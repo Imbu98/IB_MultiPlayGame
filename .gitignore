@@ -72,3 +72,44 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# KDT3 추가
+Basic/Intermediate/*
+Basic/Saved/*
+Basic/.vsconfig
+Basic/Binaries/*
+
+# VR 추가
+VR/Intermediate/*
+VR/Saved/*
+VR/.vsconfig
+VR/Binaries/*
+
+# NetworkBasic 추가
+NetworkBasic/Intermediate/*
+NetworkBasic/Saved/*
+NetworkBasic/.vsconfig
+NetworkBasic/Binaries/*
+NetworkBasic/Build/*
+
+#Contents
+Content/FXVarietyPack/*
+Content/StarterContent/*
+Content/Characters/*
+Content/ElfArden/
+
+# Package
+Package/*
+
+
+
+# Rider 
+.idea/*
+
+# NetworkBasic 추가
+Platform/Intermediate/*
+Platform/Saved/*
+Platform/.vsconfig
+Platform/Binaries/*
+Platform/Build/*
+Content/IB_Project/Levels/L_Start_BuiltData.zip
