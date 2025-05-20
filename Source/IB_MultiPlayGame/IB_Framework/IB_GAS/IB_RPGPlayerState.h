@@ -24,7 +24,7 @@ public:
 	UIB_RPGAttributeSet* GetIB_RPGAttributeSet() const;
 
 private:
-	UPROPERTY(BlueprintReadOnly,meta=(AllowPrivateAccess=true))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,meta=(AllowPrivateAccess=true))
 	TObjectPtr<UIB_RPGAbilitySystemComponent> IB_RPGAbilitySystemComp;
 	UPROPERTY(BlueprintReadOnly,meta=(AllowPrivateAccess=true))
 	TObjectPtr<UIB_RPGAttributeSet> IB_RPGAttributeSet;

@@ -1,5 +1,4 @@
 #include "IB_RPGPlayerController.h"
-
 #include "AbilitySystemBlueprintLibrary.h"
 #include "../../Components/InventoryComponent.h"
 #include "Net/UnrealNetwork.h"
@@ -9,7 +8,14 @@
 #include "../../Input/RPGSystemsInputComponents.h"
 #include "IB_RPGPlayerState.h"
 #include "IB_RPGAbilitySystemComponent.h"
-
+#include "EnhancedInputComponent.h"
+#include "InputActionValue.h"
+#include "EnhancedInputSubsystems.h"
+#include "NiagaraSystem.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Blueprint/AIBlueprintHelperLibrary.h"
+#include "NavigationSystem.h"
+#include "AIController.h"
 
 AIB_RPGPlayerController::AIB_RPGPlayerController()
 {
@@ -17,7 +23,21 @@ AIB_RPGPlayerController::AIB_RPGPlayerController()
 
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
 	InventoryComponent->SetIsReplicated(true);
+
+	/*bShowMouseCursor = true;
+	DefaultMouseCursor = EMouseCursor::Default;
+	CachedDestination = FVector::ZeroVector;
+	FollowTime = 0.f;*/
 }
+
+void AIB_RPGPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AIB_RPGPlayerController, InventoryComponent);
+}
+
+
 
 void AIB_RPGPlayerController::SetupInputComponent()
 {
@@ -25,8 +45,32 @@ void AIB_RPGPlayerController::SetupInputComponent()
 
 	if (URPGSystemsInputComponents* RPGInputComp = Cast<URPGSystemsInputComponents>(InputComponent))
 	{
-		RPGInputComp->BindAbililtyActions(RPGInputConfig, this, &ThisClass::AbilityInputPressed, &ThisClass::AbilityInputReleased);
+		RPGInputComp->BindAbililtyActions(RPGInputConfig, this, &AIB_RPGPlayerController::AbilityInputPressed, &AIB_RPGPlayerController::AbilityInputReleased);
 	}
+	//if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+	//{
+	//	Subsystem->AddMappingContext(IB_IMC, 0);
+	//}
+
+	//// Set up action bindings
+	//if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
+	//{
+	//	// Setup mouse input events
+	//	EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Started, this, &AIB_RPGPlayerController::OnInputStarted);
+	//	EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Triggered, this, &AIB_RPGPlayerController::OnSetDestinationTriggered);
+	//	EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Completed, this, &AIB_RPGPlayerController::OnSetDestinationReleased);
+	//	EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Canceled, this, &AIB_RPGPlayerController::OnSetDestinationReleased);
+
+	//	/* Setup touch input events
+	//	EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Started, this, &ATopdownTestPlayerController::OnInputStarted);
+	//	EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Triggered, this, &ATopdownTestPlayerController::OnTouchTriggered);
+	//	EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Completed, this, &ATopdownTestPlayerController::OnTouchReleased);
+	//	EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Canceled, this, &ATopdownTestPlayerController::OnTouchReleased);*/
+	//}
+	//else
+	//{
+	//	
+	//}
 
 }
 
@@ -35,11 +79,12 @@ UInventoryComponent* AIB_RPGPlayerController::GetInventoryComponent_Implementati
 	return InventoryComponent;
 }
 
-void AIB_RPGPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void AIB_RPGPlayerController::SetDynamicProjectile_Implementation(const FGameplayTag& ProjectileTag, int32 AbilityLevel)
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(AIB_RPGPlayerController,InventoryComponent);
+	if (IsValid(RPGAbilitySystemComp))
+	{
+		RPGAbilitySystemComp->SetDynamicProjectile(ProjectileTag, AbilityLevel);
+	 }
 }
 
 void AIB_RPGPlayerController::BeginPlay()
@@ -98,21 +143,84 @@ UInventoryWidgetController* AIB_RPGPlayerController::GetInventoryWidgetControlle
 			InventoryWidgetController->BindCallBacksToDependencies();
 		}
 		
-
 	}
 	return InventoryWidgetController;
 }
 
 void AIB_RPGPlayerController::CreateInventoryWidget()
 {
-	if (UUserWidget* Widget = CreateWidget<UW_RPGSystemWidget>(this, InventoryWidgetClass))
-	{
-		InventoryWidget = Cast<UW_RPGSystemWidget>(Widget);
-		InventoryWidget->SetWidgetController(GetInventoryWidgetController());
-		InventoryWidgetController->BroadcastInitialValues();
-
-		InventoryWidget->AddToViewport(0);
-	}
+	
+		if (UUserWidget* Widget = CreateWidget<UW_RPGSystemWidget>(this, InventoryWidgetClass))
+		{
+			InventoryWidget = Cast<UW_RPGSystemWidget>(Widget);
+			InventoryWidget->SetWidgetController(GetInventoryWidgetController());
+			InventoryWidgetController->BroadcastInitialValues();
+			InventoryWidget->AddToViewport(0);
+		}
 }
 
 
+
+//void AIB_RPGPlayerController::OnInputStarted()
+//{
+//	StopMovement();
+//}
+//
+//void AIB_RPGPlayerController::OnSetDestinationTriggered()
+//{
+//
+//	 We flag that the input is being pressed
+//	FollowTime += GetWorld()->GetDeltaSeconds();
+//
+//	 We look for the location in the world where the player has pressed the input
+//	FHitResult Hit;
+//	bool bHitSuccessful = false;
+//	if (bIsTouch)
+//	{
+//		bHitSuccessful = GetHitResultUnderFinger(ETouchIndex::Touch1, ECollisionChannel::ECC_Visibility, true, Hit);
+//	}
+//	else
+//	{
+//		bHitSuccessful = GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, true, Hit);
+//	}
+//
+//	 If we hit a surface, cache the location
+//	if (bHitSuccessful)
+//	{
+//		CachedDestination = Hit.Location;
+//	}
+//
+//	 Move towards mouse pointer or touch
+//	APawn* ControlledPawn = GetPawn();
+//	if (ControlledPawn != nullptr)
+//	{
+//		FVector DebugLocation = ControlledPawn->GetActorLocation();
+//		FVector WorldDirection = (CachedDestination - DebugLocation).GetSafeNormal();
+//		ControlledPawn->AddMovementInput(WorldDirection, 1.0, false);
+//	}
+//}
+//
+//void AIB_RPGPlayerController::OnSetDestinationReleased()
+//{
+//	if (!HasAuthority())
+//	{
+//		ServerSetDestination(CachedDestination);
+//		return;
+//	}
+//	 If it was a short press
+//	if (FollowTime <= ShortPressThreshold)
+//	{
+//
+//		 We move there and spawn some particles
+//		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, CachedDestination);
+//		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, FXCursor, CachedDestination, FRotator::ZeroRotator, FVector(1.f, 1.f, 1.f), true, true, ENCPoolMethod::None, true);
+//	}
+//
+//	FollowTime = 0.f;
+//
+//}
+//
+//void AIB_RPGPlayerController::ServerSetDestination_Implementation(FVector MoveTarget)
+//{
+//	OnSetDestinationReleased();
+//}

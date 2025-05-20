@@ -4,6 +4,7 @@
 #include "IB_BaseChar.h"
 #include "GameplayTags.h"
 #include "AbilitySystemInterface.h"
+#include "../Interfaces/RPGAbilitySystemInterface.h"
 #include "IB_MainChar.generated.h"
 
 class UIB_RPGAbilitySystemComponent;
@@ -18,12 +19,14 @@ enum class IB_CharCycle : uint8
 };
 
 UCLASS()
-class IB_MULTIPLAYGAME_API AIB_MainChar : public AIB_BaseChar ,public IAbilitySystemInterface
+class IB_MULTIPLAYGAME_API AIB_MainChar : public AIB_BaseChar ,public IAbilitySystemInterface , public IRPGAbilitySystemInterface
 {
 	GENERATED_BODY()
 	
 public:
 	AIB_MainChar();
+
+	virtual USceneComponent* GetDynamicSpawnPoint_Implementation() override;
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -101,6 +104,9 @@ protected:
 	virtual void InitClassDefaults() override;
 
 private:
+	UPROPERTY(VisibleAnywhere,meta= (AllowPrivateAccess=true))
+	TObjectPtr<USceneComponent> DynamicProjectileSpawnPoint;
+
 	UPROPERTY(BlueprintReadOnly,meta=(AllowPrivateAccess=true))
 	TObjectPtr<UIB_RPGAbilitySystemComponent> IB_RPGAbilitySystemComponent;
 

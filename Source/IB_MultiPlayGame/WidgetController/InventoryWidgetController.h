@@ -9,7 +9,7 @@ struct FPackagedInventory;
 struct FMasterItemDefinition;
 
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FInventoryItemSignature, const FMasterItemDefinition&, Item);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FInventoryItemSignature, const FMasterItemDefinition&, Items);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInventoryBroadCastComplete);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FScrollBoxResetSignature);
 

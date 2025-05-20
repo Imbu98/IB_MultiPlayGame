@@ -14,7 +14,6 @@ void UW_Inventory::NativeDestruct()
 {
 	if (InventoryWidgetController)
 	{
-
 		InventoryWidgetController->InventoryItemDelegate.Clear();
 		InventoryWidgetController->InventoryBroadCastComplete.Clear();
 		InventoryWidgetController->ScrollBoxResetDelegate.Clear();
@@ -60,9 +59,8 @@ void UW_Inventory::OnScrollBoxReset()
 		for (UW_InventorySlot* Widgets : ActiveItemWidgets)
 		{
 			Widgets->OnClickedActionButtonDelegate.Clear();
-			ActiveItemWidgets.Empty();
-			
 		}
+		ActiveItemWidgets.Empty();
 	}
 }
 
@@ -81,6 +79,7 @@ void UW_Inventory::HandleInventoryItemRecieved(const FMasterItemDefinition& Item
 
 void UW_Inventory::MakeItemRowWidget(const FMasterItemDefinition& Item)
 {
+
 	WBP_InventorySlot = CreateWidget<UW_InventorySlot>(this, WBP_InventorySlotClass);
 	if (WBP_InventorySlot)
 	{
@@ -89,7 +88,7 @@ void UW_Inventory::MakeItemRowWidget(const FMasterItemDefinition& Item)
 		WBP_InventorySlot->Item = Item;
 		WBP_InventorySlot->SlotIndex = ActiveItemWidgets.Num();
 		
-
+		
 		if (WB_InventoryContents)
 		{
 			WB_InventoryContents->AddChild(WBP_InventorySlot);

@@ -41,6 +41,7 @@ void UInventoryComponent::BeginPlay()
 
 void UInventoryComponent::AddItem(const FGameplayTag& ItemTag, int32 NumItems)
 {
+	
 	AActor* Owner = GetOwner();
 	if (Owner == nullptr)
 	{
@@ -54,6 +55,9 @@ void UInventoryComponent::AddItem(const FGameplayTag& ItemTag, int32 NumItems)
 		return;
 	}
 
+	// 맵은 리플리케이트 할 수 없으니 AddItem하기전 CachedInventory순서로 맵을 다시 만듦
+	ReConstructInventoryMap(CachedInventory);
+
 	if (InventoryTagMap.Contains(ItemTag))
 	{
 		InventoryTagMap[ItemTag] += NumItems;
@@ -65,8 +69,10 @@ void UInventoryComponent::AddItem(const FGameplayTag& ItemTag, int32 NumItems)
 
 	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemTag.ToString(), NumItems));
 
+	// 만들어진 맵순서로 다시 CachedInventory 생성
 	PackageInventory(CachedInventory);
 
+	// 그 CachedInventory순서로 맵을 만듦
 	InventoryPackageDelegate.Broadcast(CachedInventory);
 }
 
@@ -92,29 +98,21 @@ void UInventoryComponent::PackageInventory(FPackagedInventory& OutInventory)
 
 void UInventoryComponent::SwapItemsInPackagedInventory(FPackagedInventory& CachedInventoryRef, int32 IndexA, int32 IndexB)
 {
+	if (!GetOwner()->HasAuthority())
+	{
+		ServerSwapItem(IndexA,IndexB);
+		return;
+	}
 	if (!CachedInventoryRef.ItemTags.IsValidIndex(IndexA) || !CachedInventoryRef.ItemTags.IsValidIndex(IndexB))
 	{
 		return;
 	}
 
-	// 태그 스왑
 	CachedInventoryRef.ItemTags.Swap(IndexA, IndexB);
-	// 수량 스왑
+	
 	CachedInventoryRef.ItemQuantities.Swap(IndexA, IndexB);
 
 	InventoryPackageDelegate.Broadcast(CachedInventoryRef);
-
-	AIB_RPGPlayerController* IB_RPGPC = Cast< AIB_RPGPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-	if (IB_RPGPC)
-	{
-
-		UInventoryWidgetController* InventoryWidgetController = IB_RPGPC->GetInventoryWidgetController();
-		if (InventoryWidgetController)
-		{
-			InventoryWidgetController->UpdateInventory(CachedInventoryRef);
-		}
-	}
-
 
 	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Swapping %d <--> %d"), IndexA, IndexB));
 }
@@ -129,6 +127,7 @@ void UInventoryComponent::ReConstructInventoryMap(const FPackagedInventory& Inve
 
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Tag Added: %s // Quantity Added :%d"), *Inventory.ItemTags[i].ToString(), Inventory.ItemQuantities[i]));
 	}
+	
 }
 
 TMap<FGameplayTag, int32> UInventoryComponent::GetInventoryTagMap()
@@ -141,14 +140,28 @@ FPackagedInventory& UInventoryComponent::GetCachedInventory()
 	return CachedInventory;
 }
 
+void UInventoryComponent::ServerSwapItem_Implementation(int32 IndexA, int32 IndexB)
+{
+	SwapItemsInPackagedInventory(CachedInventory, IndexA, IndexB);
+}
+
 void UInventoryComponent::OnRep_CachedInventory()
 {
 	if (bOwnerLocallyControlled)
 	{
-		//ReConstructInventoryMap(CachedInventory);
 		InventoryPackageDelegate.Broadcast(CachedInventory);
+
 	}
 
+}
+
+void UInventoryComponent::test()
+{
+	for (int32 i = 0; i < CachedInventory.ItemTags.Num();++i)
+	{
+
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Tag Added: %s // Quantity Added :%d"), *CachedInventory.ItemTags[i].ToString(), CachedInventory.ItemQuantities[i]));
+	}
 }
 
 void UInventoryComponent::UseItem(const FGameplayTag& ItemTag, int32 NumItems)

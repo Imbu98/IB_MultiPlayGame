@@ -56,6 +56,8 @@ public:
 
 	void ReConstructInventoryMap(const FPackagedInventory& Inventory);
 
+	void PackageInventory(FPackagedInventory& OutInventory);
+
 	TMap<FGameplayTag, int32> GetInventoryTagMap();
 
 	FPackagedInventory& GetCachedInventory();
@@ -68,8 +70,6 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-
-
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TMap<FGameplayTag, int32> InventoryTagMap;
 
@@ -85,10 +85,15 @@ private:
 	UFUNCTION(Server, Reliable)
 	void ServerUseItem(const FGameplayTag& ItemTag, int32 NumItems);
 
-	void PackageInventory(FPackagedInventory& OutInventory);
+	UFUNCTION(Server, Reliable)
+	void ServerSwapItem(int32 IndexA, int32 IndexB);
 
 	UFUNCTION()
 	void OnRep_CachedInventory();
+
+	UFUNCTION(BlueprintCallable)
+	void test();
+	
 
 
 

@@ -1,7 +1,7 @@
 #include "EnemyBaseChar.h"
 #include "../IB_Framework/IB_GAS/IB_RPGAbilitySystemComponent.h"
 #include "../IB_Framework/IB_GAS/IB_RPGAttributeSet.h"
-#include "../IB_Framework/IB_GAS/IB_CharacterClassInfo.h"
+#include "../IB_Framework/IB_GAS/Data/IB_CharacterClassInfo.h"
 #include "../IB_Framework/FunctionLibrary/IB_BlueprintFunctionLibrary.h"
 #include "Components/WidgetComponent.h"
 #include "../Widget/W_EnemyOverHeadBars.h"

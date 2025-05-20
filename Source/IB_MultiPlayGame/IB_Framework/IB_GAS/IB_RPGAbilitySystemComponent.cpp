@@ -1,5 +1,6 @@
 #include "IB_RPGAbilitySystemComponent.h"
-#include "RPGGameplayAbility.h"
+#include "../IB_GAS/AbilitySystem/RPGGameplayAbility.h"
+#include "../IB_GAS/AbilitySystem/ProjectileAbility.h"
 
 
 void UIB_RPGAbilitySystemComponent::AddCharacterAbilities(const TArray<TSubclassOf<UGameplayAbility>>& AbilitiesToGrant)
@@ -83,4 +84,41 @@ void UIB_RPGAbilitySystemComponent::AbilityInputReleased(const FGameplayTag& Inp
 			}
 		}
 	}
+}
+
+void UIB_RPGAbilitySystemComponent::SetDynamicProjectile(const FGameplayTag& ProjectileTag, int32 AbilityLevel)
+{
+	if (!ProjectileTag.IsValid())
+	{
+		return;
+	}
+
+	if (!GetAvatarActor()->HasAuthority())
+	{
+		ServerSetDynamicProjectile(ProjectileTag,AbilityLevel);
+		return;
+	}
+	if (ActiveProjectileAbilty.IsValid())
+	{
+		ClearAbility(ActiveProjectileAbilty);
+	}
+
+	if (IsValid(DynamicProjectileAbility))
+	{
+		FGameplayAbilitySpec Spec = FGameplayAbilitySpec(DynamicProjectileAbility, AbilityLevel);
+		if (UProjectileAbility* ProjectileAbility = Cast<UProjectileAbility>(Spec.Ability))
+		{
+			ProjectileAbility->ProjectileToSpawnTag = ProjectileTag;
+			Spec.DynamicAbilityTags.AddTag(ProjectileAbility->InputTag);
+
+			// 
+			ActiveProjectileAbilty = GiveAbility(Spec);
+		}
+	}
+
+}
+
+void UIB_RPGAbilitySystemComponent::ServerSetDynamicProjectile_Implementation(const FGameplayTag& ProjectileTag, int32 AbilityLevel)
+{
+	SetDynamicProjectile(ProjectileTag,AbilityLevel);
 }

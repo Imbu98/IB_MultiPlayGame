@@ -43,6 +43,9 @@ public:
 	UPROPERTY()
 	TArray<UW_InventorySlot*> ActiveItemWidgets;
 
+	UPROPERTY()
+	int32 InventorySlotIndex=0;
+
 
 public:
 

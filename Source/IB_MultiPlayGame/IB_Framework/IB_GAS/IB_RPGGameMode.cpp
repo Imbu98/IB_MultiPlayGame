@@ -5,3 +5,8 @@ UIB_CharacterClassInfo* AIB_RPGGameMode::GetCharacterClassDefaultInfo() const
 {
 	return ClassDefaults;
 }
+
+UProjectile_Info* AIB_RPGGameMode::GetProjectileInfo() const
+{
+	return ProjectileInfo;
+}

@@ -10,7 +10,7 @@
 #include "IB_MultiPlayGame/IB_Framework/IB_GAS/IB_RPGPlayerState.h"
 #include "../IB_Framework/IB_GAS/IB_RPGAbilitySystemComponent.h"
 #include "Blueprint/UserWidget.h"
-#include "IB_MultiPlayGame/IB_Framework/IB_GAS/IB_CharacterClassInfo.h"
+#include "IB_MultiPlayGame/IB_Framework/IB_GAS/Data/IB_CharacterClassInfo.h"
 #include "IB_MultiPlayGame/Widget/W_Overlay.h"
 #include "Net/UnrealNetwork.h"
 
@@ -19,6 +19,7 @@ AIB_MainChar::AIB_MainChar()
 	bReplicates=true;
 
 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = true;
 
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
@@ -28,6 +29,8 @@ AIB_MainChar::AIB_MainChar()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
+	GetCharacterMovement()->bConstrainToPlane = true;
+	GetCharacterMovement()->bSnapToPlaneAtStart = true;
 
 	GetCharacterMovement()->JumpZVelocity = 700.f;
 	GetCharacterMovement()->AirControl = 0.35f;
@@ -45,6 +48,15 @@ AIB_MainChar::AIB_MainChar()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+
+	DynamicProjectileSpawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("ProjectileSpawnPoint"));
+	DynamicProjectileSpawnPoint->SetupAttachment(GetRootComponent());
+
+}
+
+USceneComponent* AIB_MainChar::GetDynamicSpawnPoint_Implementation()
+{
+	return DynamicProjectileSpawnPoint;
 }
 
 void AIB_MainChar::BeginPlay()

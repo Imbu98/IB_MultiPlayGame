@@ -37,8 +37,8 @@ void UInventoryWidgetController::UpdateInventory(const FPackagedInventory& Inven
 {
 	if (IsValid(OwningInventory))
 	{
+		
 		OwningInventory->ReConstructInventoryMap(InventoryContents);
-
 		BroadcastInventoryContents();
 	}
 }
