@@ -1,10 +1,15 @@
 #include "IB_RPGPlayerController.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "../../Components/InventoryComponent.h"
+#include "../../Components/QuestLogComponent.h"
+#include"../../Components/QuestComponent.h"
+
 #include "Net/UnrealNetwork.h"
 #include "../../WidgetController/InventoryWidgetController.h"
-#include "Blueprint/UserWidget.h"
 #include "../../Widget/W_RPGSystemWidget.h"
+#include "../../Widget/W_QuestGiver.h"
+#include "../../Widget/W_QuestLog.h"
+#include "Blueprint/UserWidget.h"
 #include "../../Input/RPGSystemsInputComponents.h"
 #include "IB_RPGPlayerState.h"
 #include "IB_RPGAbilitySystemComponent.h"
@@ -17,12 +22,21 @@
 #include "NavigationSystem.h"
 #include "AIController.h"
 
+
 AIB_RPGPlayerController::AIB_RPGPlayerController()
 {
 	bReplicates=true;
 
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
 	InventoryComponent->SetIsReplicated(true);
+	
+
+	QuestLogComponent = CreateDefaultSubobject<UQuestLogComponent>("QuestLogComponent");
+	QuestLogComponent->SetIsReplicated(true);
+
+	QuestComponent=CreateDefaultSubobject<UQuestComponent>("QuestComponent");
+	QuestComponent->SetIsReplicated(true);
+
 
 	/*bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
@@ -35,6 +49,9 @@ void AIB_RPGPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AIB_RPGPlayerController, InventoryComponent);
+	DOREPLIFETIME(AIB_RPGPlayerController, QuestLogComponent);
+	DOREPLIFETIME(AIB_RPGPlayerController, QuestComponent);
+	
 }
 
 
@@ -127,6 +144,14 @@ UIB_RPGAbilitySystemComponent* AIB_RPGPlayerController::GetRPGAbilitySystemCompo
 	return RPGAbilitySystemComp;
 }
 
+void AIB_RPGPlayerController::DisplayQuestLog()
+{
+	if(WBP_QuestLog = CreateWidget<UW_QuestLog>(this, WBP_QuestLogClass))
+	{
+		WBP_QuestLog->AddToViewport();
+	}
+}
+
 UAbilitySystemComponent* AIB_RPGPlayerController::GetAbilitySystemComponent() const
 {
 	return UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetPawn());
@@ -159,6 +184,19 @@ void AIB_RPGPlayerController::CreateInventoryWidget()
 		}
 }
 
+void AIB_RPGPlayerController::ClientDisplayQuest_Implementation(FQuestDetails QuestDetails,FName QuestID)
+{
+	if (this->IsLocalController() && !this->GetPawn()->HasAuthority())
+	{
+		WBP_QuestGiverWidget = CreateWidget<UW_QuestGiver>(this, WBP_QuestGiverWidgetClass);
+		if (WBP_QuestGiverWidget)
+		{
+			WBP_QuestGiverWidget->QuestDetails = QuestDetails;
+			WBP_QuestGiverWidget->QuestID = QuestID;
+			WBP_QuestGiverWidget->AddToViewport();
+		}
+	}
+}
 
 
 //void AIB_RPGPlayerController::OnInputStarted()

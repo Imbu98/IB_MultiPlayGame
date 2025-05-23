@@ -13,6 +13,10 @@
 #include "IB_MultiPlayGame/IB_Framework/IB_GAS/Data/IB_CharacterClassInfo.h"
 #include "IB_MultiPlayGame/Widget/W_Overlay.h"
 #include "Net/UnrealNetwork.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "../Interfaces/InteractInterface.h"
+#include "../IB_Framework/IB_GameInstance.h"
 
 AIB_MainChar::AIB_MainChar()
 {
@@ -51,6 +55,16 @@ AIB_MainChar::AIB_MainChar()
 
 	DynamicProjectileSpawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("ProjectileSpawnPoint"));
 	DynamicProjectileSpawnPoint->SetupAttachment(GetRootComponent());
+
+}
+
+void AIB_MainChar::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AIB_MainChar, CharacterState);
+	DOREPLIFETIME(AIB_MainChar, LookatActor);
+
 
 }
 
@@ -171,6 +185,36 @@ void AIB_MainChar::InitClassDefaults()
 	}
 }
 
+void AIB_MainChar::SetNPCActor_Implementation(AActor* NPCActor)
+{
+	if (NPCActor)
+	{
+		if (!HasAuthority())
+		{
+			ServerSetNPCActor(NPCActor);
+			return;
+		}
+		LookatActor = NPCActor;
+		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("ServerSet LookatActor : %s"), *LookatActor->GetName()));
+	}
+	else
+	{
+		if (!HasAuthority())
+		{
+			ServerSetNPCActor(NPCActor);
+			return;
+		}
+		LookatActor = nullptr;
+		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("ServerSet LookatActor : nullptr")));
+	}
+}
+
+void AIB_MainChar::ServerSetNPCActor_Implementation(AActor* NPCActor)
+{
+		IInteractInterface::Execute_SetNPCActor(this,NPCActor);
+	
+}
+
 void AIB_MainChar::BindCallbacksToDependencies()
 {
 	if (IsValid(IB_RPGAbilitySystemComponent)&&IsValid(IB_RPGAttributeSet))
@@ -187,6 +231,38 @@ void AIB_MainChar::BindCallbacksToDependencies()
 				OnManaChanged(Data.NewValue,IB_RPGAttributeSet->GetMaxMana());
 			});
 	}
+}
+
+void AIB_MainChar::PlayerInteraction()
+{
+	if (!HasAuthority())
+	{
+
+		SereverPlayerInteraction();
+		return;
+	}
+
+	if (LookatActor&&LookatActor->Implements<UInteractInterface>())
+	{
+		if (APlayerController* PC = Cast<APlayerController>(this->GetController()))
+		{
+			IInteractInterface::Execute_InteractWith(LookatActor, PC);
+
+			// For Quest
+			if (OnObjectiveIdCalledDelegate.IsBound())
+			{	
+				OnObjectiveIdCalledDelegate.Broadcast(IInteractInterface::Execute_InteractWith(LookatActor, PC));
+			}
+		}
+		
+		
+	}
+	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Interact")));
+}
+
+void AIB_MainChar::SereverPlayerInteraction_Implementation()
+{
+	PlayerInteraction();
 }
 
 void AIB_MainChar::BroadCastInitialValues()
@@ -219,12 +295,7 @@ UAbilitySystemComponent* AIB_MainChar::GetAbilitySystemComponent() const
 	return IB_RPGAbilitySystemComponent;
 }
 
-void AIB_MainChar::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AIB_MainChar,CharacterState);
-}
 
 void AIB_MainChar::ServerSetCharacterState_Implementation(IB_CharCycle NewState)
 {
@@ -242,6 +313,7 @@ void AIB_MainChar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EnhancedInputComponent->BindAction(LookAction,ETriggerEvent::Triggered,this,&AIB_MainChar::Look);
 		EnhancedInputComponent->BindAction(JumpAction,ETriggerEvent::Triggered,this,&ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction,ETriggerEvent::Completed,this,&ACharacter::StopJumping);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AIB_MainChar::PlayerInteraction);
 	}
 }
 

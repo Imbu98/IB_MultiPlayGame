@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "IB_MultiPlayGame/IB_MultiPlayGameCharacter.h"
 #include "GameplayTagContainer.h"
+#include "../DefineDelegates.h"
 #include "IB_BaseChar.generated.h"
 
 UCLASS()
@@ -31,5 +32,8 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Custom Values|Character Info")
 	FGameplayTag CharacterTag;
+
 	
+
+
 };

@@ -5,6 +5,7 @@
 #include "GameplayTags.h"
 #include "AbilitySystemInterface.h"
 #include "../Interfaces/RPGAbilitySystemInterface.h"
+#include "../Interfaces/InteractInterface.h"
 #include "IB_MainChar.generated.h"
 
 class UIB_RPGAbilitySystemComponent;
@@ -19,7 +20,7 @@ enum class IB_CharCycle : uint8
 };
 
 UCLASS()
-class IB_MULTIPLAYGAME_API AIB_MainChar : public AIB_BaseChar ,public IAbilitySystemInterface , public IRPGAbilitySystemInterface
+class IB_MULTIPLAYGAME_API AIB_MainChar : public AIB_BaseChar ,public IAbilitySystemInterface , public IRPGAbilitySystemInterface , public IInteractInterface
 {
 	GENERATED_BODY()
 	
@@ -49,8 +50,6 @@ public:
 	UFUNCTION(Server,Reliable)
 	void ServerSetCharacterState(IB_CharCycle NewState);
 
-
-	
 	virtual void OnHealthChanged(float CurrentHealth, float MaxHealth) override;
 
 
@@ -77,6 +76,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* InteractAction;
+
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	IB_CharCycle CharacterCycle;
 
@@ -85,6 +87,11 @@ public:
 	
 	UPROPERTY()
 	class UW_Overlay* OverlayWidgetRef;
+	
+	UPROPERTY(BlueprintReadWrite,Replicated)
+	AActor* LookatActor;
+
+	FOnObjectiveIdCalled OnObjectiveIdCalledDelegate;
 
 
 
@@ -103,6 +110,11 @@ protected:
 
 	virtual void InitClassDefaults() override;
 
+	virtual void SetNPCActor_Implementation(AActor* NPCActor) override;
+
+	UFUNCTION(Server,Reliable)
+	void ServerSetNPCActor(AActor* NPCActor);
+
 private:
 	UPROPERTY(VisibleAnywhere,meta= (AllowPrivateAccess=true))
 	TObjectPtr<USceneComponent> DynamicProjectileSpawnPoint;
@@ -113,6 +125,11 @@ private:
 	UPROPERTY(BlueprintReadOnly,meta=(AllowPrivateAccess=true))
 	TObjectPtr<UIB_RPGAttributeSet> IB_RPGAttributeSet;
 
+	UFUNCTION()
+	void PlayerInteraction();
+
+	UFUNCTION(Server,Reliable)
+	void SereverPlayerInteraction();
 
 	UFUNCTION(BlueprintCallable)
 	void BroadCastInitialValues();
@@ -120,6 +137,8 @@ private:
 	void InitOverlay();
 	UFUNCTION(BlueprintCallable)
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+
 
 
 	

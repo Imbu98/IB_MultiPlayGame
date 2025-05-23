@@ -22,7 +22,6 @@ bool FPackagedInventory::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOut
 
 UInventoryComponent::UInventoryComponent()
 {
-
 	PrimaryComponentTick.bCanEverTick = true;
 }
 

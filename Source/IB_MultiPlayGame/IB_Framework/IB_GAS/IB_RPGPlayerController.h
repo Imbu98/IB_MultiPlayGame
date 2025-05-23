@@ -7,6 +7,7 @@
 #include "AbilitySystemInterface.h"
 #include "../../Interfaces/InventoryInterface.h"
 #include "../../Interfaces/RPGAbilitySystemInterface.h"
+#include "../../QuestSystem/QuestStructure.h"
 #include "IB_RPGPlayerController.generated.h"
 
 class UInventoryWidgetController;
@@ -16,6 +17,10 @@ class UIB_RPGAbilitySystemComponent;
 class UInputAction;
 class UNiagaraSystem;
 class UInputMappingContext;
+class UQuestLogComponent;
+class UQuestComponent;
+class UW_QuestGiver;
+class UW_QuestLog;
 
 UCLASS()
 class IB_MULTIPLAYGAME_API AIB_RPGPlayerController : public APlayerController, public IAbilitySystemInterface , public IInventoryInterface , public IRPGAbilitySystemInterface
@@ -71,6 +76,32 @@ private:
 	TSubclassOf<UW_RPGSystemWidget> InventoryWidgetClass;
 
 	UIB_RPGAbilitySystemComponent* GetRPGAbilitySystemComponent();
+
+	
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Replicated)
+	TObjectPtr<UQuestLogComponent> QuestLogComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Replicated)
+	TObjectPtr<UQuestComponent> QuestComponent;
+
+	UPROPERTY(EditAnywhere, category = "Custom Values | Widget")
+	TSubclassOf<UUserWidget> WBP_QuestLogClass;
+	UPROPERTY()
+	TObjectPtr<UW_QuestLog> WBP_QuestLog;
+	UFUNCTION(BlueprintCallable)
+	void DisplayQuestLog();
+
+	
+
+	UPROPERTY(EditAnywhere, category = "Custom Values | Widget")
+	TSubclassOf<UUserWidget> WBP_QuestGiverWidgetClass;
+	UPROPERTY()
+	TObjectPtr<UW_QuestGiver> WBP_QuestGiverWidget;
+
+	UFUNCTION(Client, Reliable)
+	void ClientDisplayQuest(FQuestDetails QuestDetails, FName QuestID);
+
+	
 	
 	
 	
