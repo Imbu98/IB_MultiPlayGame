@@ -17,6 +17,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "../Interfaces/InteractInterface.h"
 #include "../IB_Framework/IB_GameInstance.h"
+#include "IB_NPCBase.h"
+#include "IB_MultiPlayGame/ETC/Object/StrangeObject.h"
 
 AIB_MainChar::AIB_MainChar()
 {
@@ -64,6 +66,7 @@ void AIB_MainChar::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& O
 
 	DOREPLIFETIME(AIB_MainChar, CharacterState);
 	DOREPLIFETIME(AIB_MainChar, LookatActor);
+	DOREPLIFETIME(AIB_MainChar, QuestObjectiveId);
 
 
 }
@@ -246,13 +249,40 @@ void AIB_MainChar::PlayerInteraction()
 	{
 		if (APlayerController* PC = Cast<APlayerController>(this->GetController()))
 		{
-			IInteractInterface::Execute_InteractWith(LookatActor, PC);
+			EInteractObjective ObjectiveType = DetermineInteractObjective(LookatActor);
 
-			// For Quest
-			if (OnObjectiveIdCalledDelegate.IsBound())
-			{	
-				OnObjectiveIdCalledDelegate.Broadcast(IInteractInterface::Execute_InteractWith(LookatActor, PC));
+			switch (ObjectiveType)
+			{
+				// if Class IB_NPCBase
+			case EInteractObjective::NPC:
+			{
+				if (OnObjectiveIdCalledDelegate.IsBound())
+				{
+					QuestObjectiveId = IInteractInterface::Execute_InteractWith(LookatActor, PC);
+					OnObjectiveIdCalledDelegate.Broadcast(QuestObjectiveId);
+				}
+				break;	
 			}
+			// if Class StrangeObject
+			case EInteractObjective::Object:
+			{
+				if (OnObjectiveIdCalledDelegate.IsBound())
+				{
+					QuestObjectiveId = IInteractInterface::Execute_InteractWith(LookatActor, PC);
+					OnObjectiveIdCalledDelegate.Broadcast(QuestObjectiveId);
+				}
+				break;
+			}
+
+			case EInteractObjective::Item:
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString::Printf(TEXT("Serever Interact with Item")));
+				break;
+			}
+				default:
+					break;
+			}
+			
 		}
 		
 		
@@ -289,6 +319,19 @@ void AIB_MainChar::InitOverlay()
 		}
 	}
 }
+EInteractObjective AIB_MainChar::DetermineInteractObjective(AActor* InteractObjective)
+{
+	if (AIB_NPCBase* NPCBase = Cast<AIB_NPCBase>(InteractObjective))
+	{
+		return EInteractObjective::NPC;
+	}
+	else if (AStrangeObject* Object = Cast<AStrangeObject>(InteractObjective))
+	{
+		return EInteractObjective::Object;
+	}
+	return EInteractObjective::None;
+
+}
 
 UAbilitySystemComponent* AIB_MainChar::GetAbilitySystemComponent() const
 {
@@ -297,7 +340,7 @@ UAbilitySystemComponent* AIB_MainChar::GetAbilitySystemComponent() const
 
 
 
-void AIB_MainChar::ServerSetCharacterState_Implementation(IB_CharCycle NewState)
+void AIB_MainChar::ServerSetCharacterState_Implementation(EIB_CharCycle NewState)
 {
 	CharacterState=NewState;
 }
@@ -310,6 +353,7 @@ void AIB_MainChar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		EnhancedInputComponent->BindAction(MoveAction,ETriggerEvent::Triggered,this,&AIB_MainChar::Move);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AIB_MainChar::MoveStop);
 		EnhancedInputComponent->BindAction(LookAction,ETriggerEvent::Triggered,this,&AIB_MainChar::Look);
 		EnhancedInputComponent->BindAction(JumpAction,ETriggerEvent::Triggered,this,&ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction,ETriggerEvent::Completed,this,&ACharacter::StopJumping);
@@ -336,12 +380,12 @@ void AIB_MainChar::Move(const FInputActionValue& Value)
 	
 	if (HasAuthority())
 	{
-		CharacterState=IB_CharCycle::Walk;
+		CharacterState=EIB_CharCycle::Walk;
 	}
 	else
 	{
 		
-		ServerSetCharacterState(IB_CharCycle::Walk);
+		ServerSetCharacterState(EIB_CharCycle::Walk);
 	}
 	
 }
@@ -356,6 +400,19 @@ void AIB_MainChar::Look(const FInputActionValue& Value)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+	}
+}
+
+void AIB_MainChar::MoveStop()
+{
+	if (HasAuthority())
+	{
+		CharacterState = EIB_CharCycle::Idle;
+	}
+	else
+	{
+
+		ServerSetCharacterState(EIB_CharCycle::Idle);
 	}
 }
 

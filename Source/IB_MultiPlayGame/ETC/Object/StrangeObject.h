@@ -30,10 +30,12 @@ public:
 	TObjectPtr<AActor> InteractedActor;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Interaction)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Interaction")
 	class UWidgetComponent* WBP_Interact;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Interaction)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Interaction")
 	class UMaterialInstance* InteractOverlayMaterial;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Quest")
+	FString ObjectiveID;
 
 protected:
 	virtual void BeginPlay() override;

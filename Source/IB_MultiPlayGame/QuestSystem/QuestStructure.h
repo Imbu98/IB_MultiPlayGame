@@ -40,6 +40,7 @@ struct FObjectiveDetails
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 bonusXP = 0;
 
+
 };
 
 USTRUCT(BlueprintType)

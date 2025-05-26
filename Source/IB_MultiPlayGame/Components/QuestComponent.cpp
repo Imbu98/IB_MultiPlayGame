@@ -1,8 +1,9 @@
-#include "QuestComponent.h"
+﻿#include "QuestComponent.h"
 #include "../Character/IB_MainChar.h"
 #include "../IB_Framework/FunctionLibrary/IB_BlueprintFunctionLibrary.h"
 #include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 #include "Net/UnrealNetwork.h"
+#include "../Widget/W_QuestNotification.h"
 
 
 UQuestComponent::UQuestComponent()
@@ -53,6 +54,12 @@ void UQuestComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>
 
 void UQuestComponent::OnObjectiveIDHeard(FString ObjectiveID)
 {
+	if (GetOwner()->HasAuthority())
+	{
+		ClientOnObjectiveIDHeard(ObjectiveID);
+		return;
+	}
+
 	if (CurrentStageObjectiveProgress.Find(ObjectiveID))
 	{
 
@@ -64,6 +71,7 @@ void UQuestComponent::OnObjectiveIDHeard(FString ObjectiveID)
 			{
 				Index = +1;
 				CurrentStageObjectiveProgress.Add(ObjectiveID, Index);
+				IsObjectiveComplete(ObjectiveID);
 			}
 
 		}
@@ -72,6 +80,12 @@ void UQuestComponent::OnObjectiveIDHeard(FString ObjectiveID)
 	{
 		return;
 	}
+}
+
+void UQuestComponent::ClientOnObjectiveIDHeard_Implementation(const FString& ObjectiveID)
+{
+	FString ObjectiveIDRef = ObjectiveID;
+	OnObjectiveIDHeard(ObjectiveIDRef);
 }
 
 void UQuestComponent::GetQuestDetails()
@@ -89,11 +103,11 @@ void UQuestComponent::GetQuestDetails()
 			for (FObjectiveDetails& Objectives : CurrentStageDetails.Objectives)
 			{
 				CurrentStageObjectiveProgress.Add(Objectives.ObjectiveID, 0);
-				
+
 			}
 		}
 	}
-	UpdateReplicatedArray();
+	
 }
 
 TOptional<FObjectiveDetails> UQuestComponent::GetObjectiveDataByID(FString ObjectiveID)
@@ -108,28 +122,42 @@ TOptional<FObjectiveDetails> UQuestComponent::GetObjectiveDataByID(FString Objec
 	return TOptional<FObjectiveDetails>();
 }
 
+void UQuestComponent::IsObjectiveComplete(FString ObjectiveID)
+{
+	FObjectiveDetails ObjectiveDetails = GetObjectiveDataByID(ObjectiveID).GetValue();
+	if (CurrentStageObjectiveProgress.Find(ObjectiveID))
+	{
+		if (int32* FoundValue = CurrentStageObjectiveProgress.Find(ObjectiveID))
+		{
+			if (*FoundValue >= ObjectiveDetails.Quantity)
+			{
+				if (WBP_QuestNotification)
+				{
+					if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(this->GetOwner()))
+					{
+						WBP_QuestNotificationClass = CreateWidget<UW_QuestNotification>(IB_RPGPlayerController, WBP_QuestNotification);
+						if (WBP_QuestNotificationClass)
+						{
+							WBP_QuestNotificationClass->ObjectiveText = ObjectiveDetails.Description;
+							WBP_QuestNotificationClass->AddToViewport(0);
+						}
+					}
+					
+				}
+			}
+		}
+	}
+	
+}
+
+
+
 void UQuestComponent::ServerSetOnObjectiveIdCalledDelegate_Implementation(AIB_MainChar* PlayerChar)
 {
-	PlayerChar->OnObjectiveIdCalledDelegate.AddUObject(this, &UQuestComponent::OnObjectiveIDHeard);
+	if (IsValid(PlayerChar) && GetOwner()->HasAuthority())
+	{
+		PlayerChar->OnObjectiveIdCalledDelegate.AddUObject(this, &UQuestComponent::OnObjectiveIDHeard);
+	}
+	
 }
 
-void UQuestComponent::UpdateReplicatedArray()
-{
-	ReplicatedObjectiveProgressArray.Empty();
-	for (auto& Elem : CurrentStageObjectiveProgress)
-	{
-		FObjectiveProgressEntry Entry;
-		Entry.ObjectiveID = Elem.Key;
-		Entry.Progress = Elem.Value;
-		ReplicatedObjectiveProgressArray.Add(Entry);
-	}
-}
-
-void UQuestComponent::OnRep_ObjectiveProgress()
-{
-	CurrentStageObjectiveProgress.Empty();
-	for (auto& Entry : ReplicatedObjectiveProgressArray)
-	{
-		CurrentStageObjectiveProgress.Add(Entry.ObjectiveID, Entry.Progress);
-	}
-}

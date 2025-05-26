@@ -7,6 +7,7 @@
 #include "QuestComponent.generated.h"
 
 class AIB_MainChar;
+class UW_QuestNotification;
 
 USTRUCT()
 struct FObjectiveProgressEntry
@@ -45,13 +46,20 @@ public:
 	FStageDetails CurrentStageDetails;
 	UPROPERTY()
 	TMap<FString, int32> CurrentStageObjectiveProgress;
-	UPROPERTY(ReplicatedUsing = OnRep_ObjectiveProgress)
+	UPROPERTY(Replicated)
 	TArray<FObjectiveProgressEntry> ReplicatedObjectiveProgressArray;
 	UPROPERTY()
 	bool IsCompleted;
 
 	UPROPERTY(EditAnywhere, Category = "Custom Values | DataTable")
 	UDataTable* DT_QuestData;
+
+	UPROPERTY(EditAnywhere, Category = "Custom Values | Widget")
+	TSubclassOf<UW_QuestNotification> WBP_QuestNotification;
+
+	UPROPERTY()
+	TObjectPtr<UW_QuestNotification> WBP_QuestNotificationClass;
+
 	
 
 	UFUNCTION()
@@ -62,10 +70,11 @@ public:
 	TOptional<FObjectiveDetails> GetObjectiveDataByID(FString ObjectiveID);
 	UFUNCTION(Server,Reliable)
 	void ServerSetOnObjectiveIdCalledDelegate(AIB_MainChar* PlayerChar);
+	UFUNCTION(Client, Reliable)
+	void ClientOnObjectiveIDHeard(const FString& ObjectiveID);
 	UFUNCTION()
-	void OnRep_ObjectiveProgress();
-	UFUNCTION()
-	void UpdateReplicatedArray();
-		
+	void IsObjectiveComplete(FString ObjectiveID);
+
+
 	
 };

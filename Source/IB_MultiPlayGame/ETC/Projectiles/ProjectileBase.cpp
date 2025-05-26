@@ -2,8 +2,11 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 #include "../../IB_Framework/IB_GAS/AbilitySystem/IB_RPGAbilityTypes.h"
+#include "../../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 #include "AbilitySystemGlobals.h"
 #include "../../IB_Framework/FunctionLibrary/IB_BlueprintFunctionLibrary.h"
+#include "../../Character/IB_MainChar.h"
+
 
 
 AProjectileBase::AProjectileBase()
@@ -62,10 +65,23 @@ void AProjectileBase::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedCompon
 	{
 		return;
 	}
+	// Overlap된 Actor의 ASC를 찾아 TargetASC로 설정하고, TaragetASC에 DamageApply
 	if (UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(OtherActor))
 	{
-		DamageEffectInfo.TargetASC = TargetASC;
-		UIB_BlueprintFunctionLibrary::ApplyDamageEffect(DamageEffectInfo);
+
+		if (OtherActor->Implements<UInteractInterface>())
+		{
+			if (AIB_MainChar* PlayerCharacter = Cast<AIB_MainChar>(GetOwner()))
+			{
+				if (AIB_RPGPlayerController* IBRPGPlayerController = Cast<AIB_RPGPlayerController>(PlayerCharacter->GetController()))
+				{
+					IInteractInterface::Execute_SetDamageInstigator(OtherActor, IBRPGPlayerController);
+					DamageEffectInfo.TargetASC = TargetASC;
+					UIB_BlueprintFunctionLibrary::ApplyDamageEffect(DamageEffectInfo);
+				}
+			}
+			
+		}
 
 		Destroy();
 	}

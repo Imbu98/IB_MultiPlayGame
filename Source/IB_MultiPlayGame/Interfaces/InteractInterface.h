@@ -4,6 +4,8 @@
 #include "UObject/Interface.h"
 #include "InteractInterface.generated.h"
 
+class AIB_RPGPlayerController;
+
 UINTERFACE(MinimalAPI)
 class UInteractInterface : public UInterface
 {
@@ -26,6 +28,9 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent)
 	void SetNPCActor(AActor* NPCActor);
+
+	UFUNCTION(BlueprintNativeEvent)
+	void SetDamageInstigator(AIB_RPGPlayerController* IBRPGPlayerController);
 	
 	
 };

@@ -12,12 +12,23 @@ class UIB_RPGAbilitySystemComponent;
 class UIB_RPGAttributeSet;
 
 UENUM(BlueprintType)
-enum class IB_CharCycle : uint8
+enum class EIB_CharCycle : uint8
 {
 	Idle=0,
 	Walk =1,
 	Run=2,
 };
+
+UENUM(BlueprintType)
+enum class EInteractObjective : uint8
+{
+	None=0,
+	NPC = 1,
+	Item = 2,
+	Object = 3,
+	Others=4,
+};
+
 
 UCLASS()
 class IB_MULTIPLAYGAME_API AIB_MainChar : public AIB_BaseChar ,public IAbilitySystemInterface , public IRPGAbilitySystemInterface , public IInteractInterface
@@ -43,12 +54,12 @@ public:
 	virtual void OnRep_PlayerState() override;
  
 	UPROPERTY(BlueprintReadWrite,Replicated)
-	IB_CharCycle CharacterState;
+	EIB_CharCycle CharacterState;
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	UFUNCTION(Server,Reliable)
-	void ServerSetCharacterState(IB_CharCycle NewState);
+	void ServerSetCharacterState(EIB_CharCycle NewState);
 
 	virtual void OnHealthChanged(float CurrentHealth, float MaxHealth) override;
 
@@ -80,7 +91,7 @@ public:
 	UInputAction* InteractAction;
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	IB_CharCycle CharacterCycle;
+	EIB_CharCycle CharacterCycle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UUserWidget> WBP_Overlay;
@@ -91,7 +102,11 @@ public:
 	UPROPERTY(BlueprintReadWrite,Replicated)
 	AActor* LookatActor;
 
+	// For Quest
 	FOnObjectiveIdCalled OnObjectiveIdCalledDelegate;
+
+	UPROPERTY(Replicated)
+	FString QuestObjectiveId;
 
 
 
@@ -99,6 +114,8 @@ protected:
 	void Move(const FInputActionValue& Value);
 	
 	void Look(const FInputActionValue& Value);
+
+	void MoveStop();
 
 	virtual void InitAbilityActorInfo() override;
 
@@ -114,6 +131,8 @@ protected:
 
 	UFUNCTION(Server,Reliable)
 	void ServerSetNPCActor(AActor* NPCActor);
+	UFUNCTION()
+	EInteractObjective DetermineInteractObjective(AActor* InteractObjective);
 
 private:
 	UPROPERTY(VisibleAnywhere,meta= (AllowPrivateAccess=true))

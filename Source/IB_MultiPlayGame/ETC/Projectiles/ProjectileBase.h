@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "../../IB_Framework/IB_GAS/AbilitySystem/IB_RPGAbilityTypes.h"
+#include "IB_MultiPlayGame/Interfaces/InteractInterface.h"
 #include "ProjectileBase.generated.h"
 
 class UStaticMeshComponent;

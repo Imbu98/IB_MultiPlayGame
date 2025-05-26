@@ -3,15 +3,18 @@
 #include "CoreMinimal.h"
 #include "IB_BaseChar.h"
 #include "AbilitySystemInterface.h"
+#include "../Interfaces/InteractInterface.h"
+#include "../DefineDelegates.h"
 #include "EnemyBaseChar.generated.h"
 
 class UIB_RPGAbilitySystemComponent;
 class UIB_RPGAttributeSet;
 class UWidgetComponent;
 class UW_EnemyOverHeadBars;
+class AIB_RPGPlayerController;
 
 UCLASS()
-class IB_MULTIPLAYGAME_API AEnemyBaseChar : public AIB_BaseChar, public IAbilitySystemInterface
+class IB_MULTIPLAYGAME_API AEnemyBaseChar : public AIB_BaseChar, public IAbilitySystemInterface , public IInteractInterface
 {
 	GENERATED_BODY()
 	
@@ -27,6 +30,12 @@ protected:
 	virtual void BindCallbacksToDependencies() override;
 
 	virtual void OnHealthChanged(float CurrentHealth, float MaxHealth) override;
+
+	virtual void SetDamageInstigator_Implementation(AIB_RPGPlayerController* IB_RPGPlayerController) override;
+
+protected:
+	UFUNCTION(Server,Reliable)
+	void ServerHandleEnemyDeath(AIB_RPGPlayerController* IB_RPGPlayerController);
 	
 
 protected:
@@ -46,5 +55,13 @@ protected:
 	TObjectPtr< UIB_RPGAttributeSet> IB_RPGAttributeSet;
 
 	void InitEnemyOverHeadBars();
+
+
+
+public:
+	UPROPERTY(EditAnywhere, meta = (AllowAccess = true))
+	FString ObjectiveID;
+	UPROPERTY()
+	AIB_RPGPlayerController* DamageInstigator=nullptr;
 
 };

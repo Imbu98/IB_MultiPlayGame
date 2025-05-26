@@ -45,8 +45,7 @@ void AStrangeObject::BeginPlay()
 
 FString AStrangeObject::InteractWith_Implementation(APlayerController* PlayerController)
 {
-
-	return FString::Printf(TEXT("StrangeObject"));
+	return ObjectiveID;
 }
 
 void AStrangeObject::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
