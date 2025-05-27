@@ -19,7 +19,6 @@ void UQuestLogComponent::BeginPlay()
 
 void UQuestLogComponent::AddNewQuest(FName QuestId)
 {
-	
 	CurrentActiveQuests.AddUnique(QuestId);
 
 	if (UQuestComponent* QuestComponent= GetOwner()->FindComponentByClass<UQuestComponent>())
@@ -28,9 +27,6 @@ void UQuestLogComponent::AddNewQuest(FName QuestId)
 		QuestComponent->GetQuestDetails();
 		CurrentQuests.Add(QuestComponent);
 	}
-
-	
-	
 	
 }
 

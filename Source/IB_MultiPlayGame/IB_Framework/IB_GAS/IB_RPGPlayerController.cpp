@@ -3,12 +3,12 @@
 #include "../../Components/InventoryComponent.h"
 #include "../../Components/QuestLogComponent.h"
 #include"../../Components/QuestComponent.h"
-
 #include "Net/UnrealNetwork.h"
 #include "../../WidgetController/InventoryWidgetController.h"
 #include "../../Widget/W_RPGSystemWidget.h"
 #include "../../Widget/W_QuestGiver.h"
 #include "../../Widget/W_QuestLog.h"
+#include "../../Widget/W_LocationNotify.h"
 #include "Blueprint/UserWidget.h"
 #include "../../Input/RPGSystemsInputComponents.h"
 #include "IB_RPGPlayerState.h"
@@ -146,9 +146,27 @@ UIB_RPGAbilitySystemComponent* AIB_RPGPlayerController::GetRPGAbilitySystemCompo
 
 void AIB_RPGPlayerController::DisplayQuestLog()
 {
-	if(WBP_QuestLog = CreateWidget<UW_QuestLog>(this, WBP_QuestLogClass))
+	if (WBP_QuestLogClass)
 	{
-		WBP_QuestLog->AddToViewport();
+		if (WBP_QuestLog = CreateWidget<UW_QuestLog>(this, WBP_QuestLogClass))
+		{
+			WBP_QuestLog->AddToViewport();
+		}
+	}
+	
+}
+
+void AIB_RPGPlayerController::ClientDisplayLocationNotification_Implementation(const FText& LocationName)
+{
+	if (LocationName.IsEmpty()) return;
+
+	if (WBP_LocationNotifyClass)
+	{
+		if (WBP_LocationNotify = CreateWidget<UW_LocationNotify>(this, WBP_LocationNotifyClass))
+		{
+			WBP_LocationNotify->LocationName = LocationName;
+			WBP_LocationNotify->AddToViewport(0);
+		}
 	}
 }
 
@@ -174,7 +192,8 @@ UInventoryWidgetController* AIB_RPGPlayerController::GetInventoryWidgetControlle
 
 void AIB_RPGPlayerController::CreateInventoryWidget()
 {
-	
+	if (InventoryWidgetClass)
+	{
 		if (UUserWidget* Widget = CreateWidget<UW_RPGSystemWidget>(this, InventoryWidgetClass))
 		{
 			InventoryWidget = Cast<UW_RPGSystemWidget>(Widget);
@@ -182,6 +201,8 @@ void AIB_RPGPlayerController::CreateInventoryWidget()
 			InventoryWidgetController->BroadcastInitialValues();
 			InventoryWidget->AddToViewport(0);
 		}
+	}
+
 }
 
 void AIB_RPGPlayerController::ClientDisplayQuest_Implementation(FQuestDetails QuestDetails,FName QuestID)
@@ -195,6 +216,10 @@ void AIB_RPGPlayerController::ClientDisplayQuest_Implementation(FQuestDetails Qu
 			WBP_QuestGiverWidget->QuestID = QuestID;
 			WBP_QuestGiverWidget->AddToViewport();
 		}
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("RPGPlayerController Not Local Controller, and HasAuthority"));
 	}
 }
 

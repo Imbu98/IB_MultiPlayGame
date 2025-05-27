@@ -21,7 +21,7 @@ struct FObjectiveProgressEntry
 	int32 Progress;
 };
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(Blueprintable,ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class IB_MULTIPLAYGAME_API UQuestComponent : public UActorComponent
 {
 	GENERATED_BODY()
@@ -63,7 +63,7 @@ public:
 	
 
 	UFUNCTION()
-	void OnObjectiveIDHeard(FString ObjectiveID);
+	void OnObjectiveIDHeard(FString ObjectiveID, int32 Value=1);
 	UFUNCTION()
 	void GetQuestDetails();
 	UFUNCTION()
@@ -71,9 +71,11 @@ public:
 	UFUNCTION(Server,Reliable)
 	void ServerSetOnObjectiveIdCalledDelegate(AIB_MainChar* PlayerChar);
 	UFUNCTION(Client, Reliable)
-	void ClientOnObjectiveIDHeard(const FString& ObjectiveID);
+	void ClientOnObjectiveIDHeard(const FString& ObjectiveID, int32 Value = 1);
 	UFUNCTION()
 	void IsObjectiveComplete(FString ObjectiveID);
+
+	void HandleObjectiveIDHeard(const FString& ObjectiveID, int32 Value = 1);
 
 
 	

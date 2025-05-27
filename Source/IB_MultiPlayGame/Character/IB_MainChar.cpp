@@ -259,7 +259,8 @@ void AIB_MainChar::PlayerInteraction()
 				if (OnObjectiveIdCalledDelegate.IsBound())
 				{
 					QuestObjectiveId = IInteractInterface::Execute_InteractWith(LookatActor, PC);
-					OnObjectiveIdCalledDelegate.Broadcast(QuestObjectiveId);
+					int32 QuestSuccessDefaultValue = 1;
+					OnObjectiveIdCalledDelegate.Broadcast(QuestObjectiveId, QuestSuccessDefaultValue);
 				}
 				break;	
 			}
@@ -269,7 +270,8 @@ void AIB_MainChar::PlayerInteraction()
 				if (OnObjectiveIdCalledDelegate.IsBound())
 				{
 					QuestObjectiveId = IInteractInterface::Execute_InteractWith(LookatActor, PC);
-					OnObjectiveIdCalledDelegate.Broadcast(QuestObjectiveId);
+					int32 QuestSuccessDefaultValue = 1;
+					OnObjectiveIdCalledDelegate.Broadcast(QuestObjectiveId, QuestSuccessDefaultValue);
 				}
 				break;
 			}

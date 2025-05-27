@@ -21,6 +21,7 @@ class UQuestLogComponent;
 class UQuestComponent;
 class UW_QuestGiver;
 class UW_QuestLog;
+class UW_LocationNotify;
 
 UCLASS()
 class IB_MULTIPLAYGAME_API AIB_RPGPlayerController : public APlayerController, public IAbilitySystemInterface , public IInventoryInterface , public IRPGAbilitySystemInterface
@@ -88,18 +89,27 @@ public:
 	TSubclassOf<UUserWidget> WBP_QuestLogClass;
 	UPROPERTY()
 	TObjectPtr<UW_QuestLog> WBP_QuestLog;
-	UFUNCTION(BlueprintCallable)
-	void DisplayQuestLog();
 
-	
 
 	UPROPERTY(EditAnywhere, category = "Custom Values | Widget")
 	TSubclassOf<UUserWidget> WBP_QuestGiverWidgetClass;
 	UPROPERTY()
 	TObjectPtr<UW_QuestGiver> WBP_QuestGiverWidget;
 
+	UPROPERTY(EditAnywhere, Category = "Custom Values | Widget")
+	TSubclassOf<UW_LocationNotify> WBP_LocationNotifyClass;
+	UPROPERTY()
+	TObjectPtr<UW_LocationNotify> WBP_LocationNotify;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void DisplayQuestLog();
+
 	UFUNCTION(Client, Reliable)
 	void ClientDisplayQuest(FQuestDetails QuestDetails, FName QuestID);
+
+	UFUNCTION(Client,Reliable)
+	void ClientDisplayLocationNotification(const FText& LocationName);
 
 	
 	

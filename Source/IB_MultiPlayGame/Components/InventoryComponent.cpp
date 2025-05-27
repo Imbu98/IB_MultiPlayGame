@@ -1,14 +1,16 @@
 #include "InventoryComponent.h"
+#include "IB_MultiPlayGame/IB_Framework/FunctionLibrary/IB_BlueprintFunctionLibrary.h"
+#include "IB_MultiPlayGame/Inventory/ItemTypesToTables.h"
+#include "../WidgetController/InventoryWidgetController.h"
+#include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
+#include "../Character/IB_MainChar.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayTagContainer.h"
-#include "IB_MultiPlayGame/IB_Framework/FunctionLibrary/IB_BlueprintFunctionLibrary.h"
-#include "IB_MultiPlayGame/Inventory/ItemTypesToTables.h"
 #include "Net/UnrealNetwork.h"
-#include "../WidgetController/InventoryWidgetController.h"
 #include "Kismet/GameplayStatics.h"
-#include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
+#include "BlueprintGameplayTagLibrary.h"
 
 
 bool FPackagedInventory::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
@@ -40,7 +42,6 @@ void UInventoryComponent::BeginPlay()
 
 void UInventoryComponent::AddItem(const FGameplayTag& ItemTag, int32 NumItems)
 {
-	
 	AActor* Owner = GetOwner();
 	if (Owner == nullptr)
 	{
@@ -53,7 +54,20 @@ void UInventoryComponent::AddItem(const FGameplayTag& ItemTag, int32 NumItems)
 		ServerAddItem(ItemTag, NumItems);
 		return;
 	}
-
+	// QuestItem Add 처리
+	if (AIB_RPGPlayerController* PlayerController = Cast<AIB_RPGPlayerController>(Owner))
+	{
+		if(AIB_MainChar* IB_MainChar = Cast<AIB_MainChar>(PlayerController->GetPawn()))
+		{
+			FString ItemTagString = ItemTag.ToString();
+			if (IB_MainChar->OnObjectiveIdCalledDelegate.IsBound())
+			{
+				IB_MainChar->OnObjectiveIdCalledDelegate.Broadcast(ItemTagString, NumItems);
+			}
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Collect %s, : %d"), *ItemTagString, NumItems));
+		}
+	}
+	
 	// 맵은 리플리케이트 할 수 없으니 AddItem하기전 CachedInventory순서로 맵을 다시 만듦
 	ReConstructInventoryMap(CachedInventory);
 
@@ -116,6 +130,11 @@ void UInventoryComponent::SwapItemsInPackagedInventory(FPackagedInventory& Cache
 	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Swapping %d <--> %d"), IndexA, IndexB));
 }
 
+void UInventoryComponent::ServerSwapItem_Implementation(int32 IndexA, int32 IndexB)
+{
+	SwapItemsInPackagedInventory(CachedInventory, IndexA, IndexB);
+}
+
 void UInventoryComponent::ReConstructInventoryMap(const FPackagedInventory& Inventory)
 {
 	InventoryTagMap.Empty();
@@ -139,11 +158,6 @@ FPackagedInventory& UInventoryComponent::GetCachedInventory()
 	return CachedInventory;
 }
 
-void UInventoryComponent::ServerSwapItem_Implementation(int32 IndexA, int32 IndexB)
-{
-	SwapItemsInPackagedInventory(CachedInventory, IndexA, IndexB);
-}
-
 void UInventoryComponent::OnRep_CachedInventory()
 {
 	if (bOwnerLocallyControlled)
@@ -154,14 +168,34 @@ void UInventoryComponent::OnRep_CachedInventory()
 
 }
 
-void UInventoryComponent::test()
+int32 UInventoryComponent::QueryInventory(const FString& ItemTagString)
 {
-	for (int32 i = 0; i < CachedInventory.ItemTags.Num();++i)
-	{
+	if (ItemTagString.IsEmpty()) return 0;
 
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Tag Added: %s // Quantity Added :%d"), *CachedInventory.ItemTags[i].ToString(), CachedInventory.ItemQuantities[i]));
+	FString TagString = ItemTagString;
+	FName TagName(*TagString);
+
+	FGameplayTag Tag;
+	if (UGameplayTagsManager::Get().RequestGameplayTag(TagName,false).IsValid())
+	{
+		Tag = UGameplayTagsManager::Get().RequestGameplayTag(TagName, false);
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GameplayTag '%s' is not registered."), *TagString);
+	}
+
+	// 단일 FPackagedInventory 안에서 인덱스 탐색 후 수량 return;
+	for (int32 Index = 0; Index < CachedInventory.ItemTags.Num(); ++Index)
+	{
+		if (CachedInventory.ItemTags[Index] == Tag)
+		{
+			return CachedInventory.ItemQuantities[Index];
+		}
+	}
+	return 0;
 }
+
 
 void UInventoryComponent::UseItem(const FGameplayTag& ItemTag, int32 NumItems)
 {

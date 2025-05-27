@@ -66,6 +66,9 @@ public:
 
 	void SwapItemsInPackagedInventory(FPackagedInventory& CachedInventory, int32 IndexA, int32 IndexB);
 
+	UFUNCTION()
+	int32 QueryInventory(const FString& ItemTagString);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -91,8 +94,7 @@ private:
 	UFUNCTION()
 	void OnRep_CachedInventory();
 
-	UFUNCTION(BlueprintCallable)
-	void test();
+	
 	
 
 

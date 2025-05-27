@@ -4,6 +4,7 @@
 #include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 #include "Net/UnrealNetwork.h"
 #include "../Widget/W_QuestNotification.h"
+#include "Kismet/KismetMathLibrary.h"
 
 
 UQuestComponent::UQuestComponent()
@@ -16,7 +17,9 @@ void UQuestComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (AIB_RPGPlayerController* IB_PC= Cast<AIB_RPGPlayerController>(GetOwner()))
+	GetQuestDetails();
+
+	if (AIB_RPGPlayerController* IB_PC = Cast<AIB_RPGPlayerController>(GetOwner()))
 	{
 		if (IB_PC->IsLocalController())
 		{
@@ -29,9 +32,8 @@ void UQuestComponent::BeginPlay()
 				else
 				{
 					ServerSetOnObjectiveIdCalledDelegate(PlayerChar);
-					
-				}
 
+				}
 			}
 		}
 		else
@@ -39,7 +41,6 @@ void UQuestComponent::BeginPlay()
 			GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, FString::Printf(TEXT("Server QuestBase has authority")));
 			return;
 		}
-		
 	}
 
 }
@@ -52,48 +53,64 @@ void UQuestComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>
 
 }
 
-void UQuestComponent::OnObjectiveIDHeard(FString ObjectiveID)
+void UQuestComponent::OnObjectiveIDHeard(FString ObjectiveID,int32 Value)
 {
+	if (ObjectiveID.IsEmpty()) return;
+
 	if (GetOwner()->HasAuthority())
 	{
 		ClientOnObjectiveIDHeard(ObjectiveID);
 		return;
 	}
 
-	if (CurrentStageObjectiveProgress.Find(ObjectiveID))
-	{
+	HandleObjectiveIDHeard(ObjectiveID,Value);
+}
 
-		if (int32* FoundValue = CurrentStageObjectiveProgress.Find(ObjectiveID))
+void UQuestComponent::ClientOnObjectiveIDHeard_Implementation(const FString& ObjectiveID, int32 Value)
+{
+	if (ObjectiveID.IsEmpty()) return;
+	HandleObjectiveIDHeard(ObjectiveID, Value);
+}
+
+void UQuestComponent::HandleObjectiveIDHeard(const FString& ObjectiveID, int32 Value)
+{
+	if (ObjectiveID.IsEmpty()) return;
+
+	
+	if (!CurrentStageObjectiveProgress.Find(ObjectiveID)) return;
+
+	if (int32* FoundValue = CurrentStageObjectiveProgress.Find(ObjectiveID))
+	{
+		// Value가 0보다 크면 1, 0보다 작으면 -1, 나머지는 0
+		if (UKismetMathLibrary::SignOfInteger(Value) > 0)
 		{
 			int32 Index = *FoundValue;
 			FObjectiveDetails Details = GetObjectiveDataByID(ObjectiveID).GetValue();
 			if (Index < Details.Quantity)
 			{
-				Index = +1;
+
+				Index += Value;
 				CurrentStageObjectiveProgress.Add(ObjectiveID, Index);
 				IsObjectiveComplete(ObjectiveID);
 			}
 
 		}
+		else
+		{
+			int32 Index = *FoundValue + Value;
+			CurrentStageObjectiveProgress.Add(ObjectiveID, Index);
+		}
 	}
-	else
-	{
-		return;
-	}
+
 }
 
-void UQuestComponent::ClientOnObjectiveIDHeard_Implementation(const FString& ObjectiveID)
-{
-	FString ObjectiveIDRef = ObjectiveID;
-	OnObjectiveIDHeard(ObjectiveIDRef);
-}
 
 void UQuestComponent::GetQuestDetails()
 {
-	if (!IsValid(DT_QuestData))
-	{
-		return;
-	}
+	if (!IsValid(DT_QuestData))return;
+	
+	if (QuestID.IsNone()) return;
+
 	QuestDetails = *DT_QuestData->FindRow<FQuestDetails>(QuestID, TEXT(""));
 	{
 		if (!QuestDetails.Stages.IsEmpty())
@@ -107,6 +124,19 @@ void UQuestComponent::GetQuestDetails()
 			}
 		}
 	}
+	// 미리 인벤토리에 아이템이 들어가있을때
+	for (FObjectiveDetails& ObjectiveDetail : CurrentStageDetails.Objectives)
+	{
+		if (ObjectiveDetail.Type == EObjectiveType::Collect)
+		{
+			if (UInventoryComponent* InventoryComponent = GetOwner()->GetComponentByClass<UInventoryComponent>())
+			{
+				// 서버에 바인딩된 함수가 아니라 client에서 함수 실행중
+				OnObjectiveIDHeard(ObjectiveDetail.ObjectiveID, InventoryComponent->QueryInventory(ObjectiveDetail.ObjectiveID));
+			}
+		}
+	}
+
 	
 }
 
@@ -149,7 +179,6 @@ void UQuestComponent::IsObjectiveComplete(FString ObjectiveID)
 	}
 	
 }
-
 
 
 void UQuestComponent::ServerSetOnObjectiveIdCalledDelegate_Implementation(AIB_MainChar* PlayerChar)

@@ -28,8 +28,7 @@ public:
 	FName CurrentTrackedQuest;
 	UPROPERTY(EditAnywhere)
 	TArray<UQuestComponent*> CurrentQuests;
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<AQuest_Base> BP_Quest_Base;
+
 
 public:
 	UFUNCTION()

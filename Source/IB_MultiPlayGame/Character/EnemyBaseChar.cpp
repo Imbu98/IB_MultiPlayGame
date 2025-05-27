@@ -87,7 +87,8 @@ void AEnemyBaseChar::BindCallbacksToDependencies()
 
 void AEnemyBaseChar::OnHealthChanged(float CurrentHealth, float MaxHealth)
 {
-	
+	if (bIsDead == true) return;
+//서버실행인듯
 	if (OverHeadBars)
 	{
 		OverHeadBars->SetProgressBarPercent(CurrentHealth, MaxHealth);
@@ -96,25 +97,25 @@ void AEnemyBaseChar::OnHealthChanged(float CurrentHealth, float MaxHealth)
 	if (CurrentHealth <= 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Enemy Current Health Is Zero"));
-		// 클라기준 PlayerController가 IsLocalController()가 true면 클라니까 
-		// DamageInstigator->IsLocalController()로 빌드해보자
+		// 서버실행이면 DamageInstigator가 localcontroller가 아니어야한다
 		if (DamageInstigator&&!DamageInstigator->IsLocalController())
 		{
-			ServerHandleEnemyDeath(DamageInstigator);
+			HandleEnemyDeath(DamageInstigator);
 		}
-		
 	}
 }
 
-void AEnemyBaseChar::ServerHandleEnemyDeath_Implementation(AIB_RPGPlayerController* IB_RPGPlayerController)
+void AEnemyBaseChar::HandleEnemyDeath(AIB_RPGPlayerController* IB_RPGPlayerController)
 {
-	if (IB_RPGPlayerController)
+	if (IB_RPGPlayerController&&!IB_RPGPlayerController->IsLocalController())
 	{
+		bIsDead = true;
 		if (AIB_MainChar* IB_MainChar = Cast<AIB_MainChar>(IB_RPGPlayerController->GetPawn()))
 		{
 			if (IB_MainChar->OnObjectiveIdCalledDelegate.IsBound())
 			{
-				IB_MainChar->OnObjectiveIdCalledDelegate.Broadcast(ObjectiveID);
+				int32 QuestSuccessDefaultValue = 1;
+				IB_MainChar->OnObjectiveIdCalledDelegate.Broadcast(ObjectiveID, QuestSuccessDefaultValue);
 				GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Destroyer:%s,ObjectiveID:%s"), *IB_RPGPlayerController->GetName(), *ObjectiveID));
 				Destroy();
 			}

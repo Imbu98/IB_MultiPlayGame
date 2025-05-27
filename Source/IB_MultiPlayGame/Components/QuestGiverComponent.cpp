@@ -27,6 +27,7 @@ FString UQuestGiverComponent::InteractWith_Implementation(APlayerController* Cha
 {
 	if (!GetOwner()->HasAuthority())
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("NPC HasAuthority"));
 		return"";
 	}
 
@@ -44,6 +45,7 @@ FString UQuestGiverComponent::InteractWith_Implementation(APlayerController* Cha
 	{
 		if (IB_RPGPlayerController->QuestLogComponent && !IB_RPGPlayerController->QuestLogComponent->QuaryActiveQuest(QuestRowHandle.RowName))
 		{
+		
 			IB_RPGPlayerController->ClientDisplayQuest(*QuestDetails, QuestRowHandle.RowName);
 			return UKismetSystemLibrary::GetDisplayName(GetOwner());
 		}

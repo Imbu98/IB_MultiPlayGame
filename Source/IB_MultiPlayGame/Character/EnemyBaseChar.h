@@ -34,8 +34,8 @@ protected:
 	virtual void SetDamageInstigator_Implementation(AIB_RPGPlayerController* IB_RPGPlayerController) override;
 
 protected:
-	UFUNCTION(Server,Reliable)
-	void ServerHandleEnemyDeath(AIB_RPGPlayerController* IB_RPGPlayerController);
+	UFUNCTION()
+	void HandleEnemyDeath(AIB_RPGPlayerController* IB_RPGPlayerController);
 	
 
 protected:
@@ -63,5 +63,7 @@ public:
 	FString ObjectiveID;
 	UPROPERTY()
 	AIB_RPGPlayerController* DamageInstigator=nullptr;
+	UPROPERTY()
+	bool bIsDead = false;
 
 };
