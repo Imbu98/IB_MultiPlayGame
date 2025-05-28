@@ -194,6 +194,7 @@ void AIB_MainChar::SetNPCActor_Implementation(AActor* NPCActor)
 	{
 		if (!HasAuthority())
 		{
+			LookatActor = NPCActor;
 			ServerSetNPCActor(NPCActor);
 			return;
 		}
@@ -204,6 +205,7 @@ void AIB_MainChar::SetNPCActor_Implementation(AActor* NPCActor)
 	{
 		if (!HasAuthority())
 		{
+			LookatActor = nullptr;
 			ServerSetNPCActor(NPCActor);
 			return;
 		}

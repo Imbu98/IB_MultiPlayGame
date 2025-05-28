@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "QuestStructure.generated.h"
 
 UENUM()
@@ -61,7 +62,7 @@ struct FStageDetails
 	int32 XPReward = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TMap<FName, int32> ItemRewards;
+	TMap<FGameplayTag, int32> ItemRewards;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 CurrencyRewards = 0;

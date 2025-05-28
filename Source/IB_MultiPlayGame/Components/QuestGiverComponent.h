@@ -26,6 +26,9 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest",meta =(AllowPrivateAccess=true))
 	FDataTableRowHandle QuestRowHandle;
 
+public:
+	UPROPERTY()
+	bool bAlreadyQuest=false;
 	
 
 };

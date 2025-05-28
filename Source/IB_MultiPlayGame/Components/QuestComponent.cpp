@@ -50,6 +50,8 @@ void UQuestComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UQuestComponent,ReplicatedObjectiveProgressArray);
+	DOREPLIFETIME(UQuestComponent, IsCompleted);
+	
 
 }
 
@@ -59,11 +61,13 @@ void UQuestComponent::OnObjectiveIDHeard(FString ObjectiveID,int32 Value)
 
 	if (GetOwner()->HasAuthority())
 	{
+		// for Server
+		HandleObjectiveIDHeard(ObjectiveID, Value);
 		ClientOnObjectiveIDHeard(ObjectiveID);
 		return;
 	}
 
-	HandleObjectiveIDHeard(ObjectiveID,Value);
+	
 }
 
 void UQuestComponent::ClientOnObjectiveIDHeard_Implementation(const FString& ObjectiveID, int32 Value)
@@ -91,7 +95,7 @@ void UQuestComponent::HandleObjectiveIDHeard(const FString& ObjectiveID, int32 V
 
 				Index += Value;
 				CurrentStageObjectiveProgress.Add(ObjectiveID, Index);
-				IsObjectiveComplete(ObjectiveID);
+				 IsObjectiveComplete(ObjectiveID);
 			}
 
 		}
@@ -99,6 +103,7 @@ void UQuestComponent::HandleObjectiveIDHeard(const FString& ObjectiveID, int32 V
 		{
 			int32 Index = *FoundValue + Value;
 			CurrentStageObjectiveProgress.Add(ObjectiveID, Index);
+	
 		}
 	}
 
@@ -136,8 +141,7 @@ void UQuestComponent::GetQuestDetails()
 			}
 		}
 	}
-
-	
+	IsCompleted = AreObjectivesComplete();
 }
 
 TOptional<FObjectiveDetails> UQuestComponent::GetObjectiveDataByID(FString ObjectiveID)
@@ -154,6 +158,11 @@ TOptional<FObjectiveDetails> UQuestComponent::GetObjectiveDataByID(FString Objec
 
 void UQuestComponent::IsObjectiveComplete(FString ObjectiveID)
 {
+	if (!GetOwner()->HasAuthority())
+	{
+		ServerIsObjectiveComplete(ObjectiveID);
+		return;
+	}
 	FObjectiveDetails ObjectiveDetails = GetObjectiveDataByID(ObjectiveID).GetValue();
 	if (CurrentStageObjectiveProgress.Find(ObjectiveID))
 	{
@@ -161,23 +170,51 @@ void UQuestComponent::IsObjectiveComplete(FString ObjectiveID)
 		{
 			if (*FoundValue >= ObjectiveDetails.Quantity)
 			{
-				if (WBP_QuestNotification)
-				{
 					if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(this->GetOwner()))
 					{
-						WBP_QuestNotificationClass = CreateWidget<UW_QuestNotification>(IB_RPGPlayerController, WBP_QuestNotification);
-						if (WBP_QuestNotificationClass)
-						{
-							WBP_QuestNotificationClass->ObjectiveText = ObjectiveDetails.Description;
-							WBP_QuestNotificationClass->AddToViewport(0);
-						}
+						IB_RPGPlayerController->ClientDisplayNotification(ObjectiveDetails);
+						IsCompleted = AreObjectivesComplete();
 					}
-					
+
+			}
+		}
+	}
+}
+
+
+void UQuestComponent::ServerIsObjectiveComplete_Implementation(const FString& ObjectiveID)
+{
+	if (ObjectiveID.IsEmpty()) return;
+
+	IsObjectiveComplete(ObjectiveID);
+	
+}
+
+bool UQuestComponent::AreObjectivesComplete()
+{
+	bool LocalAllComplete = true;
+
+	for (FObjectiveDetails ObjectiveDetails : CurrentStageDetails.Objectives)
+	{
+		FObjectiveDetails Details = GetObjectiveDataByID(ObjectiveDetails.ObjectiveID).GetValue();
+
+		if (CurrentStageObjectiveProgress.Find(Details.ObjectiveID))
+		{
+			if (int32* FoundValue = CurrentStageObjectiveProgress.Find(Details.ObjectiveID))
+			{
+				if (*FoundValue >= Details.Quantity)
+				{
+
+				}
+				else
+				{
+					LocalAllComplete = false;
+					return LocalAllComplete;
 				}
 			}
 		}
 	}
-	
+	return LocalAllComplete;
 }
 
 

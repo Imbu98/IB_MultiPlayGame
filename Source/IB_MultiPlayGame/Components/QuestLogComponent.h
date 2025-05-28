@@ -19,8 +19,10 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
 public:	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere,Replicated)
 	TArray<FName> CurrentActiveQuests;
 	UPROPERTY(EditAnywhere)
 	TArray<FName> CompletedQuests;
@@ -28,17 +30,30 @@ public:
 	FName CurrentTrackedQuest;
 	UPROPERTY(EditAnywhere)
 	TArray<UQuestComponent*> CurrentQuests;
+	UPROPERTY(Replicated)
+	bool IsAlreadyOnQuest = false;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UDataTable> DT_QuestData;
 
 
 public:
 	UFUNCTION()
 	void AddNewQuest(FName QuestId);
+	UFUNCTION(Server,Reliable)
+	void ServerAddNewQuest(FName QuestId);
 	UFUNCTION()
-	void CompleteQuest(FName QuestId);
+	void CompleteQuest(const FName& QuestId);
+	UFUNCTION(Server, Reliable)
+	void ServerCompleteQuest(const FName& QuestId);
 	UFUNCTION()
-	bool QuaryActiveQuest(FName QuestId);
+	bool QuaryActiveQuest(const FName& QuestId);
 	UFUNCTION()
 	void TrackQuest(FName QuestId);
+	UFUNCTION()
+	UQuestComponent* GetQuestActor(FName QuestId);
+	UFUNCTION()
+	void TurnInQuest(const FName& QuestId);
 
 
 		

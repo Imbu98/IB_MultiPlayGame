@@ -3,22 +3,27 @@
 #include "../../Components/InventoryComponent.h"
 #include "../../Components/QuestLogComponent.h"
 #include"../../Components/QuestComponent.h"
-#include "Net/UnrealNetwork.h"
+#include "../../Components/QuestGiverComponent.h"
+#include "../../Character/IB_MainChar.h"
 #include "../../WidgetController/InventoryWidgetController.h"
 #include "../../Widget/W_RPGSystemWidget.h"
 #include "../../Widget/W_QuestGiver.h"
 #include "../../Widget/W_QuestLog.h"
 #include "../../Widget/W_LocationNotify.h"
-#include "Blueprint/UserWidget.h"
+#include "../../Widget/W_QuestNotification.h"
+#include "../../Widget/W_QuestRewards.h"
 #include "../../Input/RPGSystemsInputComponents.h"
 #include "IB_RPGPlayerState.h"
 #include "IB_RPGAbilitySystemComponent.h"
+#include "Blueprint/AIBlueprintHelperLibrary.h"
+
+#include "Net/UnrealNetwork.h"
+#include "Blueprint/UserWidget.h"
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
 #include "EnhancedInputSubsystems.h"
 #include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
-#include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "NavigationSystem.h"
 #include "AIController.h"
 
@@ -156,6 +161,8 @@ void AIB_RPGPlayerController::DisplayQuestLog()
 	
 }
 
+
+
 void AIB_RPGPlayerController::ClientDisplayLocationNotification_Implementation(const FText& LocationName)
 {
 	if (LocationName.IsEmpty()) return;
@@ -222,6 +229,47 @@ void AIB_RPGPlayerController::ClientDisplayQuest_Implementation(FQuestDetails Qu
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("RPGPlayerController Not Local Controller, and HasAuthority"));
 	}
 }
+
+void AIB_RPGPlayerController::ClientDisplayRewards_Implementation(FQuestDetails QuestDetails, FName QuestID)
+{
+	if (this->IsLocalController() && !this->GetPawn()->HasAuthority())
+	{
+		WBP_QuestRewards = CreateWidget<UW_QuestRewards>(this, WBP_QuestRewardsClass);
+		if (WBP_QuestRewards)
+		{
+			WBP_QuestRewards->QuestDetails = QuestDetails;
+			WBP_QuestRewards->QuestID = QuestID;
+			WBP_QuestRewards->AddToViewport();
+		}
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("RPGPlayerController Not Local Controller, and HasAuthority"));
+	}
+}
+void AIB_RPGPlayerController::ClientDisplayNotification_Implementation(const FObjectiveDetails& ObjectiveDetails)
+{
+	if (this->IsLocalController() && !this->GetPawn()->HasAuthority())
+	{
+		
+		if (WBP_QuestNotificationClass)
+		{
+			if (WBP_QuestNotificationWidget = CreateWidget<UW_QuestNotification>(this, WBP_QuestNotificationClass))
+			{
+				WBP_QuestNotificationWidget->ObjectiveText = ObjectiveDetails.Description;
+				WBP_QuestNotificationWidget->AddToViewport(0);
+			}
+
+			
+		}
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("RPGPlayerController Not Local Controller, and HasAuthority"));
+	}
+}
+
+
 
 
 //void AIB_RPGPlayerController::OnInputStarted()

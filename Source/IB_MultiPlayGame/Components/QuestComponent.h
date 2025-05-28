@@ -48,17 +48,13 @@ public:
 	TMap<FString, int32> CurrentStageObjectiveProgress;
 	UPROPERTY(Replicated)
 	TArray<FObjectiveProgressEntry> ReplicatedObjectiveProgressArray;
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	bool IsCompleted;
 
 	UPROPERTY(EditAnywhere, Category = "Custom Values | DataTable")
 	UDataTable* DT_QuestData;
 
-	UPROPERTY(EditAnywhere, Category = "Custom Values | Widget")
-	TSubclassOf<UW_QuestNotification> WBP_QuestNotification;
-
-	UPROPERTY()
-	TObjectPtr<UW_QuestNotification> WBP_QuestNotificationClass;
+	
 
 	
 
@@ -74,9 +70,12 @@ public:
 	void ClientOnObjectiveIDHeard(const FString& ObjectiveID, int32 Value = 1);
 	UFUNCTION()
 	void IsObjectiveComplete(FString ObjectiveID);
+	UFUNCTION(Server,Reliable)
+	void ServerIsObjectiveComplete(const FString& ObjectiveID);
+	UFUNCTION()
+	bool AreObjectivesComplete();
 
 	void HandleObjectiveIDHeard(const FString& ObjectiveID, int32 Value = 1);
-
 
 	
 };
