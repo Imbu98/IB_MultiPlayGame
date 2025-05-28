@@ -2,14 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "WidgetController.h"
+#include "../Inventory/ItemTypes.h"
 #include "InventoryWidgetController.generated.h"
 
 class UInventoryComponent;
 struct FPackagedInventory;
-struct FMasterItemDefinition;
 
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FInventoryItemSignature, const FMasterItemDefinition&, Items);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FInventoryItemSignature, const FPackagedInventory&, PackagedInventory);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInventoryBroadCastComplete);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FScrollBoxResetSignature);
 
@@ -40,7 +39,7 @@ private:
 
 	
 
-	void BroadcastInventoryContents();
+	void BroadcastInventoryContents(const FPackagedInventory& InventoryContents);
 
 	UPROPERTY()
 	TObjectPtr<AActor> OwningActor;

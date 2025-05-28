@@ -46,6 +46,10 @@ public:
 	UPROPERTY()
 	int32 InventorySlotIndex=0;
 
+	UPROPERTY(EditAnywhere, Category = "CustomValues|DataTable")
+	TObjectPtr<UDataTable> DT_ItemDefinition;
+	
+
 
 public:
 
@@ -53,7 +57,7 @@ public:
 	void BindInventoryItemDelegate();
 
 	UFUNCTION()
-	void InventoryItemRecieved(const FMasterItemDefinition& Item);
+	void InventoryItemRecieved(const FPackagedInventory& PackagedInventory);
 	UFUNCTION()
 	void InventoryBroadcastComplete();
 	UFUNCTION()
@@ -62,10 +66,10 @@ public:
 	void OnActionButtonClicked(const FMasterItemDefinition& Item);
 
 	UFUNCTION()
-	void HandleInventoryItemRecieved(const FMasterItemDefinition& Item);
+	void HandleInventoryItemRecieved(const FPackagedInventory& PackagedInventory);
 
 	UFUNCTION()
-	void MakeItemRowWidget(const FMasterItemDefinition& Item);
+	void MakeItemRowWidget(const FPackagedInventory& PackagedInventory);
 
 
 };

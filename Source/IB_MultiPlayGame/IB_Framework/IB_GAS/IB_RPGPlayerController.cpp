@@ -197,6 +197,7 @@ UInventoryWidgetController* AIB_RPGPlayerController::GetInventoryWidgetControlle
 	return InventoryWidgetController;
 }
 
+// on client
 void AIB_RPGPlayerController::CreateInventoryWidget()
 {
 	if (InventoryWidgetClass)

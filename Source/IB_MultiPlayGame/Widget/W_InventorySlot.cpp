@@ -99,8 +99,6 @@ bool UW_InventorySlot::NativeOnDrop(const FGeometry& InGeometry, const FDragDrop
 			FPackagedInventory& CachedInventory = InventoryComponent->GetCachedInventory(); 
 			InventoryComponent->SwapItemsInPackagedInventory(CachedInventory, SourceIndex, TargetIndex);
 
-			
-			
 		}
 	}
 
@@ -121,7 +119,15 @@ void UW_InventorySlot::SetQuiantityText(int32 Quantity)
 {
 	if (Text_ItemQuantity)
 	{
-		Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT("x %d"), Quantity)));
+		if (Quantity > 0)
+		{
+			Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT("x %d"), Quantity)));
+		}
+		else
+		{
+			Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT(""))));
+		}
+		
 	}
 }
 
@@ -136,10 +142,24 @@ void UW_InventorySlot::UpdateSlot()
 	{
 		IMG_SlotImage->SetBrushFromTexture(Item.Icon);
 	}
-	if (Text_ItemQuantity)
+	if (Text_ItemQuantity&& Item.ItemQuantity>0)
 	{
 		Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT("x %d"), Item.ItemQuantity)));
 	}
+}
+
+void UW_InventorySlot::ClearSlot()
+{
+	if (IMG_SlotImage)
+	{
+		IMG_SlotImage->SetBrushFromTexture(nullptr);
+	}
+	if (Text_ItemQuantity)
+	{
+		Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT(""))));
+	}
+    // tag초기화 추가
+	//Item.ItemTag = FGameplayTag::RequestGameplayTag(FName("Item.None"));
 }
 
 void UW_InventorySlot::SetItem(const FMasterItemDefinition& NewItem)

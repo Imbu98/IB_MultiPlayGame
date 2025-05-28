@@ -36,20 +36,68 @@ void UW_Inventory::BindInventoryItemDelegate()
 
 	}
 }
-
-void UW_Inventory::InventoryItemRecieved(const FMasterItemDefinition& Item)
-{
-	HandleInventoryItemRecieved(Item);
-}
-
 void UW_Inventory::InventoryBroadcastComplete()
 {
 	for (UW_InventorySlot* Widgets : ActiveItemWidgets)
 	{
 		Widgets->OnClickedActionButtonDelegate.AddUObject(this, &UW_Inventory::OnActionButtonClicked);
 	}
-	
+
 }
+
+void UW_Inventory::InventoryItemRecieved(const FPackagedInventory& PackagedInventory)
+{
+	
+	HandleInventoryItemRecieved(PackagedInventory);
+}
+
+
+void UW_Inventory::HandleInventoryItemRecieved(const FPackagedInventory& PackagedInventory)
+{
+
+	MakeItemRowWidget(PackagedInventory);
+}
+
+// On client
+void UW_Inventory::MakeItemRowWidget(const FPackagedInventory& PackagedInventory)
+{
+	if (!IsValid(InventoryWidgetController)) return;
+
+	if (!IsValid(InventoryComponent)) return;
+
+	const int32 NumSlots = 30;
+
+	for (int32 i = 0; i < NumSlots; i++)
+	{
+		UW_InventorySlot* SlotWidget = CreateWidget<UW_InventorySlot>(this, WBP_InventorySlotClass);
+		if (!SlotWidget) continue;
+
+		// 태그가 유효한 아이템인 경우
+		if (PackagedInventory.ItemTags.IsValidIndex(i) &&
+			PackagedInventory.ItemQuantities.IsValidIndex(i) &&
+			PackagedInventory.ItemTags[i].IsValid())
+		{
+			// 아이템 정보 가져오기
+			FMasterItemDefinition ItemData = InventoryComponent->GetItemDefinitionByTag(PackagedInventory.ItemTags[i]); // 이 함수는 OwningInventory 등에서 구현
+			ItemData.ItemQuantity = PackagedInventory.ItemQuantities[i];
+
+			SlotWidget->SetItemImage(ItemData.Icon);
+			SlotWidget->SetQuiantityText(ItemData.ItemQuantity);
+			SlotWidget->Item = ItemData;
+		}
+		else
+		{
+			// 빈 슬롯 처리
+			SlotWidget->ClearSlot(); // 이 함수는 기본 아이콘, 텍스트 비움 등 설정
+		}
+
+		SlotWidget->SlotIndex = i;
+
+		ActiveItemWidgets.Add(SlotWidget);
+
+	}
+}
+
 
 void UW_Inventory::OnScrollBoxReset()
 {
@@ -72,27 +120,3 @@ void UW_Inventory::OnActionButtonClicked(const FMasterItemDefinition& Item)
 	}
 }
 
-void UW_Inventory::HandleInventoryItemRecieved(const FMasterItemDefinition& Item)
-{
-	MakeItemRowWidget(Item);
-}
-
-void UW_Inventory::MakeItemRowWidget(const FMasterItemDefinition& Item)
-{
-
-	WBP_InventorySlot = CreateWidget<UW_InventorySlot>(this, WBP_InventorySlotClass);
-	if (WBP_InventorySlot)
-	{
-		WBP_InventorySlot->SetItemImage(Item.Icon);
-		WBP_InventorySlot->SetQuiantityText(Item.ItemQuantity);
-		WBP_InventorySlot->Item = Item;
-		WBP_InventorySlot->SlotIndex = ActiveItemWidgets.Num();
-		
-		
-		if (WB_InventoryContents)
-		{
-			WB_InventoryContents->AddChild(WBP_InventorySlot);
-			ActiveItemWidgets.Add(WBP_InventorySlot);
-		}
-	}
-}

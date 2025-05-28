@@ -28,7 +28,7 @@ void UInventoryWidgetController::BroadcastInitialValues()
 {
 	if (IsValid(OwningInventory))
 	{
-		BroadcastInventoryContents();
+		BroadcastInventoryContents(OwningInventory->GetCachedInventory());
 
 	}
 }
@@ -39,27 +39,19 @@ void UInventoryWidgetController::UpdateInventory(const FPackagedInventory& Inven
 	{
 		
 		OwningInventory->ReConstructInventoryMap(InventoryContents);
-		BroadcastInventoryContents();
+		BroadcastInventoryContents(InventoryContents);
 	}
 }
 
-void UInventoryWidgetController::BroadcastInventoryContents()
+void UInventoryWidgetController::BroadcastInventoryContents(const FPackagedInventory& InventoryContents)
 {
 	if (IsValid(OwningInventory))
 	{
-		TMap<FGameplayTag, int32> LocalInventoryMap = OwningInventory->GetInventoryTagMap();
+		InventoryItemDelegate.Broadcast(InventoryContents);
 
-		ScrollBoxResetDelegate.Broadcast();
-
-		for (const auto& Pair : LocalInventoryMap)
-		{
-			FMasterItemDefinition Item = OwningInventory->GetItemDefinitionByTag(Pair.Key);
-			Item.ItemQuantity = Pair.Value;
-			InventoryItemDelegate.Broadcast(Item);
-		}
 		InventoryBroadCastComplete.Broadcast();
 	}
-}
 
+}
 
 

@@ -66,6 +66,9 @@ public:
 	UFUNCTION()
 	void UpdateSlot();
 	UFUNCTION()
+	void ClearSlot();
+
+	UFUNCTION()
 	void SetItem(const FMasterItemDefinition& NewItem);
 
 	EItemTypes FilterCategoryTag(const FGameplayTag& Tag);
