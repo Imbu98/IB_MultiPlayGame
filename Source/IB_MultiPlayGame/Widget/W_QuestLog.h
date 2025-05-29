@@ -17,6 +17,7 @@ class UQuestComponent;
 class AIB_RPGPlayerController;
 
 
+
 UCLASS()
 class IB_MULTIPLAYGAME_API UW_QuestLog : public UUserWidget
 {
