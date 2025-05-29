@@ -1,7 +1,10 @@
 #include "W_QuestLogEntry.h"
+#include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
+#include "../QuestSystem/QuestStructure.h"
+#include "../Components/QuestLogComponent.h"
+
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
-#include "../QuestSystem/QuestStructure.h"
 
 
 void UW_QuestLogEntry::NativePreConstruct()
@@ -16,12 +19,7 @@ void UW_QuestLogEntry::NativePreConstruct()
 		{
 			Textblock_QuestName->SetText(QuestDetails->QuestName);
 		}
-		
 	}
-
-	
-
-		
 }
 
 void UW_QuestLogEntry::NativeConstruct()
@@ -33,9 +31,40 @@ void UW_QuestLogEntry::NativeConstruct()
 		Btn_QuestLogEntry->OnClicked.Clear();
 		Btn_QuestLogEntry->OnClicked.AddDynamic(this, &UW_QuestLogEntry::OnClickedQuestLogEntryButton);
 	}
+	if (Btn_QuestTrack)
+	{
+		Btn_QuestTrack->OnClicked.Clear();
+		Btn_QuestTrack->OnClicked.AddDynamic(this, &UW_QuestLogEntry::OnClickedQuestTrackButton);
+	}
+	
 }
 
 void UW_QuestLogEntry::OnClickedQuestLogEntryButton()
 {
 	QuestSelectedDelegate.Broadcast(QuestID,QuestBase);
+}
+
+void UW_QuestLogEntry::OnClickedQuestTrackButton()
+{
+	QuestTrackDelegate.Broadcast(QuestBase);
+}
+
+void UW_QuestLogEntry::BindingQuestCompletedDelegate()
+{
+	if (IB_RPGPlayerController)
+	{
+		if (UQuestLogComponent* QuestLogComponent = IB_RPGPlayerController->FindComponentByClass<UQuestLogComponent>())
+		{
+			QuestLogComponent->OnQuestCompletedDeleteTrack.Clear();
+			QuestLogComponent->OnQuestCompletedDeleteTrack.AddUObject(this, &UW_QuestLogEntry::QuestCompleted);
+		}
+	}
+}
+
+void UW_QuestLogEntry::QuestCompleted(UQuestComponent* Quest)
+{
+	if (!QuestBase.IsNull() && Quest == QuestBase)
+	{
+		this->RemoveFromParent();
+	}
 }

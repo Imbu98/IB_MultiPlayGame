@@ -41,7 +41,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UTextBlock> Text_ItemQuantity;
 	UPROPERTY()
-	int32 SlotIndex=0;
+	int32 SlotIndex;
 	UPROPERTY(EditAnywhere,Category="Image")
 	TObjectPtr<UTexture2D> SlotItemImage;
 

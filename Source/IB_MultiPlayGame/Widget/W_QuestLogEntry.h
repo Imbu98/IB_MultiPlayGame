@@ -28,6 +28,13 @@ public:
 	TObjectPtr<UTextBlock> Textblock_QuestName;
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	TObjectPtr<UCheckBox> CheckBox_IsComplete;
+	UPROPERTY(EditAnywhere, meta = (BindWidget))
+	TObjectPtr<UButton> Btn_QuestTrack;
+
+	UPROPERTY()
+	TObjectPtr<AIB_RPGPlayerController> IB_RPGPlayerController;
+
+
 	UPROPERTY()
 	FName QuestID;
 	UPROPERTY()
@@ -37,11 +44,18 @@ public:
 	UDataTable* DT_QuestData;
 
 	FOnQuestSelected QuestSelectedDelegate;
+	FOnQuestTrack QuestTrackDelegate;
 
 
 public:
 	UFUNCTION()
 	void OnClickedQuestLogEntryButton();
+	UFUNCTION()
+	void OnClickedQuestTrackButton();
+	UFUNCTION()
+	void BindingQuestCompletedDelegate();
+	UFUNCTION()
+	void QuestCompleted(UQuestComponent* Quest);
 
 	
 };

@@ -88,6 +88,8 @@ void UW_QuestGiver::SetWidgetProPerty()
 		if (WBP_QuestLogEntry_Objectives = CreateWidget<UW_QuestLogEntry_Objectives>(this, WBP_QuestLogEntry_ObjectivesClass))
 		{
 			WBP_QuestLogEntry_Objectives->ObjectiveData = ObjectiveDetails;
+			// 수정 여기서 QuestComponent를 넘겨줘야될것같다
+			// WBP_QuestLogEntry_Objectives->
 			
 			if (VerticalBox_Objectives)
 			{

@@ -2,10 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "../DefineDelegates.h"
 #include "QuestLogComponent.generated.h"
 
 class AQuest_Base;
 class UQuestComponent;
+class AIB_RPGPlayerController;
+
 
 
 UCLASS(Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -36,6 +39,12 @@ public:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UDataTable> DT_QuestData;
 
+	UPROPERTY()
+	AIB_RPGPlayerController* IB_RPGPlayerController;
+
+	FOnQuestCompletedDeleteTrack OnQuestCompletedDeleteTrack;
+
+	FOnQuestCompletedDeleteLogEntry OnQuestCompletedDeleteLogEntry;
 
 public:
 	UFUNCTION()
@@ -54,6 +63,8 @@ public:
 	UQuestComponent* GetQuestActor(FName QuestId);
 	UFUNCTION()
 	void TurnInQuest(const FName& QuestId);
+	UFUNCTION()
+	void RemoveCurrentQuest(const FName& QuestId);
 
 
 		

@@ -53,10 +53,12 @@ void UW_InventorySlot::NativeOnDragDetected(const FGeometry& InGeometry, const F
 					DragOp->Pivot = EDragPivot::CenterCenter;
 					DragOp->ItemSlot = this;
 
+					if (Item.ItemQuantity == 0) return;  //아이템이 없으면 아무것도 안되게
+
+
 					DragOp->DraggedItem = Item;
 					DragOp->FromSlotIndex = SlotIndex;
 					WBP_DraggedImageItem->ItemImage = Item.Icon;
-					
 
 					OutOperation = DragOp;
 				}
@@ -88,10 +90,6 @@ bool UW_InventorySlot::NativeOnDrop(const FGeometry& InGeometry, const FDragDrop
 			FMasterItemDefinition TempItem = ToSlot->Item;
 			ToSlot->SetItem(FromSlot->Item);
 			FromSlot->SetItem(TempItem);
-
-			int32 TempIndex = ToSlot->SlotIndex;
-			ToSlot->SlotIndex = FromSlot->SlotIndex;
-			FromSlot->SlotIndex = TempIndex;
 
 			this->UpdateSlot();
 			FromSlot->UpdateSlot();

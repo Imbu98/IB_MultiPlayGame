@@ -155,6 +155,7 @@ void AIB_RPGPlayerController::DisplayQuestLog()
 	{
 		if (WBP_QuestLog = CreateWidget<UW_QuestLog>(this, WBP_QuestLogClass))
 		{
+			WBP_QuestLog->IB_RPGPlayerController = this;
 			WBP_QuestLog->AddToViewport();
 		}
 	}
@@ -222,6 +223,7 @@ void AIB_RPGPlayerController::ClientDisplayQuest_Implementation(FQuestDetails Qu
 		{
 			WBP_QuestGiverWidget->QuestDetails = QuestDetails;
 			WBP_QuestGiverWidget->QuestID = QuestID;
+			
 			WBP_QuestGiverWidget->AddToViewport();
 		}
 	}

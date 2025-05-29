@@ -38,15 +38,18 @@ void UInventoryWidgetController::UpdateInventory(const FPackagedInventory& Inven
 	if (IsValid(OwningInventory))
 	{
 		
-		OwningInventory->ReConstructInventoryMap(InventoryContents);
+		//OwningInventory->ReConstructInventoryMap(InventoryContents);
 		BroadcastInventoryContents(InventoryContents);
 	}
 }
 
+// on client
 void UInventoryWidgetController::BroadcastInventoryContents(const FPackagedInventory& InventoryContents)
 {
 	if (IsValid(OwningInventory))
 	{
+		ScrollBoxResetDelegate.Broadcast();
+
 		InventoryItemDelegate.Broadcast(InventoryContents);
 
 		InventoryBroadCastComplete.Broadcast();
