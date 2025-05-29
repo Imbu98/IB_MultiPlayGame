@@ -222,6 +222,7 @@ void AIB_RPGPlayerController::ClientDisplayQuest_Implementation(FQuestDetails Qu
 		{
 			WBP_QuestGiverWidget->QuestDetails = QuestDetails;
 			WBP_QuestGiverWidget->QuestID = QuestID;
+			
 			WBP_QuestGiverWidget->AddToViewport();
 		}
 	}

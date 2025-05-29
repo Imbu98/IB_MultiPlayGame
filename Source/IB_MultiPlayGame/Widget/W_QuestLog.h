@@ -11,8 +11,10 @@ class UButton;
 class UVerticalBox;
 class UW_QuestLogEntry;
 class UW_QuestLogEntry_Objectives;
+class UW_QuestTracker;
 class AQuest_Base;
 class UQuestComponent;
+
 
 UCLASS()
 class IB_MULTIPLAYGAME_API UW_QuestLog : public UUserWidget
@@ -62,6 +64,12 @@ public:
 	UPROPERTY()
 	TObjectPtr<UW_QuestLogEntry_Objectives> WBP_QuestLogEntry_Objectives;
 
+	UPROPERTY(EditAnywhere, Category = "Custom Values | Widgets")
+	TSubclassOf<UUserWidget> WBP_QuestTrackerClass;
+
+	UPROPERTY()
+	TObjectPtr<UW_QuestTracker> WBP_QuestTracker;
+
 	UPROPERTY(EditAnywhere, Category = "Custom Values | DataTable")
 	TObjectPtr<UDataTable> DT_QuestDataTable;
 
@@ -77,7 +85,8 @@ public:
 	void OnClickedCloseWidgetBtn();
 	UFUNCTION()
 	void CreateEntryWidget();
-	
+	UFUNCTION()
+	void OnTracked(UQuestComponent* Quest);
 
 	
 };

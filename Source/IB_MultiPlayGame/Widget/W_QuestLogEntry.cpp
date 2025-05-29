@@ -16,12 +16,7 @@ void UW_QuestLogEntry::NativePreConstruct()
 		{
 			Textblock_QuestName->SetText(QuestDetails->QuestName);
 		}
-		
 	}
-
-	
-
-		
 }
 
 void UW_QuestLogEntry::NativeConstruct()
@@ -33,9 +28,19 @@ void UW_QuestLogEntry::NativeConstruct()
 		Btn_QuestLogEntry->OnClicked.Clear();
 		Btn_QuestLogEntry->OnClicked.AddDynamic(this, &UW_QuestLogEntry::OnClickedQuestLogEntryButton);
 	}
+	if (Btn_QuestTrack)
+	{
+		Btn_QuestTrack->OnClicked.Clear();
+		Btn_QuestTrack->OnClicked.AddDynamic(this, &UW_QuestLogEntry::OnClickedQuestTrackButton);
+	}
 }
 
 void UW_QuestLogEntry::OnClickedQuestLogEntryButton()
 {
 	QuestSelectedDelegate.Broadcast(QuestID,QuestBase);
+}
+
+void UW_QuestLogEntry::OnClickedQuestTrackButton()
+{
+	QuestTrackDelegate.Broadcast(QuestBase);
 }

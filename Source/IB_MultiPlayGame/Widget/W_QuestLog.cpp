@@ -2,16 +2,22 @@
 #include "../Components/QuestLogComponent.h"
 #include "../Components/QuestComponent.h"
 #include "../QuestSystem/QuestStructure.h"
+#include "../QuestSystem/Quest_Base.h"
+#include "W_QuestLogEntry.h"
+#include "W_QuestLogEntry_Objectives.h"
+#include "W_QuestTracker.h"
+#include "../DefineDelegates.h"
+
 #include "Components/ScrollBox.h"
 #include "Components/WidgetSwitcher.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
 #include "Components/VerticalBox.h"
-#include "W_QuestLogEntry.h"
-#include "W_QuestLogEntry_Objectives.h"
-#include "../DefineDelegates.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
-#include "../QuestSystem/Quest_Base.h"
+
+
+
+
 
 void UW_QuestLog::NativePreConstruct()
 {
@@ -95,7 +101,6 @@ void UW_QuestLog::DisplayQuest(FName QuestID, UQuestComponent* QuestActor)
 					{
 						VerticalBox_Objectives->AddChildToVerticalBox(WBP_QuestLogEntry_Objectives);
 					}
-
 				}
 			}
 
@@ -123,6 +128,9 @@ void UW_QuestLog::CreateEntryWidget()
 				{
 					WBP_QuestLogEntry->QuestSelectedDelegate.Clear();
 					WBP_QuestLogEntry->QuestSelectedDelegate.AddUObject(this, &UW_QuestLog::OnQuestSelected);
+					WBP_QuestLogEntry->QuestTrackDelegate.Clear();
+					WBP_QuestLogEntry->QuestTrackDelegate.AddUObject(this, &UW_QuestLog::OnTracked);
+
 					WBP_QuestLogEntry->QuestID = Quest_Base->QuestID;
 					WBP_QuestLogEntry->QuestBase = Quest_Base;
 					if (FQuestDetails* QuestDetails = DT_QuestDataTable->FindRow<FQuestDetails>(Quest_Base->QuestID, TEXT("")))
@@ -146,6 +154,27 @@ void UW_QuestLog::CreateEntryWidget()
 					}
 
 				}
+			}
+		}
+	}
+}
+
+void UW_QuestLog::OnTracked(UQuestComponent* Quest)
+{
+	if (!IsValid(Quest)) return;
+
+	if (WBP_QuestTrackerClass)
+	{
+		if (WBP_QuestTracker)
+		{
+			WBP_QuestTracker->Update(Quest);
+		}
+		else
+		{
+			if (WBP_QuestTracker = CreateWidget<UW_QuestTracker>(this, WBP_QuestTrackerClass))
+			{
+				WBP_QuestTracker->QuestComponent = Quest;
+				WBP_QuestTracker->AddToViewport(-1);
 			}
 		}
 	}

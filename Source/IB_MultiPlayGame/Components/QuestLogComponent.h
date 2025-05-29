@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "../DefineDelegates.h"
 #include "QuestLogComponent.generated.h"
 
 class AQuest_Base;
@@ -35,6 +36,8 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UDataTable> DT_QuestData;
+
+	FOnQuestCompleted OnQuestCompletedDelegate;
 
 
 public:

@@ -38,6 +38,11 @@ void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 void UInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	FGameplayTag NoneTag = FGameplayTag::RequestGameplayTag(TEXT("Item.None"));
+	CachedInventory.Initialize(Inventorysize, NoneTag, 0);
+	ReConstructInventoryMap(CachedInventory);
+
 }
 
 void UInventoryComponent::AddItem(const FGameplayTag& ItemTag, int32 NumItems)
@@ -67,23 +72,43 @@ void UInventoryComponent::AddItem(const FGameplayTag& ItemTag, int32 NumItems)
 			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Collect %s, : %d"), *ItemTagString, NumItems));
 		}
 	}
-	
-	// 맵은 리플리케이트 할 수 없으니 AddItem하기전 CachedInventory순서로 맵을 다시 만듦
-	ReConstructInventoryMap(CachedInventory);
 
-	if (InventoryTagMap.Contains(ItemTag))
+	//PackageInventory(CachedInventory);
+
+	FGameplayTag NoneTag = FGameplayTag::RequestGameplayTag(TEXT("Item.None"));
+
+	if (CachedInventory.ItemTags.Contains(ItemTag))
 	{
-		InventoryTagMap[ItemTag] += NumItems;
+		int32 FoundIndex= CachedInventory.ItemTags.IndexOfByKey(ItemTag);
+		if (FoundIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(FoundIndex))
+		{
+			CachedInventory.ItemQuantities[FoundIndex] += NumItems;
+			if (CachedInventory.ItemQuantities[FoundIndex] <= 0)
+			{
+				CachedInventory.ItemTags[FoundIndex] = NoneTag;
+			}
+		}
 	}
 	else
 	{
-		InventoryTagMap.Emplace(ItemTag, NumItems);
+		int32 NoneIndex = CachedInventory.ItemTags.IndexOfByKey(NoneTag);
+		if (NoneIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(NoneIndex))
+		{
+			CachedInventory.ItemTags[NoneIndex] = ItemTag;
+			CachedInventory.ItemQuantities[NoneIndex] = NumItems;
+		}
+		else
+		{
+			// None 슬롯도 없으면 추가 (혹시나 배열이 확장되는 구조일 경우)
+			CachedInventory.ItemTags.Add(ItemTag);
+			CachedInventory.ItemQuantities.Add(NumItems);
+		}
 	}
 
 	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemTag.ToString(), NumItems));
 
 	// 만들어진 맵순서로 다시 CachedInventory 생성
-	PackageInventory(CachedInventory);
+	//PackageInventory(CachedInventory);
 
 	// 그 CachedInventory순서로 맵을 만듦
 	InventoryPackageDelegate.Broadcast(CachedInventory);
@@ -105,6 +130,15 @@ void UInventoryComponent::PackageInventory(FPackagedInventory& OutInventory)
 		{
 			OutInventory.ItemTags.Add(Pair.Key);
 			OutInventory.ItemQuantities.Add(Pair.Value);
+		}
+		else
+		{
+			FGameplayTag NoneTag = FGameplayTag::RequestGameplayTag(TEXT("Item.None"));
+			if (NoneTag.IsValid())
+			{
+				OutInventory.ItemTags.Add(NoneTag);
+				OutInventory.ItemQuantities.Add(0);
+			}
 		}
 	}
 }
@@ -139,12 +173,15 @@ void UInventoryComponent::ReConstructInventoryMap(const FPackagedInventory& Inve
 {
 	InventoryTagMap.Empty();
 
-	for (int32 i = 0; i < Inventory.ItemTags.Num();++i)
+	for (int32 i = 0; i < Inventorysize;++i)
 	{
+		if (!Inventory.ItemTags.IsValidIndex(i) || !Inventory.ItemQuantities.IsValidIndex(i)) return;
+
 		InventoryTagMap.Emplace(Inventory.ItemTags[i], Inventory.ItemQuantities[i]);
 
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Tag Added: %s // Quantity Added :%d"), *Inventory.ItemTags[i].ToString(), Inventory.ItemQuantities[i]));
 	}
+	
 	
 }
 
@@ -156,6 +193,11 @@ TMap<FGameplayTag, int32> UInventoryComponent::GetInventoryTagMap()
 FPackagedInventory& UInventoryComponent::GetCachedInventory()
 {
 	return CachedInventory;
+}
+
+int32 UInventoryComponent::GetInventorySize()
+{
+	return Inventorysize;
 }
 
 void UInventoryComponent::OnRep_CachedInventory()
@@ -222,7 +264,6 @@ void UInventoryComponent::UseItem(const FGameplayTag& ItemTag, int32 NumItems)
 			OwnerAsc->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 
 
-			// 여기를 고치자
 			AddItem(ItemTag, -1);
 
 		}
@@ -232,7 +273,7 @@ void UInventoryComponent::UseItem(const FGameplayTag& ItemTag, int32 NumItems)
 
 void UInventoryComponent::ServerUseItem_Implementation(const FGameplayTag& ItemTag, int32 NumItems)
 {
-	if (InventoryTagMap.Contains(ItemTag))
+	if (CachedInventory.ItemTags.Contains(ItemTag))
 	{
 		UseItem(ItemTag, NumItems);
 	}

@@ -60,6 +60,7 @@ void UQuestLogComponent::ServerAddNewQuest_Implementation(FName QuestId)
 	}
 }
 
+
 void UQuestLogComponent::CompleteQuest(const FName& QuestId)
 {
 	if (QuestId.IsNone()) return;
@@ -81,6 +82,7 @@ void UQuestLogComponent::ServerCompleteQuest_Implementation(const FName& QuestId
 
 	CompletedQuests.AddUnique(QuestId);
 	CurrentActiveQuests.Remove(QuestId);
+	OnQuestCompletedDelegate.(GetQuestActor(QuestId));
 }
 
 

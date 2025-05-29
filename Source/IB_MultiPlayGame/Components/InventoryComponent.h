@@ -20,6 +20,18 @@ struct FPackagedInventory
 	TArray<int32> ItemQuantities;
 
 	virtual bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess);
+
+	void Initialize(int32 InventorySize, FGameplayTag DefaultTag, int32 DefaultQuantity = 0)
+	{
+		ItemTags.SetNum(InventorySize);
+		ItemQuantities.SetNum(InventorySize);
+
+		for (int32 i = 0; i < InventorySize; ++i)
+		{
+			ItemTags[i] = DefaultTag;
+			ItemQuantities[i] = DefaultQuantity;
+		}
+	}
 };
 
 template<>
@@ -62,12 +74,15 @@ public:
 
 	FPackagedInventory& GetCachedInventory();
 
+	int32 GetInventorySize();
+
 	bool bOwnerLocallyControlled = false;
 
 	void SwapItemsInPackagedInventory(FPackagedInventory& CachedInventory, int32 IndexA, int32 IndexB);
 
 	UFUNCTION()
 	int32 QueryInventory(const FString& ItemTagString);
+
 
 protected:
 	virtual void BeginPlay() override;
@@ -81,6 +96,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<class UItemTypesToTables> InventoryDefinition;
+
+	UPROPERTY()
+	int32 Inventorysize=15;
 
 	UFUNCTION(Server, Reliable)
 	void ServerAddItem(const FGameplayTag& ItemTag, int32 NumItems);

@@ -65,12 +65,13 @@ void UW_Inventory::MakeItemRowWidget(const FPackagedInventory& PackagedInventory
 
 	if (!IsValid(InventoryComponent)) return;
 
-	const int32 NumSlots = 30;
+	const int32 NumSlots = InventoryComponent->GetInventorySize();
 
 	for (int32 i = 0; i < NumSlots; i++)
 	{
 		UW_InventorySlot* SlotWidget = CreateWidget<UW_InventorySlot>(this, WBP_InventorySlotClass);
 		if (!SlotWidget) continue;
+		
 
 		// 태그가 유효한 아이템인 경우
 		if (PackagedInventory.ItemTags.IsValidIndex(i) &&
@@ -90,14 +91,17 @@ void UW_Inventory::MakeItemRowWidget(const FPackagedInventory& PackagedInventory
 			// 빈 슬롯 처리
 			SlotWidget->ClearSlot(); // 이 함수는 기본 아이콘, 텍스트 비움 등 설정
 		}
-
 		SlotWidget->SlotIndex = i;
+
+		if (WB_InventoryContents)
+		{
+			WB_InventoryContents->AddChild(SlotWidget);
+		}
 
 		ActiveItemWidgets.Add(SlotWidget);
 
 	}
 }
-
 
 void UW_Inventory::OnScrollBoxReset()
 {
