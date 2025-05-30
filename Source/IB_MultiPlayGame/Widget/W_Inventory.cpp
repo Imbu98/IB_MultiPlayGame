@@ -1,17 +1,43 @@
 #include "W_Inventory.h"
 #include "../Components/InventoryComponent.h"
-#include "Components/ScrollBox.h"
-#include "Components/Button.h"
-#include "Components/WrapBox.h"
 #include "W_ItemRow.h"
 #include "W_InventorySlot.h"
 #include "../Inventory/ItemTypes.h"
 #include "../DefineDelegates.h"
 #include "../WidgetController/InventoryWidgetController.h"
 
+#include "kismet/GameplayStatics.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "Components/ScrollBox.h"
+#include "Components/Button.h"
+#include "Components/WrapBox.h"
+
+
+
+void UW_Inventory::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	if (IsValid(PlayerController))
+	{
+		UWidgetBlueprintLibrary::SetInputMode_UIOnlyEx(PlayerController);
+		PlayerController->SetShowMouseCursor(true);
+	}
+	
+}
 
 void UW_Inventory::NativeDestruct()
 {
+	Super::NativeDestruct();
+
+	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	if (IsValid(PlayerController))
+	{
+		UWidgetBlueprintLibrary::SetInputMode_GameOnly(PlayerController);
+		PlayerController->SetShowMouseCursor(false);
+	}
+
 	if (InventoryWidgetController)
 	{
 		InventoryWidgetController->InventoryItemDelegate.Clear();
@@ -19,9 +45,6 @@ void UW_Inventory::NativeDestruct()
 		InventoryWidgetController->ScrollBoxResetDelegate.Clear();
 	}
 }
-
-
-
 
 void UW_Inventory::BindInventoryItemDelegate()
 {

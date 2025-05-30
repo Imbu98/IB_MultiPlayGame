@@ -115,6 +115,7 @@ void AEnemyBaseChar::HandleEnemyDeath(AIB_RPGPlayerController* IB_RPGPlayerContr
 			if (IB_MainChar->OnObjectiveIdCalledDelegate.IsBound())
 			{
 				int32 QuestSuccessDefaultValue = 1;
+
 				IB_MainChar->OnObjectiveIdCalledDelegate.Broadcast(ObjectiveID, QuestSuccessDefaultValue);
 				GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Destroyer:%s,ObjectiveID:%s"), *IB_RPGPlayerController->GetName(), *ObjectiveID));
 				Destroy();

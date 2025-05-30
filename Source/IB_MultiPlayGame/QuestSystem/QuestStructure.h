@@ -4,6 +4,17 @@
 #include "GameplayTagContainer.h"
 #include "QuestStructure.generated.h"
 
+USTRUCT(BlueprintType)
+struct FItemRewards
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTag ItemTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 ItemQuantity;
+};
+
 UENUM()
 enum class EObjectiveType : int32
 {
@@ -62,7 +73,7 @@ struct FStageDetails
 	int32 XPReward = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TMap<FGameplayTag, int32> ItemRewards;
+	TArray<FItemRewards> ItemRewards;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 CurrencyRewards = 0;
@@ -87,5 +98,15 @@ struct FQuestDetails : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FStageDetails> Stages;
+
+	FQuestDetails()
+		: QuestName(FText::GetEmpty())
+		, LogDescription(FText::GetEmpty())
+		, TrackingDescription(FText::GetEmpty())
+		, IsMainQuest(false)
+		, Stages() 
+	{
+
+	}
 };
 

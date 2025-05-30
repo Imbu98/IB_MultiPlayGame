@@ -38,7 +38,7 @@ public:
 	UPROPERTY()
 	FName QuestID;
 	UPROPERTY()
-	TObjectPtr<UQuestComponent> QuestBase;
+	FActiveQuestData ActiveQuestData;
 
 	UPROPERTY(EditAnywhere,Category="Custom Values | Actor")
 	UDataTable* DT_QuestData;
@@ -55,7 +55,7 @@ public:
 	UFUNCTION()
 	void BindingQuestCompletedDelegate();
 	UFUNCTION()
-	void QuestCompleted(UQuestComponent* Quest);
+	void QuestCompleted(const FActiveQuestData& ActiveQuest);
 
 	
 };

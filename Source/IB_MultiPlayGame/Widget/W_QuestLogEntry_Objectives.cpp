@@ -8,30 +8,47 @@ void UW_QuestLogEntry_Objectives::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (IsValid(QuestActor))
+	if (IsValid(QuestActor)&& !ActiveQuestData.QuestID.IsNone())
 	{
-		if (int32* Current = QuestActor->CurrentStageObjectiveProgress.Find(ObjectiveData.ObjectiveID))
+		for (int i = 0; i < QuestActor->CurrentQuests.Num();i++)
 		{
-			if (TextBlock_Description)
+			if (int32* Current = QuestActor->CurrentQuests[i].CurrentStageObjectiveProgress.Find(ObjectiveData.ObjectiveID))
 			{
-				FText Description = FText::FromString(FString::Printf(TEXT("%s %d/%d"), *ObjectiveData.Description.ToString(), *Current, ObjectiveData.Quantity));
-				TextBlock_Description->SetText(Description);
-			}
-			if (CheckBox_IsCompleted)
-			{
-				if (ObjectiveData.Quantity <= *Current)
+				if (TextBlock_Description)
 				{
-					CheckBox_IsCompleted->SetCheckedState(ECheckBoxState::Checked);
+					FText Description = FText::FromString(FString::Printf(TEXT("%s %d/%d"), *ObjectiveData.Description.ToString(), *Current, ObjectiveData.Quantity));
+					TextBlock_Description->SetText(Description);
+				}
+				if (CheckBox_IsCompleted)
+				{
+					if (ObjectiveData.Quantity <= *Current)
+					{
+						CheckBox_IsCompleted->SetCheckedState(ECheckBoxState::Checked);
+					}
+
+					else
+					{
+						CheckBox_IsCompleted->SetCheckedState(ECheckBoxState::Unchecked);
+					}
 				}
 
-				else
+			}
+			else
+			{
+				if (TextBlock_Description)
 				{
-					CheckBox_IsCompleted->SetCheckedState(ECheckBoxState::Unchecked);
+					FText Description = FText::FromString(FString::Printf(TEXT("%s 0/%d"), *ObjectiveData.Description.ToString(), ObjectiveData.Quantity));
+					TextBlock_Description->SetText(Description);
+				}
+				if (CheckBox_IsCompleted)
+				{
+
 				}
 			}
-
+			break;
 		}
 	}
+	
 	else
 	{
 		if (TextBlock_Description)
@@ -44,7 +61,5 @@ void UW_QuestLogEntry_Objectives::NativeConstruct()
 
 		}
 	}
-
-	
 }
 		

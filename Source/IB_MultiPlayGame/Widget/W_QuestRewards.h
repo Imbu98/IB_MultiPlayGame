@@ -9,6 +9,9 @@ class UTextBlock;
 class UButton;
 class UVerticalBox;
 class UW_QuestLogEntry_Objectives;
+class UW_ItemInfoSlot;
+class UWrapBox;
+class UInventoryComponent;
 
 UCLASS()
 class IB_MULTIPLAYGAME_API UW_QuestRewards : public UUserWidget
@@ -33,12 +36,24 @@ public:
 	TObjectPtr<UButton> Btn_CancleButton;
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	TObjectPtr<UButton> Btn_ColletRewardButton;
+	UPROPERTY(EditAnywhere, meta = (BindWidget))
+	TObjectPtr<UWrapBox> WrapBox_ItemRewardsBox;
+	
 
 	UPROPERTY(EditAnywhere, Category = "Custom Values | Widgets")
 	TSubclassOf<UUserWidget> WBP_QuestLogEntry_ObjectivesClass;
 
 	UPROPERTY()
 	TObjectPtr<UW_QuestLogEntry_Objectives> WBP_QuestLogEntry_Objectives;
+
+	UPROPERTY(EditAnywhere, Category = "Custom Values | Widgets")
+	TSubclassOf<UUserWidget> WBP_ItemInfoSlotClass;
+
+	UPROPERTY()
+	TObjectPtr<UW_ItemInfoSlot> WBP_ItemInfoSlot;
+
+	UPROPERTY()
+	TObjectPtr<UInventoryComponent> InventoryComponent;
 
 	UPROPERTY(EditAnywhere)
 	FQuestDetails QuestDetails;
@@ -52,6 +67,8 @@ public:
 	void OnClickAcceptButton();
 	UFUNCTION()
 	void SetWidgetProPerty();
+	UFUNCTION()
+	void SetInventoryRewards();
 
 
 

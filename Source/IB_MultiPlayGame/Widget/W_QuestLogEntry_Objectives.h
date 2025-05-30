@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "../QuestSystem/QuestStructure.h"
+#include "../DefineDelegates.h"
 #include "W_QuestLogEntry_Objectives.generated.h"
 
 class UTextBlock;
@@ -26,6 +27,8 @@ public:
 
 	UPROPERTY()
 	TObjectPtr<UQuestComponent> QuestActor;
+
+	FActiveQuestData ActiveQuestData;
 
 	UPROPERTY()
 	FObjectiveDetails ObjectiveData;

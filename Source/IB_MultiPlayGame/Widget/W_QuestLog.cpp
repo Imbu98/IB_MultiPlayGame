@@ -60,12 +60,15 @@ void UW_QuestLog::NativeDestruct()
 	}
 }
 
-void UW_QuestLog::DisplayQuest(FName QuestID, UQuestComponent* QuestActor)
+void UW_QuestLog::DisplayQuest(FName QuestID, const FActiveQuestData& ActiveQuest)
 {
+	UQuestComponent* QuestCompnent = GetOwningPlayer()->GetComponentByClass<UQuestComponent>();
+	if (!IsValid(QuestCompnent)) return;
+	
 	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Cyan, FString::Printf(TEXT("DisplayQuest")));
-	if (!IsValid(QuestActor)) return;
+	if (ActiveQuest.QuestID.IsNone()) return;
 
-	CurrentQuestActor = QuestActor;
+	CurrentActiveQuestData = ActiveQuest;
 	
 	WS_WidgetSwitcher->SetActiveWidgetIndex(1);
 	if (!IsValid(VerticalBox_Objectives)) return;
@@ -91,12 +94,14 @@ void UW_QuestLog::DisplayQuest(FName QuestID, UQuestComponent* QuestActor)
 			{
 				TextBlock_StageDescription->SetText(StageDetail.Description);
 			}
-			for (FObjectiveDetails ObjectiveDetails : StageDetail.Objectives)
+			for (FObjectiveDetails ObjectiveDetails : CurrentActiveQuestData.CurrentStageDetails.Objectives)
 			{
 				if (WBP_QuestLogEntry_Objectives = CreateWidget<UW_QuestLogEntry_Objectives>(this, WBP_QuestLogEntry_ObjectivesClass))
 				{
-					WBP_QuestLogEntry_Objectives->QuestActor = CurrentQuestActor;
+					WBP_QuestLogEntry_Objectives->ActiveQuestData = CurrentActiveQuestData;
 					WBP_QuestLogEntry_Objectives->ObjectiveData = ObjectiveDetails;
+					WBP_QuestLogEntry_Objectives->QuestActor = QuestCompnent;
+
 					if (VerticalBox_Objectives)
 					{
 						VerticalBox_Objectives->AddChildToVerticalBox(WBP_QuestLogEntry_Objectives);
@@ -120,10 +125,10 @@ void UW_QuestLog::CreateEntryWidget()
 	if (IB_RPGPlayerController==nullptr) return;
 
 
-	if (UQuestLogComponent* QuestLogCompnent = GetOwningPlayer()->GetComponentByClass<UQuestLogComponent>())
+	if (UQuestLogComponent* QuestCompnent = GetOwningPlayer()->GetComponentByClass<UQuestLogComponent>())
 	{
 		// 퀘스트로그컴포넌트에 퀘스트들로 entrywidget을 만든다
-		for(UQuestComponent* Quest_Base: QuestLogCompnent->CurrentQuests)
+		for(FActiveQuestData ActiveQuestData: QuestCompnent->CurrentQuests)
 		{
 			WBP_QuestLogEntry = CreateWidget<UW_QuestLogEntry>(GetOwningPlayer(), WBP_QuestLogEntryClass);
 			{
@@ -134,12 +139,12 @@ void UW_QuestLog::CreateEntryWidget()
 					WBP_QuestLogEntry->QuestTrackDelegate.Clear();
 					WBP_QuestLogEntry->QuestTrackDelegate.AddUObject(this, &UW_QuestLog::OnTracked);
 					
-					WBP_QuestLogEntry->QuestID = Quest_Base->QuestID;
-					WBP_QuestLogEntry->QuestBase = Quest_Base;
+					WBP_QuestLogEntry->QuestID = ActiveQuestData.QuestID;
+					WBP_QuestLogEntry->ActiveQuestData = ActiveQuestData;
 					WBP_QuestLogEntry->IB_RPGPlayerController = IB_RPGPlayerController;
 					WBP_QuestLogEntry->BindingQuestCompletedDelegate();
 
-					if (FQuestDetails* QuestDetails = DT_QuestDataTable->FindRow<FQuestDetails>(Quest_Base->QuestID, TEXT("")))
+					if (FQuestDetails* QuestDetails = DT_QuestDataTable->FindRow<FQuestDetails>(ActiveQuestData.QuestID, TEXT("")))
 					{
 						if (QuestDetails->IsMainQuest) // MainQuest
 						{
@@ -165,32 +170,61 @@ void UW_QuestLog::CreateEntryWidget()
 	}
 }
 
-void UW_QuestLog::OnTracked(UQuestComponent* Quest)
+void UW_QuestLog::OnTracked(const FActiveQuestData& ActiveQuest)
 {
-	if (!IsValid(Quest)) return;
+	if (ActiveQuest.QuestID.IsNone()) return;
 
-	if (WBP_QuestTrackerClass)
+	if(UQuestComponent* QuestComponent = GetOwningPlayer()->GetComponentByClass<UQuestComponent>())
 	{
-		if (WBP_QuestTracker)
+		if (UQuestLogComponent* QuestLogCompnent = GetOwningPlayer()->GetComponentByClass<UQuestLogComponent>())
 		{
-			WBP_QuestTracker->Update(Quest);
-		}
-		else
-		{
-			if (WBP_QuestTracker = CreateWidget<UW_QuestTracker>(this, WBP_QuestTrackerClass))
+			// 퀘스트로그컴포넌트에 퀘스트들로 entrywidget을 만든다
+			for (FActiveQuestData ActiveQuestData : QuestLogCompnent->CurrentQuests)
 			{
-				WBP_QuestTracker->QuestComponent = Quest;
-				if (IB_RPGPlayerController)
+				if (WBP_QuestTrackerClass)
 				{
-					WBP_QuestTracker->IB_RPGPlayerController = IB_RPGPlayerController;
+					if (WBP_QuestTracker)
+					{
+						if (WBP_QuestTracker->IsInViewport())
+						{
+							//WBP_QuestTracker->Update(Quest);
+							WBP_QuestTracker->RemoveFromParent();
+						}
+						else if (!WBP_QuestTracker->IsInViewport())
+						{
+							if (WBP_QuestTracker = CreateWidget<UW_QuestTracker>(this, WBP_QuestTrackerClass))
+							{
+								WBP_QuestTracker->QuestComponent = QuestComponent;
+								WBP_QuestTracker->ActiveQuestData = ActiveQuestData;
+								if (IB_RPGPlayerController)
+								{
+									WBP_QuestTracker->IB_RPGPlayerController = IB_RPGPlayerController;
+								}
+								WBP_QuestTracker->AddToViewport(-1);
+							}
+						}
+					}
+					else
+					{
+						if (WBP_QuestTracker = CreateWidget<UW_QuestTracker>(this, WBP_QuestTrackerClass))
+						{
+							WBP_QuestTracker->QuestComponent = QuestComponent;
+							WBP_QuestTracker->ActiveQuestData = ActiveQuestData;
+							if (IB_RPGPlayerController)
+							{
+								WBP_QuestTracker->IB_RPGPlayerController = IB_RPGPlayerController;
+							}
+							WBP_QuestTracker->AddToViewport(-1);
+						}
+					}
 				}
-				WBP_QuestTracker->AddToViewport(-1);
 			}
+
 		}
 	}
 }
 
-void UW_QuestLog::OnQuestSelected(FName QuestID,UQuestComponent* QuestActor)
+void UW_QuestLog::OnQuestSelected(FName QuestID, const FActiveQuestData& ActiveQuest)
 {
-	DisplayQuest(QuestID, QuestActor);
+	DisplayQuest(QuestID, ActiveQuest);
 }

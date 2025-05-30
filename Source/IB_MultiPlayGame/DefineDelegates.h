@@ -7,6 +7,7 @@
 
 class UQuestComponent;
 class AIB_RPGPlayerController;
+struct FActiveQuestData;
 
 
 // ItemUseButton Delegate
@@ -14,11 +15,14 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnClickedActionButton,const FMasterItemDefi
 // QuestSystem Delegate
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnObjectiveIdCalled, FString,int32);
 // QuestLogEntryButton Delegate
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnQuestSelected, FName,UQuestComponent*);
+
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnQuestSelected, FName, const FActiveQuestData&);
 // QuestTrackButton Delegate
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnQuestTrack, UQuestComponent*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnQuestTrack, const FActiveQuestData&);
 // QuestComplete Delegate
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnQuestCompletedDeleteTrack, UQuestComponent*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnQuestCompletedDeleteTrack, const FActiveQuestData&);
 //
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnQuestCompletedDeleteLogEntry, UQuestComponent*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnQuestCompletedDeleteLogEntry, const FActiveQuestData&);
+
+
 

@@ -17,7 +17,7 @@ class IB_MULTIPLAYGAME_API UW_Inventory : public UW_RPGSystemWidget
 	GENERATED_BODY()
 	
 public:
-
+	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
 	

@@ -17,6 +17,8 @@ void UQuestComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	CurrentQuests.SetNum(MaxQuestAcceptable);
+
 	GetQuestDetails();
 
 	if (AIB_RPGPlayerController* IB_PC = Cast<AIB_RPGPlayerController>(GetOwner()))
@@ -50,7 +52,6 @@ void UQuestComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UQuestComponent,ReplicatedObjectiveProgressArray);
-	DOREPLIFETIME(UQuestComponent, IsCompleted);
 	
 
 }
@@ -63,6 +64,7 @@ void UQuestComponent::OnObjectiveIDHeard(FString ObjectiveID,int32 Value)
 	{
 		// for Server
 		HandleObjectiveIDHeard(ObjectiveID, Value);
+
 		ClientOnObjectiveIDHeard(ObjectiveID);
 		return;
 	}
@@ -81,81 +83,96 @@ void UQuestComponent::HandleObjectiveIDHeard(const FString& ObjectiveID, int32 V
 	if (ObjectiveID.IsEmpty()) return;
 
 	
-	if (!CurrentStageObjectiveProgress.Find(ObjectiveID)) return;
-
-	if (int32* FoundValue = CurrentStageObjectiveProgress.Find(ObjectiveID))
+	for (int i = 0; i < CurrentQuests.Num(); i++)
 	{
-		// Value가 0보다 크면 1, 0보다 작으면 -1, 나머지는 0
-		if (UKismetMathLibrary::SignOfInteger(Value) > 0)
+		if (!CurrentQuests[i].CurrentStageObjectiveProgress.Find(ObjectiveID)) continue;
+
+		if (int32* FoundValue = CurrentQuests[i].CurrentStageObjectiveProgress.Find(ObjectiveID))
 		{
-			int32 Index = *FoundValue;
-			FObjectiveDetails Details = GetObjectiveDataByID(ObjectiveID).GetValue();
-			if (Index < Details.Quantity)
+			// Value가 0보다 크면 1, 0보다 작으면 -1, 나머지는 0
+			if (UKismetMathLibrary::SignOfInteger(Value) > 0)
 			{
+				int32 Index = *FoundValue;
 
-				Index += Value;
-				CurrentStageObjectiveProgress.Add(ObjectiveID, Index);
-				 IsObjectiveComplete(ObjectiveID);
+				FObjectiveDetails Details = GetObjectiveDataByID(ObjectiveID).GetValue();
+
+				if (Index < Details.Quantity)
+				{
+
+					Index += Value;
+					CurrentQuests[i].CurrentStageObjectiveProgress.Add(ObjectiveID, Index);
+					IsObjectiveComplete(ObjectiveID);
+				}
+
 			}
-
-		}
-		else
-		{
-			int32 Index = *FoundValue + Value;
-			CurrentStageObjectiveProgress.Add(ObjectiveID, Index);
-	
+			else
+			{
+				int32 Index = *FoundValue + Value;
+				CurrentQuests[i].CurrentStageObjectiveProgress.Add(ObjectiveID, Index);
+			}
+			break;
 		}
 	}
-
+	OnObjectiveHeardDelegate.Broadcast();
 }
 
 
 void UQuestComponent::GetQuestDetails()
 {
 	if (!IsValid(DT_QuestData))return;
+
+	for (int i = 0; i < CurrentQuests.Num(); i++)
+	{
+		if (CurrentQuests[i].QuestID.IsNone()) return;
+
+		CurrentQuests[i].QuestDetails = *DT_QuestData->FindRow<FQuestDetails>(CurrentQuests[i].QuestID, TEXT(""));
+		if (!CurrentQuests[i].QuestDetails.Stages.IsEmpty())
+		{
+			int CurrentStage = CurrentQuests[i].CurrentStage;
+			CurrentQuests[i].CurrentStageDetails = CurrentQuests[i].QuestDetails.Stages[CurrentStage];
+
+			CurrentQuests[i].CurrentStageObjectiveProgress.Empty();
+			for (FObjectiveDetails& Objectives : CurrentQuests[i].CurrentStageDetails.Objectives)
+			{
+				CurrentQuests[i].CurrentStageObjectiveProgress.Add(Objectives.ObjectiveID, 0);
+			}
+		}
+
+		// 미리 인벤토리에 아이템이 들어가있을때
+		for (FObjectiveDetails& ObjectiveDetail : CurrentQuests[i].CurrentStageDetails.Objectives)
+		{
+			if (ObjectiveDetail.Type == EObjectiveType::Collect)
+			{
+				if (UInventoryComponent* InventoryComponent = GetOwner()->GetComponentByClass<UInventoryComponent>())
+				{
+					// 서버에 바인딩된 함수가 아니라 client에서 함수 실행중
+					OnObjectiveIDHeard(ObjectiveDetail.ObjectiveID, InventoryComponent->QueryInventory(ObjectiveDetail.ObjectiveID));
+				}
+			}
+		}
+		CurrentQuests[i].IsCompleted = AreObjectivesComplete();
+	}
 	
-	if (QuestID.IsNone()) return;
-
-	QuestDetails = *DT_QuestData->FindRow<FQuestDetails>(QuestID, TEXT(""));
-	{
-		if (!QuestDetails.Stages.IsEmpty())
-		{
-			CurrentStageDetails = QuestDetails.Stages[CurrentStage];
-			CurrentStageObjectiveProgress.Empty();
-			for (FObjectiveDetails& Objectives : CurrentStageDetails.Objectives)
-			{
-				CurrentStageObjectiveProgress.Add(Objectives.ObjectiveID, 0);
-
-			}
-		}
-	}
-	// 미리 인벤토리에 아이템이 들어가있을때
-	for (FObjectiveDetails& ObjectiveDetail : CurrentStageDetails.Objectives)
-	{
-		if (ObjectiveDetail.Type == EObjectiveType::Collect)
-		{
-			if (UInventoryComponent* InventoryComponent = GetOwner()->GetComponentByClass<UInventoryComponent>())
-			{
-				// 서버에 바인딩된 함수가 아니라 client에서 함수 실행중
-				OnObjectiveIDHeard(ObjectiveDetail.ObjectiveID, InventoryComponent->QueryInventory(ObjectiveDetail.ObjectiveID));
-			}
-		}
-	}
-	IsCompleted = AreObjectivesComplete();
 }
 
 TOptional<FObjectiveDetails> UQuestComponent::GetObjectiveDataByID(FString ObjectiveID)
 {
-	for (const FObjectiveDetails& StageDetails : CurrentStageDetails.Objectives)
+	for (int i = 0; i < CurrentQuests.Num(); i++)
 	{
-		if (StageDetails.ObjectiveID.Equals(ObjectiveID))
+		if (CurrentQuests[i].QuestID.IsNone()) return TOptional<FObjectiveDetails>();
+
+		for (const FObjectiveDetails& StageDetails : CurrentQuests[i].CurrentStageDetails.Objectives)
 		{
-			return StageDetails;
+			if (StageDetails.ObjectiveID.Equals(ObjectiveID))
+			{
+				return StageDetails;
+			}
 		}
 	}
 	return TOptional<FObjectiveDetails>();
 }
 
+//server
 void UQuestComponent::IsObjectiveComplete(FString ObjectiveID)
 {
 	if (!GetOwner()->HasAuthority())
@@ -163,22 +180,28 @@ void UQuestComponent::IsObjectiveComplete(FString ObjectiveID)
 		ServerIsObjectiveComplete(ObjectiveID);
 		return;
 	}
+
 	FObjectiveDetails ObjectiveDetails = GetObjectiveDataByID(ObjectiveID).GetValue();
-	if (CurrentStageObjectiveProgress.Find(ObjectiveID))
+
+	for (int i = 0; i < CurrentQuests.Num(); i++)
 	{
-		if (int32* FoundValue = CurrentStageObjectiveProgress.Find(ObjectiveID))
+		if (CurrentQuests[i].CurrentStageObjectiveProgress.Find(ObjectiveID))
 		{
-			if (*FoundValue >= ObjectiveDetails.Quantity)
+			if (int32* FoundValue = CurrentQuests[i].CurrentStageObjectiveProgress.Find(ObjectiveID))
 			{
+				if (*FoundValue >= ObjectiveDetails.Quantity)
+				{
 					if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(this->GetOwner()))
 					{
 						IB_RPGPlayerController->ClientDisplayNotification(ObjectiveDetails);
-						IsCompleted = AreObjectivesComplete();
+						CurrentQuests[i].IsCompleted = AreObjectivesComplete();
 					}
 
+				}
 			}
 		}
 	}
+	
 }
 
 
@@ -194,22 +217,25 @@ bool UQuestComponent::AreObjectivesComplete()
 {
 	bool LocalAllComplete = true;
 
-	for (FObjectiveDetails ObjectiveDetails : CurrentStageDetails.Objectives)
+	for (int i = 0; i < CurrentQuests.Num(); i++)
 	{
-		FObjectiveDetails Details = GetObjectiveDataByID(ObjectiveDetails.ObjectiveID).GetValue();
-
-		if (CurrentStageObjectiveProgress.Find(Details.ObjectiveID))
+		for (FObjectiveDetails ObjectiveDetails : CurrentQuests[i].CurrentStageDetails.Objectives)
 		{
-			if (int32* FoundValue = CurrentStageObjectiveProgress.Find(Details.ObjectiveID))
-			{
-				if (*FoundValue >= Details.Quantity)
-				{
+			const FObjectiveDetails Details = GetObjectiveDataByID(ObjectiveDetails.ObjectiveID).GetValue();
 
-				}
-				else
+			if (CurrentQuests[i].CurrentStageObjectiveProgress.Find(Details.ObjectiveID))
+			{
+				if (int32* FoundValue = CurrentQuests[i].CurrentStageObjectiveProgress.Find(Details.ObjectiveID))
 				{
-					LocalAllComplete = false;
-					return LocalAllComplete;
+					if (*FoundValue >= Details.Quantity)
+					{
+
+					}
+					else
+					{
+						LocalAllComplete = false;
+						return LocalAllComplete;
+					}
 				}
 			}
 		}

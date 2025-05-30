@@ -29,9 +29,6 @@ public:
 	TObjectPtr<UVerticalBox> VerticalBox_Objectives;
 
 	UPROPERTY()
-	TObjectPtr<UQuestComponent> QuestComponent;
-
-	UPROPERTY()
 	TObjectPtr<AIB_RPGPlayerController> IB_RPGPlayerController;
 
 	UPROPERTY(EditAnywhere, Category = "Custom Values | Widgets")
@@ -40,11 +37,18 @@ public:
 	UPROPERTY()
 	TObjectPtr<UW_QuestLogEntry_Objectives> WBP_QuestLogEntry_Objectives;
 
+	UPROPERTY()
+	TObjectPtr<UQuestComponent> QuestComponent;
+
+	FActiveQuestData ActiveQuestData;
+
 public:
 	UFUNCTION()
 	void Update(UQuestComponent* Quest);
 	UFUNCTION()
-	void QuestCompleted(UQuestComponent* Quest);
+	void QuestCompleted(const FActiveQuestData& ActiveQuest);
+	UFUNCTION()
+	void OnObjectiveHeard();
 
 	
 };

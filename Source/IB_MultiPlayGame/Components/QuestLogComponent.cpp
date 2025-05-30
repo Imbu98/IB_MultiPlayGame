@@ -26,9 +26,10 @@ void UQuestLogComponent::BeginPlay()
 void UQuestLogComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
+	
 	DOREPLIFETIME(UQuestLogComponent, CurrentActiveQuests);
 	DOREPLIFETIME(UQuestLogComponent, IsAlreadyOnQuest);
+	DOREPLIFETIME(UQuestLogComponent, CurrentQuests);
 }
 
 
@@ -41,24 +42,39 @@ void UQuestLogComponent::AddNewQuest(FName QuestId)
 
 		if (UQuestComponent* QuestComponent = GetOwner()->FindComponentByClass<UQuestComponent>())
 		{
-			QuestComponent->QuestID = QuestId;
-			QuestComponent->GetQuestDetails();
-			CurrentQuests.Add(QuestComponent);
+			for (int i = 0;i < QuestComponent->MaxQuestAcceptable;i++)
+			{
+				if (QuestComponent->CurrentQuests[i].QuestID.IsNone())
+				{
+					QuestComponent->CurrentQuests[i].QuestID = QuestId;
+					QuestComponent->GetQuestDetails();
+					CurrentQuests.Add(QuestComponent->CurrentQuests[i]);
+					break;
+				}
+			}
 		}
 		ServerAddNewQuest(QuestId);
 		return;
 	}
 }
 
+// On Server
 void UQuestLogComponent::ServerAddNewQuest_Implementation(FName QuestId)
 {
 	CurrentActiveQuests.AddUnique(QuestId);
 
 	if (UQuestComponent* QuestComponent = GetOwner()->FindComponentByClass<UQuestComponent>())
 	{
-		QuestComponent->QuestID = QuestId;
-		QuestComponent->GetQuestDetails();
-		CurrentQuests.Add(QuestComponent);
+		for (int i = 0;i < QuestComponent->MaxQuestAcceptable;i++)
+		{
+			if (QuestComponent->CurrentQuests[i].QuestID.IsNone())
+			{
+				QuestComponent->CurrentQuests[i].QuestID = QuestId;
+				QuestComponent->GetQuestDetails();
+				CurrentQuests.Add(QuestComponent->CurrentQuests[i]);
+				return;
+			}
+		}
 	}
 }
 
@@ -70,8 +86,12 @@ void UQuestLogComponent::CompleteQuest(const FName& QuestId)
 	CompletedQuests.AddUnique(QuestId);
 	CurrentActiveQuests.Remove(QuestId);
 
-	OnQuestCompletedDeleteTrack.Broadcast(GetQuestActor(QuestId));
-	OnQuestCompletedDeleteLogEntry.Broadcast(GetQuestActor(QuestId));
+
+	OnQuestCompletedDeleteTrack.Broadcast(GetQuestActor(QuestId).GetValue());
+	OnQuestCompletedDeleteLogEntry.Broadcast(GetQuestActor(QuestId).GetValue());
+	
+
+	
 
 	RemoveCurrentQuest(QuestId);
 
@@ -110,49 +130,65 @@ void UQuestLogComponent::TrackQuest(FName QuestId)
 
 }
 
-UQuestComponent* UQuestLogComponent::GetQuestActor(FName QuestId)
+TOptional<FActiveQuestData> UQuestLogComponent::GetQuestActor(FName QuestId)
 {
-	if (CurrentQuests.IsEmpty()) return nullptr;
-
-	for (UQuestComponent* QuestComponent : CurrentQuests)
+	if (UQuestComponent* QuestComponent = GetOwner()->FindComponentByClass<UQuestComponent>())
 	{
-		if (QuestComponent->QuestID == QuestId)
+		if (QuestComponent->CurrentQuests.IsEmpty()) return TOptional<FActiveQuestData>();
+
+		for (FActiveQuestData& ActiveQuestData : QuestComponent->CurrentQuests)
 		{
-			return QuestComponent;
+			if (ActiveQuestData.QuestID == QuestId)
+			{
+				return ActiveQuestData;
+			}
 		}
+		return TOptional<FActiveQuestData>();
 	}
-	return nullptr;
+	return TOptional<FActiveQuestData>();
 }
 
 void UQuestLogComponent::TurnInQuest(const FName& QuestId)
 {
 	if (QuestId.IsNone()) return;
 
-	
-		if (UQuestComponent* QuestComponent = GetQuestActor(QuestId))
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, FString::Printf(TEXT("XP : %d"), QuestComponent->CurrentStageDetails.XPReward));
+	if (UInventoryComponent* InventoryComponent = GetOwner()->FindComponentByClass<UInventoryComponent>())
+	{
+		FActiveQuestData ActiveQuestData = GetQuestActor(QuestId).GetValue();
+
+			for (FItemRewards ItemRewards : ActiveQuestData.CurrentStageDetails.ItemRewards)
+			{
+				FGameplayTag ItemTag = ItemRewards.ItemTag;
+				int32 Quantity = ItemRewards.ItemQuantity;
+
+				InventoryComponent->AddItem(ItemTag, Quantity);
+			}
+			GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, FString::Printf(TEXT("XP : %d"), ActiveQuestData.CurrentStageDetails.XPReward));
 			CompleteQuest(QuestId);
-		}
+	}
 }
 
 void UQuestLogComponent::RemoveCurrentQuest(const FName& QuestId)
 {
-	TArray<UQuestComponent*> ToRemove;
+	TArray<FActiveQuestData> ToRemove;
 
-	// 1. 조건에 맞는 QuestComponent를 임시 배열에 저장
-	for (UQuestComponent* QuestComponent : CurrentQuests)
+	if (UQuestComponent* QuestComponent = GetOwner()->FindComponentByClass<UQuestComponent>())
 	{
-		if (QuestComponent && QuestComponent->QuestID == QuestId)
+
+		// 1. 조건에 맞는 QuestComponent를 임시 배열에 저장
+		for (FActiveQuestData& ActiveQuestData : QuestComponent->CurrentQuests)
 		{
-			ToRemove.Add(QuestComponent);
+			if (!ActiveQuestData.QuestID.IsNone() && ActiveQuestData.QuestID == QuestId)
+			{
+				ToRemove.Add(ActiveQuestData);
+			}
 		}
-	}
 
-	// 2. 임시 배열에 있는 요소들을 CurrentQuests에서 제거
-	for (UQuestComponent* QuestComponent : ToRemove)
-	{
-		CurrentQuests.Remove(QuestComponent);
+		// 2. 임시 배열에 있는 요소들을 CurrentQuests에서 제거
+		for (FActiveQuestData& ActiveQuestData : ToRemove)
+		{
+			QuestComponent->CurrentQuests.Remove(ActiveQuestData);
+		}
 	}
 }
 

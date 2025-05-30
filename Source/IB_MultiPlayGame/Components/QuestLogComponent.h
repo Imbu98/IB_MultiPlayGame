@@ -31,13 +31,14 @@ public:
 	TArray<FName> CompletedQuests;
 	UPROPERTY(EditAnywhere)
 	FName CurrentTrackedQuest;
-	UPROPERTY(EditAnywhere)
-	TArray<UQuestComponent*> CurrentQuests;
+	UPROPERTY(EditAnywhere,Replicated)
+	TArray<FActiveQuestData> CurrentQuests;
 	UPROPERTY(Replicated)
 	bool IsAlreadyOnQuest = false;
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UDataTable> DT_QuestData;
+
 
 	UPROPERTY()
 	AIB_RPGPlayerController* IB_RPGPlayerController;
@@ -60,7 +61,7 @@ public:
 	UFUNCTION()
 	void TrackQuest(FName QuestId);
 	UFUNCTION()
-	UQuestComponent* GetQuestActor(FName QuestId);
+	TOptional<FActiveQuestData> GetQuestActor(FName QuestId);
 	UFUNCTION()
 	void TurnInQuest(const FName& QuestId);
 	UFUNCTION()

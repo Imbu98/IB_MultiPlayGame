@@ -12,18 +12,24 @@
 
 void UW_QuestTracker::NativeConstruct()
 {
-	if (!IsValid(QuestComponent)) return;
+	if (ActiveQuestData.QuestID.IsNone()) return;
+
+	if(!IsValid(QuestComponent)) return;
+
+	QuestComponent->OnObjectiveHeardDelegate.Clear();
+	QuestComponent->OnObjectiveHeardDelegate.AddUObject(this, &UW_QuestTracker::OnObjectiveHeard);
 
 	if (Textblock_QuestName)
 	{
-		Textblock_QuestName->SetText(QuestComponent->QuestDetails.QuestName);
+		Textblock_QuestName->SetText(ActiveQuestData.QuestDetails.QuestName);
 	}
-	for (FObjectiveDetails ObjectiveDetails : QuestComponent->QuestDetails.Stages[0].Objectives)
+	for (FObjectiveDetails ObjectiveDetails : ActiveQuestData.QuestDetails.Stages[0].Objectives)
 	{
 			if (WBP_QuestLogEntry_Objectives = CreateWidget<UW_QuestLogEntry_Objectives>(this, WBP_QuestLogEntry_ObjectivesClass))
 			{
 				WBP_QuestLogEntry_Objectives->ObjectiveData = ObjectiveDetails;
 				WBP_QuestLogEntry_Objectives->QuestActor = QuestComponent;
+				WBP_QuestLogEntry_Objectives->ActiveQuestData = ActiveQuestData;
 
 				if (VerticalBox_Objectives)
 				{
@@ -43,39 +49,49 @@ void UW_QuestTracker::NativeConstruct()
 
 void UW_QuestTracker::Update(UQuestComponent* Quest)
 {
+	if (!IsValid(VerticalBox_Objectives)) return;
 	if (!IsValid(Quest)) return;
 
 	QuestComponent = Quest;
 
 	if (!IsValid(QuestComponent)) return;
 
+	VerticalBox_Objectives->ClearChildren();
+
+	QuestComponent->OnObjectiveHeardDelegate.Clear();
+	QuestComponent->OnObjectiveHeardDelegate.AddUObject(this, &UW_QuestTracker::OnObjectiveHeard);
+
 		if (Textblock_QuestName)
 		{
-			Textblock_QuestName->SetText(QuestComponent->QuestDetails.QuestName);
+			Textblock_QuestName->SetText(ActiveQuestData.QuestDetails.QuestName);
 		}
 
-		for (FObjectiveDetails ObjectiveDetails : QuestComponent->QuestDetails.Stages[0].Objectives)
+		for (FObjectiveDetails ObjectiveDetails : ActiveQuestData.QuestDetails.Stages[0].Objectives)
 		{
 			if (WBP_QuestLogEntry_Objectives = CreateWidget<UW_QuestLogEntry_Objectives>(this, WBP_QuestLogEntry_ObjectivesClass))
 			{
 				WBP_QuestLogEntry_Objectives->ObjectiveData = ObjectiveDetails;
 				WBP_QuestLogEntry_Objectives->QuestActor = QuestComponent;
+				WBP_QuestLogEntry_Objectives->ActiveQuestData = ActiveQuestData;
 
-				if (VerticalBox_Objectives)
-				{
+				
 					VerticalBox_Objectives->AddChildToVerticalBox(WBP_QuestLogEntry_Objectives);
-				}
+				
 			}
 		}
-
 }
 
-void UW_QuestTracker::QuestCompleted(UQuestComponent* Quest)
+void UW_QuestTracker::QuestCompleted(const FActiveQuestData& ActiveQuest)
 {
-	if (IsValid(QuestComponent) && Quest == QuestComponent)
+	if (!ActiveQuest.QuestID.IsNone() && ActiveQuestData.QuestID == ActiveQuest.QuestID)
 	{
 		this->RemoveFromParent();
 	}
+}
+
+void UW_QuestTracker::OnObjectiveHeard()
+{
+	Update(QuestComponent);
 }
 
 

@@ -41,12 +41,12 @@ void UW_QuestLogEntry::NativeConstruct()
 
 void UW_QuestLogEntry::OnClickedQuestLogEntryButton()
 {
-	QuestSelectedDelegate.Broadcast(QuestID,QuestBase);
+	QuestSelectedDelegate.Broadcast(QuestID, ActiveQuestData);
 }
 
 void UW_QuestLogEntry::OnClickedQuestTrackButton()
 {
-	QuestTrackDelegate.Broadcast(QuestBase);
+	QuestTrackDelegate.Broadcast(ActiveQuestData);
 }
 
 void UW_QuestLogEntry::BindingQuestCompletedDelegate()
@@ -61,9 +61,9 @@ void UW_QuestLogEntry::BindingQuestCompletedDelegate()
 	}
 }
 
-void UW_QuestLogEntry::QuestCompleted(UQuestComponent* Quest)
+void UW_QuestLogEntry::QuestCompleted(const FActiveQuestData& ActiveQuest)
 {
-	if (!QuestBase.IsNull() && Quest == QuestBase)
+	if (!ActiveQuest.QuestID.IsNone() &&ActiveQuestData.QuestID == ActiveQuest.QuestID)
 	{
 		this->RemoveFromParent();
 	}

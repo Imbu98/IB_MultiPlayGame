@@ -9,6 +9,42 @@
 class AIB_MainChar;
 class UW_QuestNotification;
 
+USTRUCT(BlueprintType)
+struct FActiveQuestData
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName QuestID;
+	UPROPERTY()
+	FQuestDetails QuestDetails;
+	UPROPERTY()
+	int32 CurrentStage;
+	UPROPERTY()
+	FStageDetails CurrentStageDetails;
+	UPROPERTY()
+	TMap<FString, int32> CurrentStageObjectiveProgress;
+	UPROPERTY()
+	bool IsCompleted;
+
+	bool operator==(const FActiveQuestData& Other) const
+	{
+		return QuestID == Other.QuestID;
+	}
+
+	FActiveQuestData()
+		: QuestID(NAME_None)
+		, QuestDetails()                // 기본 생성자 호출
+		, CurrentStage(0)
+		, CurrentStageDetails()         // 기본 생성자 호출
+		, CurrentStageObjectiveProgress() // 빈 맵 초기화
+		, IsCompleted(false)
+	{
+	}
+};
+
+DECLARE_MULTICAST_DELEGATE(FOnObjectiveHeard);
+
 USTRUCT()
 struct FObjectiveProgressEntry
 {
@@ -36,25 +72,25 @@ protected:
 
 
 public:
-	UPROPERTY()
+	/*UPROPERTY()
 	FName QuestID;
 	UPROPERTY()
-	FQuestDetails QuestDetails;
+	FQuestDetails QuestDetails;*/
 	UPROPERTY()
-	int32 CurrentStage;
-	UPROPERTY()
-	FStageDetails CurrentStageDetails;
-	UPROPERTY()
-	TMap<FString, int32> CurrentStageObjectiveProgress;
+	TArray<FActiveQuestData> CurrentQuests;
+	
+	
+	
 	UPROPERTY(Replicated)
 	TArray<FObjectiveProgressEntry> ReplicatedObjectiveProgressArray;
-	UPROPERTY(Replicated)
-	bool IsCompleted;
+	
+	UPROPERTY()
+	int32 MaxQuestAcceptable=15;
 
 	UPROPERTY(EditAnywhere, Category = "Custom Values | DataTable")
 	UDataTable* DT_QuestData;
 
-	
+	FOnObjectiveHeard OnObjectiveHeardDelegate;
 
 	
 

@@ -16,6 +16,8 @@ class IB_MULTIPLAYGAME_API UQuestGiverComponent : public UActorComponent , publi
 public:	
 	UQuestGiverComponent();
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -25,6 +27,8 @@ protected:
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest",meta =(AllowPrivateAccess=true))
 	FDataTableRowHandle QuestRowHandle;
+
+
 
 public:
 	UPROPERTY()

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "../DefineDelegates.h"
 #include "W_QuestLog.generated.h"
 
 class UScrollBox;
@@ -82,16 +83,18 @@ public:
 	UPROPERTY()
 	TObjectPtr<UQuestComponent> CurrentQuestActor;
 
+	FActiveQuestData CurrentActiveQuestData;
+
 	UFUNCTION()
-	void OnQuestSelected(FName QuestID, UQuestComponent* QuestActor);
+	void OnQuestSelected(FName QuestID, const FActiveQuestData& ActiveQuest);
 	UFUNCTION()
-	void DisplayQuest(FName QuestID, UQuestComponent* QuestActor);
+	void DisplayQuest(FName QuestID, const FActiveQuestData& ActiveQuest);
 	UFUNCTION()
 	void OnClickedCloseWidgetBtn();
 	UFUNCTION()
 	void CreateEntryWidget();
 	UFUNCTION()
-	void OnTracked(UQuestComponent* Quest);
+	void OnTracked(const FActiveQuestData& ActiveQuest);
 
 	
 };

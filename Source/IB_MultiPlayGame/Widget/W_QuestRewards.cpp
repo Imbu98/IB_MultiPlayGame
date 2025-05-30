@@ -1,11 +1,16 @@
 #include "W_QuestRewards.h"
+#include "W_QuestLogEntry_Objectives.h"
+#include "W_ItemInfoSlot.h"
+#include "../Components/QuestLogComponent.h"
+#include "../Components/InventoryComponent.h"
+
+#include "Kismet/GameplayStatics.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
-#include "Kismet/GameplayStatics.h"
-#include "../Components/QuestLogComponent.h"
+#include "Components/WrapBox.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
-#include "W_QuestLogEntry_Objectives.h"
+
 
 void UW_QuestRewards::NativePreConstruct()
 {
@@ -39,6 +44,8 @@ void UW_QuestRewards::NativeConstruct()
 		PlayerController->SetShowMouseCursor(true);
 	}
 
+	SetInventoryRewards();
+
 }
 
 void UW_QuestRewards::NativeDestruct()
@@ -51,7 +58,7 @@ void UW_QuestRewards::NativeDestruct()
 		UWidgetBlueprintLibrary::SetInputMode_GameOnly(PlayerController);
 		PlayerController->SetShowMouseCursor(false);
 	}
-
+	
 }
 
 void UW_QuestRewards::OnClickDeclineButton()
@@ -83,4 +90,34 @@ void UW_QuestRewards::SetWidgetProPerty()
 		TextBlock_StageDescription->SetText(QuestDetails.Stages[0].Description);
 	}
 
+}
+
+void UW_QuestRewards::SetInventoryRewards()
+{
+	if (!IsValid(InventoryComponent)) return;
+
+	if (WrapBox_ItemRewardsBox && QuestDetails.Stages.Num() > 0)
+	{
+		int32 ItemRewardsNum = QuestDetails.Stages[0].ItemRewards.Num();
+
+		for (FItemRewards ItemRewards : QuestDetails.Stages[0].ItemRewards)
+		{
+			if (WBP_ItemInfoSlotClass)
+			{
+				if (WBP_ItemInfoSlot = CreateWidget<UW_ItemInfoSlot>(this, WBP_ItemInfoSlotClass))
+				{
+
+					FGameplayTag ItemTag = ItemRewards.ItemTag;
+					int32 ItemQuantity = ItemRewards.ItemQuantity;
+
+					FMasterItemDefinition ItemData = InventoryComponent->GetItemDefinitionByTag(ItemTag);
+					ItemData.ItemQuantity = ItemQuantity;
+
+					WBP_ItemInfoSlot->Item = ItemData;
+
+					WrapBox_ItemRewardsBox->AddChild(WBP_ItemInfoSlot);
+				}
+			}
+		}
+	}
 }

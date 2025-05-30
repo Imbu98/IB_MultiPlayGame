@@ -223,6 +223,7 @@ void AIB_RPGPlayerController::ClientDisplayQuest_Implementation(FQuestDetails Qu
 		{
 			WBP_QuestGiverWidget->QuestDetails = QuestDetails;
 			WBP_QuestGiverWidget->QuestID = QuestID;
+			WBP_QuestGiverWidget->InventoryComponent = InventoryComponent;
 			
 			WBP_QuestGiverWidget->AddToViewport();
 		}
@@ -242,6 +243,7 @@ void AIB_RPGPlayerController::ClientDisplayRewards_Implementation(FQuestDetails 
 		{
 			WBP_QuestRewards->QuestDetails = QuestDetails;
 			WBP_QuestRewards->QuestID = QuestID;
+			WBP_QuestRewards->InventoryComponent = InventoryComponent;
 			WBP_QuestRewards->AddToViewport();
 		}
 	}
