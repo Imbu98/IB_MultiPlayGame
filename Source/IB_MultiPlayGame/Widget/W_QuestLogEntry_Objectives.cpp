@@ -8,49 +8,48 @@ void UW_QuestLogEntry_Objectives::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (IsValid(QuestActor)&& !ActiveQuestData.QuestID.IsNone())
+	if (IsValid(QuestActor) && !ActiveQuestData.QuestID.IsNone())
 	{
-		for (int i = 0; i < QuestActor->CurrentQuests.Num();i++)
+		bool bFound = false;
+		for (const FActiveQuestData& Quest : QuestActor->CurrentQuests)
 		{
-			if (int32* Current = QuestActor->CurrentQuests[i].CurrentStageObjectiveProgress.Find(ObjectiveData.ObjectiveID))
+			if (const int32* Current = Quest.CurrentStageObjectiveProgress.Find(ObjectiveData.ObjectiveID))
 			{
+				int32 Progress = *Current;
+
 				if (TextBlock_Description)
 				{
-					FText Description = FText::FromString(FString::Printf(TEXT("%s %d/%d"), *ObjectiveData.Description.ToString(), *Current, ObjectiveData.Quantity));
+					FText Description = FText::FromString(FString::Printf(TEXT("%s %d/%d"), *ObjectiveData.Description.ToString(), Progress, ObjectiveData.Quantity));
 					TextBlock_Description->SetText(Description);
 				}
+
 				if (CheckBox_IsCompleted)
 				{
-					if (ObjectiveData.Quantity <= *Current)
-					{
-						CheckBox_IsCompleted->SetCheckedState(ECheckBoxState::Checked);
-					}
-
-					else
-					{
-						CheckBox_IsCompleted->SetCheckedState(ECheckBoxState::Unchecked);
-					}
+					ECheckBoxState CheckState = (Progress >= ObjectiveData.Quantity) ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+					CheckBox_IsCompleted->SetCheckedState(CheckState);
 				}
-
+				bFound = true;
+				break; // 일치하는 Objective 찾았으면 종료
 			}
-			else
+		}
+
+		if (!bFound)
+		{
+			// 못 찾았을 때 처리
+			if (TextBlock_Description)
 			{
-				if (TextBlock_Description)
-				{
-					FText Description = FText::FromString(FString::Printf(TEXT("%s 0/%d"), *ObjectiveData.Description.ToString(), ObjectiveData.Quantity));
-					TextBlock_Description->SetText(Description);
-				}
-				if (CheckBox_IsCompleted)
-				{
-
-				}
+				FText Description = FText::FromString(FString::Printf(TEXT("%s 0/%d"), *ObjectiveData.Description.ToString(), ObjectiveData.Quantity));
+				TextBlock_Description->SetText(Description);
 			}
-			break;
+			if (CheckBox_IsCompleted)
+			{
+				CheckBox_IsCompleted->SetCheckedState(ECheckBoxState::Unchecked);
+			}
 		}
 	}
-	
 	else
 	{
+		// QuestActor가 없거나 QuestID가 없을 때 처리
 		if (TextBlock_Description)
 		{
 			FText Description = FText::FromString(FString::Printf(TEXT("%s 0/%d"), *ObjectiveData.Description.ToString(), ObjectiveData.Quantity));
@@ -58,7 +57,7 @@ void UW_QuestLogEntry_Objectives::NativeConstruct()
 		}
 		if (CheckBox_IsCompleted)
 		{
-
+			CheckBox_IsCompleted->SetCheckedState(ECheckBoxState::Unchecked);
 		}
 	}
 }

@@ -70,7 +70,8 @@ void UW_QuestRewards::OnClickAcceptButton()
 {
 	if (UQuestLogComponent* QuestLogComponent = GetOwningPlayer()->GetComponentByClass<UQuestLogComponent>())
 	{
-		QuestLogComponent->TurnInQuest(QuestID);
+		//  여기부 ㅓ 서버로 바꾸자
+		QuestLogComponent->ServerTurnInQuest(QuestID);
 		this->RemoveFromParent();
 	}
 }

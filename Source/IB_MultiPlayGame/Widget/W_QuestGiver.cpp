@@ -97,6 +97,7 @@ void UW_QuestGiver::SetWidgetProPerty()
 			{
 				WBP_QuestLogEntry_Objectives->ObjectiveData = ObjectiveDetails;
 				WBP_QuestLogEntry_Objectives->QuestActor = QuestComponent;
+				
 		
 				if (VerticalBox_Objectives)
 				{

@@ -112,9 +112,5 @@ private:
 	UFUNCTION()
 	void OnRep_CachedInventory();
 
-	
-	
-
-
 
 };

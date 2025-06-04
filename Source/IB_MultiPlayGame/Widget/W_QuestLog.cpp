@@ -118,6 +118,7 @@ void UW_QuestLog::OnClickedCloseWidgetBtn()
 	this->RemoveFromParent();
 }
 
+// On client
 void UW_QuestLog::CreateEntryWidget()
 {
 	if (!IsValid(DT_QuestDataTable)) return;
@@ -125,11 +126,13 @@ void UW_QuestLog::CreateEntryWidget()
 	if (IB_RPGPlayerController==nullptr) return;
 
 
-	if (UQuestLogComponent* QuestCompnent = GetOwningPlayer()->GetComponentByClass<UQuestLogComponent>())
+	if (UQuestComponent* QuestCompnent = GetOwningPlayer()->GetComponentByClass<UQuestComponent>())
 	{
 		// 퀘스트로그컴포넌트에 퀘스트들로 entrywidget을 만든다
 		for(FActiveQuestData ActiveQuestData: QuestCompnent->CurrentQuests)
 		{
+			if (ActiveQuestData.QuestID.IsNone()) continue;
+
 			WBP_QuestLogEntry = CreateWidget<UW_QuestLogEntry>(GetOwningPlayer(), WBP_QuestLogEntryClass);
 			{
 				if (WBP_QuestLogEntry)
@@ -170,6 +173,7 @@ void UW_QuestLog::CreateEntryWidget()
 	}
 }
 
+// wrapbox 나 verticalbox 추가해서 자식으로 넣어주기
 void UW_QuestLog::OnTracked(const FActiveQuestData& ActiveQuest)
 {
 	if (ActiveQuest.QuestID.IsNone()) return;
@@ -179,15 +183,15 @@ void UW_QuestLog::OnTracked(const FActiveQuestData& ActiveQuest)
 		if (UQuestLogComponent* QuestLogCompnent = GetOwningPlayer()->GetComponentByClass<UQuestLogComponent>())
 		{
 			// 퀘스트로그컴포넌트에 퀘스트들로 entrywidget을 만든다
-			for (FActiveQuestData ActiveQuestData : QuestLogCompnent->CurrentQuests)
-			{
+			
+			// 수정
 				if (WBP_QuestTrackerClass)
 				{
 					if (WBP_QuestTracker)
 					{
 						if (WBP_QuestTracker->IsInViewport())
 						{
-							//WBP_QuestTracker->Update(Quest);
+							WBP_QuestTracker->Update(QuestComponent);
 							WBP_QuestTracker->RemoveFromParent();
 						}
 						else if (!WBP_QuestTracker->IsInViewport())
@@ -195,7 +199,7 @@ void UW_QuestLog::OnTracked(const FActiveQuestData& ActiveQuest)
 							if (WBP_QuestTracker = CreateWidget<UW_QuestTracker>(this, WBP_QuestTrackerClass))
 							{
 								WBP_QuestTracker->QuestComponent = QuestComponent;
-								WBP_QuestTracker->ActiveQuestData = ActiveQuestData;
+								WBP_QuestTracker->ActiveQuestData = ActiveQuest;
 								if (IB_RPGPlayerController)
 								{
 									WBP_QuestTracker->IB_RPGPlayerController = IB_RPGPlayerController;
@@ -209,7 +213,7 @@ void UW_QuestLog::OnTracked(const FActiveQuestData& ActiveQuest)
 						if (WBP_QuestTracker = CreateWidget<UW_QuestTracker>(this, WBP_QuestTrackerClass))
 						{
 							WBP_QuestTracker->QuestComponent = QuestComponent;
-							WBP_QuestTracker->ActiveQuestData = ActiveQuestData;
+							WBP_QuestTracker->ActiveQuestData = ActiveQuest;
 							if (IB_RPGPlayerController)
 							{
 								WBP_QuestTracker->IB_RPGPlayerController = IB_RPGPlayerController;
@@ -218,8 +222,6 @@ void UW_QuestLog::OnTracked(const FActiveQuestData& ActiveQuest)
 						}
 					}
 				}
-			}
-
 		}
 	}
 }

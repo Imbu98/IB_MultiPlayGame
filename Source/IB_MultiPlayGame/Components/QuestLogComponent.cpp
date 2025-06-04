@@ -78,42 +78,45 @@ void UQuestLogComponent::ServerAddNewQuest_Implementation(FName QuestId)
 	}
 }
 
-
+// on server
 void UQuestLogComponent::CompleteQuest(const FName& QuestId)
 {
+	
 	if (QuestId.IsNone()&& !IsValid(IB_RPGPlayerController)) return;
-	// for client
+
 	CompletedQuests.AddUnique(QuestId);
 	CurrentActiveQuests.Remove(QuestId);
 
+	RemoveCurrentQuest(QuestId);
+
+	if (UQuestComponent* QuestComponent = GetOwner()->FindComponentByClass<UQuestComponent>())
+	{
+		if (GetOwner()->HasAuthority())
+		{
+			ClientCompleteQuest(QuestId, QuestComponent->CurrentQuests);
+			return;
+		}
+	}
+	
+
+}
+
+void UQuestLogComponent::ClientCompleteQuest_Implementation(const FName& QuestId,const TArray<FActiveQuestData>& ActiveQuests)
+{
+	if (QuestId.IsNone() && !IsValid(IB_RPGPlayerController)) return;
+
+	CompletedQuests.AddUnique(QuestId);
+	CurrentActiveQuests.Remove(QuestId);
 
 	OnQuestCompletedDeleteTrack.Broadcast(GetQuestActor(QuestId).GetValue());
 	OnQuestCompletedDeleteLogEntry.Broadcast(GetQuestActor(QuestId).GetValue());
-	
 
-	
-
-	RemoveCurrentQuest(QuestId);
-
-	// for server
-	if (!GetOwner()->HasAuthority())
+	if (UQuestComponent* QuestComponent = GetOwner()->FindComponentByClass<UQuestComponent>())
 	{
-		ServerCompleteQuest(QuestId);
-		
+		QuestComponent->CurrentQuests = ActiveQuests;
 	}
 	
 }
-
-void UQuestLogComponent::ServerCompleteQuest_Implementation(const FName& QuestId)
-{
-	if (QuestId.IsNone()) return;
-
-	CompletedQuests.AddUnique(QuestId);
-	CurrentActiveQuests.Remove(QuestId);
-
-	RemoveCurrentQuest(QuestId);
-}
-
 
 bool UQuestLogComponent::QuaryActiveQuest(const FName& QuestId)
 {
@@ -150,21 +153,29 @@ TOptional<FActiveQuestData> UQuestLogComponent::GetQuestActor(FName QuestId)
 
 void UQuestLogComponent::TurnInQuest(const FName& QuestId)
 {
+	if (!GetOwner()->HasAuthority())
+	{
+		ServerTurnInQuest(QuestId);
+	}
+}
+
+void UQuestLogComponent::ServerTurnInQuest_Implementation(const FName& QuestId)
+{
 	if (QuestId.IsNone()) return;
 
 	if (UInventoryComponent* InventoryComponent = GetOwner()->FindComponentByClass<UInventoryComponent>())
 	{
 		FActiveQuestData ActiveQuestData = GetQuestActor(QuestId).GetValue();
 
-			for (FItemRewards ItemRewards : ActiveQuestData.CurrentStageDetails.ItemRewards)
-			{
-				FGameplayTag ItemTag = ItemRewards.ItemTag;
-				int32 Quantity = ItemRewards.ItemQuantity;
+		for (FItemRewards ItemRewards : ActiveQuestData.CurrentStageDetails.ItemRewards)
+		{
+			FGameplayTag ItemTag = ItemRewards.ItemTag;
+			int32 Quantity = ItemRewards.ItemQuantity;
 
-				InventoryComponent->AddItem(ItemTag, Quantity);
-			}
-			GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, FString::Printf(TEXT("XP : %d"), ActiveQuestData.CurrentStageDetails.XPReward));
-			CompleteQuest(QuestId);
+			InventoryComponent->AddItem(ItemTag, Quantity);
+		}
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, FString::Printf(TEXT("XP : %d"), ActiveQuestData.CurrentStageDetails.XPReward));
+		CompleteQuest(QuestId);
 	}
 }
 

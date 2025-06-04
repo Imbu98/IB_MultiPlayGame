@@ -265,7 +265,6 @@ void UInventoryComponent::UseItem(const FGameplayTag& ItemTag, int32 NumItems)
 
 
 			AddItem(ItemTag, -1);
-
 		}
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Magenta, FString::Printf(TEXT("Server Item Used : %s"), *ItemTag.ToString()));

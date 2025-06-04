@@ -54,8 +54,8 @@ public:
 	void ServerAddNewQuest(FName QuestId);
 	UFUNCTION()
 	void CompleteQuest(const FName& QuestId);
-	UFUNCTION(Server, Reliable)
-	void ServerCompleteQuest(const FName& QuestId);
+	UFUNCTION(Client, Reliable)
+	void ClientCompleteQuest(const FName& QuestId,const TArray<FActiveQuestData>& ActiveQuests);
 	UFUNCTION()
 	bool QuaryActiveQuest(const FName& QuestId);
 	UFUNCTION()
@@ -64,6 +64,8 @@ public:
 	TOptional<FActiveQuestData> GetQuestActor(FName QuestId);
 	UFUNCTION()
 	void TurnInQuest(const FName& QuestId);
+	UFUNCTION(Server, Reliable)
+	void ServerTurnInQuest(const FName& QuestId);
 	UFUNCTION()
 	void RemoveCurrentQuest(const FName& QuestId);
 

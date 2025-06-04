@@ -123,7 +123,7 @@ void UQuestComponent::GetQuestDetails()
 
 	for (int i = 0; i < CurrentQuests.Num(); i++)
 	{
-		if (CurrentQuests[i].QuestID.IsNone()) return;
+		if (CurrentQuests[i].QuestID.IsNone()) continue;
 
 		CurrentQuests[i].QuestDetails = *DT_QuestData->FindRow<FQuestDetails>(CurrentQuests[i].QuestID, TEXT(""));
 		if (!CurrentQuests[i].QuestDetails.Stages.IsEmpty())

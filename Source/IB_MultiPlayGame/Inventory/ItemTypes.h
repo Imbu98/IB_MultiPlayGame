@@ -4,6 +4,16 @@
 #include "GameplayTagContainer.h"
 #include "ItemTypes.generated.h"
 
+UENUM(BlueprintType)
+enum class EItemRarity : uint8
+{
+	None,
+	Common,
+	Rare,
+	Epic,
+	Legendary,
+};
+
 USTRUCT(BlueprintType)
 struct FConsumableProps
 {
@@ -48,6 +58,10 @@ struct FMasterItemDefinition : public FTableRowBase
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
 	FConsumableProps ConsumableProps;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	EItemRarity ItemRarity;
+
+
 	FMasterItemDefinition() :
 		ItemTag(FGameplayTag::EmptyTag)
 		, ItemQuantity(0)
@@ -55,7 +69,7 @@ struct FMasterItemDefinition : public FTableRowBase
 		,Icon(nullptr)
 		,Description(FText::FromString(TEXT("")))
 		,ConsumableProps()
-
+		,ItemRarity(EItemRarity::None)
 	{
 
 	}
