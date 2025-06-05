@@ -21,6 +21,9 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent,BlueprintCallable)
 	void SetDynamicProjectile(const FGameplayTag& ProjectileTag, int32 AbilityLevel=1);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void SetDynamicWeapon(const FGameplayTag& WeaponTag, int32 AbilityLevel = 1);
 	
 	
 };

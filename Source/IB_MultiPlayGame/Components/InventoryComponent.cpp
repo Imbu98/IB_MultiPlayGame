@@ -3,7 +3,9 @@
 #include "IB_MultiPlayGame/Inventory/ItemTypesToTables.h"
 #include "../WidgetController/InventoryWidgetController.h"
 #include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
+#include "../Interfaces/RPGAbilitySystemInterface.h"
 #include "../Character/IB_MainChar.h"
+#include "../IB_Framework/IB_GAS/IB_RPGAbilitySystemComponent.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
@@ -75,43 +77,8 @@ void UInventoryComponent::AddItem(const FGameplayTag& ItemTag, int32 NumItems)
 
 	//PackageInventory(CachedInventory);
 
-	FGameplayTag NoneTag = FGameplayTag::RequestGameplayTag(TEXT("Item.None"));
-
-	if (CachedInventory.ItemTags.Contains(ItemTag))
-	{
-		int32 FoundIndex= CachedInventory.ItemTags.IndexOfByKey(ItemTag);
-		if (FoundIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(FoundIndex))
-		{
-			CachedInventory.ItemQuantities[FoundIndex] += NumItems;
-			if (CachedInventory.ItemQuantities[FoundIndex] <= 0)
-			{
-				CachedInventory.ItemTags[FoundIndex] = NoneTag;
-			}
-		}
-	}
-	else
-	{
-		int32 NoneIndex = CachedInventory.ItemTags.IndexOfByKey(NoneTag);
-		if (NoneIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(NoneIndex))
-		{
-			CachedInventory.ItemTags[NoneIndex] = ItemTag;
-			CachedInventory.ItemQuantities[NoneIndex] = NumItems;
-		}
-		else
-		{
-			// None 슬롯도 없으면 추가 (혹시나 배열이 확장되는 구조일 경우)
-			CachedInventory.ItemTags.Add(ItemTag);
-			CachedInventory.ItemQuantities.Add(NumItems);
-		}
-	}
-
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemTag.ToString(), NumItems));
-
-	// 만들어진 맵순서로 다시 CachedInventory 생성
-	//PackageInventory(CachedInventory);
-
-	// 그 CachedInventory순서로 맵을 만듦
-	InventoryPackageDelegate.Broadcast(CachedInventory);
+	// 나중에 얘도 데이터 테이블에서 data가져와서 stackable같은걸로 처리를 해줄 수 있으면 해주자
+	DefinitionItemAdd(ItemTag,NumItems);
 }
 
 void UInventoryComponent::ServerAddItem_Implementation(const FGameplayTag& ItemTag, int32 NumItems)
@@ -254,20 +221,8 @@ void UInventoryComponent::UseItem(const FGameplayTag& ItemTag, int32 NumItems)
 	}
 	const FMasterItemDefinition Item = GetItemDefinitionByTag(ItemTag);
 
-	if (UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Owner))
-	{
-		if (IsValid(Item.ConsumableProps.ItemEffectClass))
-		{
-			const FGameplayEffectContextHandle ContextHandle = OwnerAsc->MakeEffectContext();
-			const FGameplayEffectSpecHandle SpecHandle = OwnerAsc->MakeOutgoingSpec(Item.ConsumableProps.ItemEffectClass,
-				Item.ConsumableProps.ItemEffectLevel, ContextHandle);
-			OwnerAsc->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	DefinitionItemUse(Item);
 
-
-			AddItem(ItemTag, -1);
-		}
-	}
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Magenta, FString::Printf(TEXT("Server Item Used : %s"), *ItemTag.ToString()));
 }
 
 void UInventoryComponent::ServerUseItem_Implementation(const FGameplayTag& ItemTag, int32 NumItems)
@@ -286,11 +241,152 @@ FMasterItemDefinition UInventoryComponent::GetItemDefinitionByTag(const FGamepla
 
 	for (const auto& Pair : InventoryDefinition->TagsToTables)
 	{
-		if (ItemTag.MatchesTag(Pair.Key))
+		if (Pair.Value)
 		{
-			return *UIB_BlueprintFunctionLibrary::GetDataTableRowByTag<FMasterItemDefinition>(Pair.Value, ItemTag);
+			if (ItemTag.MatchesTag(Pair.Key))
+			{
+				if (const FMasterItemDefinition* ItemDef = UIB_BlueprintFunctionLibrary::GetDataTableRowByTag<FMasterItemDefinition>(Pair.Value, ItemTag))
+				{
+					return *ItemDef;
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("ItemTag '%s' not found in DataTable!"), *ItemTag.ToString());
+
+					return FMasterItemDefinition();
+				}
+				
+			}
 		}
+
+		
 	}
 
 	return FMasterItemDefinition();
+}
+
+
+void UInventoryComponent::DefinitionItemUse(const FMasterItemDefinition& Item)
+{
+	AActor* Owner = GetOwner();
+	if (Owner == nullptr)
+	{
+		return;
+	}
+
+	const FGameplayTag ConsumableTag = FGameplayTag::RequestGameplayTag(FName("Item.Consumable"));
+	const FGameplayTag EquippableTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable"));
+
+	if (Item.ItemTag.MatchesTag(ConsumableTag))
+	{
+		if (UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Owner))
+		{
+			if (IsValid(Item.ConsumableProps.ItemEffectClass))
+			{
+				const FGameplayEffectContextHandle ContextHandle = OwnerAsc->MakeEffectContext();
+				const FGameplayEffectSpecHandle SpecHandle = OwnerAsc->MakeOutgoingSpec(Item.ConsumableProps.ItemEffectClass,
+					Item.ConsumableProps.ItemEffectLevel, ContextHandle);
+				OwnerAsc->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+
+
+			}
+		}
+	}
+	else if (Item.ItemTag.MatchesTag(EquippableTag))
+	{
+		if (UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Owner))
+		{
+			if (UIB_RPGAbilitySystemComponent* IB_RPGAbilitySystemComponent = Cast<UIB_RPGAbilitySystemComponent>(OwnerAsc))
+			{
+				if (IB_RPGAbilitySystemComponent->Implements<URPGAbilitySystemInterface>())
+				{
+					IRPGAbilitySystemInterface::Execute_SetDynamicWeapon(IB_RPGAbilitySystemComponent, Item.ItemTag,1);
+				}
+			}
+		}
+	}
+
+	AddItem(Item.ItemTag, -1);
+
+	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Magenta, FString::Printf(TEXT("Server Item Used : %s"), *Item.ItemTag.ToString()));
+}
+
+void UInventoryComponent::DefinitionItemAdd(const FGameplayTag& ItemTag,int32 NumItems)
+{
+	FGameplayTag NoneTag = FGameplayTag::RequestGameplayTag(TEXT("Item.None"));
+	FGameplayTag EquippableTag = FGameplayTag::RequestGameplayTag(TEXT("Item.Equippable"));
+
+	if (!CachedInventory.ItemTags.Contains(NoneTag))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Inventory Is Full"));
+	}
+
+	if (CachedInventory.ItemTags.Contains(ItemTag))
+	{
+		// EquippableTag (즉, 장비면 새로운 슬롯에 넣어주기)
+		if (ItemTag.MatchesTag(EquippableTag))
+		{
+			if (NumItems > 0)
+			{
+				
+				int32 NoneIndex = CachedInventory.ItemTags.IndexOfByKey(NoneTag);
+				if (NoneIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(NoneIndex))
+				{
+					CachedInventory.ItemTags[NoneIndex] = ItemTag;
+					CachedInventory.ItemQuantities[NoneIndex] = NumItems;
+				}
+			}
+			else
+			{
+				int32 FoundIndex = CachedInventory.ItemTags.IndexOfByKey(ItemTag);
+				if (FoundIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(FoundIndex))
+				{
+					CachedInventory.ItemQuantities[FoundIndex] += NumItems;
+					if (CachedInventory.ItemQuantities[FoundIndex] <= 0)
+					{
+						CachedInventory.ItemTags[FoundIndex] = NoneTag;
+					}
+				}
+			}
+			
+		}
+		// 장비가 아니면 수량+
+		else
+		{
+			int32 FoundIndex = CachedInventory.ItemTags.IndexOfByKey(ItemTag);
+			if (FoundIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(FoundIndex))
+			{
+				CachedInventory.ItemQuantities[FoundIndex] += NumItems;
+				if (CachedInventory.ItemQuantities[FoundIndex] <= 0)
+				{
+					CachedInventory.ItemTags[FoundIndex] = NoneTag;
+				}
+			}
+		}
+		
+	}
+	else
+	{
+		int32 NoneIndex = CachedInventory.ItemTags.IndexOfByKey(NoneTag);
+		if (NoneIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(NoneIndex))
+		{
+			CachedInventory.ItemTags[NoneIndex] = ItemTag;
+			CachedInventory.ItemQuantities[NoneIndex] = NumItems;
+		}
+		else
+		{
+			// None 슬롯도 없으면 추가 (혹시나 배열이 확장되는 구조일 경우)
+			CachedInventory.ItemTags.Add(ItemTag);
+			CachedInventory.ItemQuantities.Add(NumItems);
+		}
+	}
+	
+	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemTag.ToString(), NumItems));
+
+	// 만들어진 맵순서로 다시 CachedInventory 생성
+	//PackageInventory(CachedInventory);
+
+	// 그 CachedInventory순서로 맵을 만듦
+	InventoryPackageDelegate.Broadcast(CachedInventory);
 }

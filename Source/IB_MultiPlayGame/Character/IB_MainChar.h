@@ -66,6 +66,11 @@ public:
 
 	virtual void OnManaChanged(float CurrentMana, float MaxMana) override;
 
+	virtual void SetNPCActor_Implementation(AActor* NPCActor) override;
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetNPCActor(AActor* NPCActor);
+
 public:
 
 	virtual void NotifyControllerChanged() override;
@@ -127,10 +132,6 @@ protected:
 
 	virtual void InitClassDefaults() override;
 
-	virtual void SetNPCActor_Implementation(AActor* NPCActor) override;
-
-	UFUNCTION(Server,Reliable)
-	void ServerSetNPCActor(AActor* NPCActor);
 	UFUNCTION()
 	EInteractObjective DetermineInteractObjective(AActor* InteractObjective);
 

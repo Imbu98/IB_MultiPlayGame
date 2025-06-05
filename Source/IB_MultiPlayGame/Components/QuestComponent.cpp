@@ -131,10 +131,16 @@ void UQuestComponent::GetQuestDetails()
 			int CurrentStage = CurrentQuests[i].CurrentStage;
 			CurrentQuests[i].CurrentStageDetails = CurrentQuests[i].QuestDetails.Stages[CurrentStage];
 
-			CurrentQuests[i].CurrentStageObjectiveProgress.Empty();
 			for (FObjectiveDetails& Objectives : CurrentQuests[i].CurrentStageDetails.Objectives)
 			{
-				CurrentQuests[i].CurrentStageObjectiveProgress.Add(Objectives.ObjectiveID, 0);
+				int32 ProgressValue = 0;
+
+				if (int32* FoundValue = CurrentQuests[i].CurrentStageObjectiveProgress.Find(Objectives.ObjectiveID))
+				{
+					ProgressValue = *FoundValue;
+				}
+				// 진행도 저장: 새로 넣거나 덮어쓰기
+				CurrentQuests[i].CurrentStageObjectiveProgress.Add(Objectives.ObjectiveID, ProgressValue);
 			}
 		}
 

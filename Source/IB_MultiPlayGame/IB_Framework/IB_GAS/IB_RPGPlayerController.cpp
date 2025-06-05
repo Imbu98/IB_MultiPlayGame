@@ -16,6 +16,7 @@
 #include "IB_RPGPlayerState.h"
 #include "IB_RPGAbilitySystemComponent.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
+#include "../../ETC/Cannon/CannonSpawnManager.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Blueprint/UserWidget.h"
@@ -26,6 +27,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NavigationSystem.h"
 #include "AIController.h"
+#include "Kismet\GameplayStatics.h"
 
 
 AIB_RPGPlayerController::AIB_RPGPlayerController()
@@ -58,8 +60,6 @@ void AIB_RPGPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME(AIB_RPGPlayerController, QuestComponent);
 	
 }
-
-
 
 void AIB_RPGPlayerController::SetupInputComponent()
 {
@@ -118,6 +118,16 @@ void AIB_RPGPlayerController::BeginPlay()
 		InventoryComponent->bOwnerLocallyControlled = IsLocalController();
 	}
 	
+	
+	if (IsLocalController())
+	{
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
+		{
+			ServerSpawnCannonRequest(this);
+		}, 2.0f, false); // 약간의 지연
+		
+	}
 }
 
 void AIB_RPGPlayerController::AbilityInputPressed(FGameplayTag InputTag)
@@ -161,8 +171,6 @@ void AIB_RPGPlayerController::DisplayQuestLog()
 	}
 	
 }
-
-
 
 void AIB_RPGPlayerController::ClientDisplayLocationNotification_Implementation(const FText& LocationName)
 {
@@ -272,6 +280,15 @@ void AIB_RPGPlayerController::ClientDisplayNotification_Implementation(const FOb
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("RPGPlayerController Not Local Controller, and HasAuthority"));
 	}
+}
+
+void AIB_RPGPlayerController::ServerSpawnCannonRequest_Implementation(AIB_RPGPlayerController* IB_RPGPlayerController)
+{
+	if(ACannonSpawnManager* CannonSpawnManager = Cast<ACannonSpawnManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ACannonSpawnManager::StaticClass())))
+	{
+		CannonSpawnManager->ServerSpawnOwnedCannon(IB_RPGPlayerController);
+	}
+	
 }
 
 

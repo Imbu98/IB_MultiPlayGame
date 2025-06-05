@@ -12,6 +12,7 @@ class UIB_RPGAttributeSet;
 class UWidgetComponent;
 class UW_EnemyOverHeadBars;
 class AIB_RPGPlayerController;
+class UItemSpawnComponent;
 
 UCLASS()
 class IB_MULTIPLAYGAME_API AEnemyBaseChar : public AIB_BaseChar, public IAbilitySystemInterface , public IInteractInterface
@@ -54,7 +55,12 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (AllowAccess = true))
 	TObjectPtr< UIB_RPGAttributeSet> IB_RPGAttributeSet;
 
+	UPROPERTY(EditAnywhere, meta = (AllowAccess = true))
+	TObjectPtr<UItemSpawnComponent> ItemSpawnComponent;
+
 	void InitEnemyOverHeadBars();
+
+	
 
 
 

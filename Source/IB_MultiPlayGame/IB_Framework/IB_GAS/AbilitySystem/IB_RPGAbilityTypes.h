@@ -6,21 +6,23 @@
 class UGameplayEffect;
 class UAbilitySystemComponent;
 class AProjectileBase;
-//class AWeaponBase;
+class AWeaponBase;
 
 USTRUCT()
 struct FWeaponParams
 {
 	GENERATED_BODY()
 
-	//UPROPERTY(EditDefaultsOnly)
-	//TSubclassOf<AWeaponBase> WeaponClass;
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AWeaponBase> WeaponClass;
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<USkeletalMesh> WeaponSkeletalMesh;
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UStaticMesh> WeaponMesh;
+	UPROPERTY(EditDefaultsOnly)
+	FName AttackSocketName;
 
 	UPROPERTY(EditDefaultsOnly)
 	TArray<TObjectPtr<UAnimMontage>> WeaponAttackMontageArray;

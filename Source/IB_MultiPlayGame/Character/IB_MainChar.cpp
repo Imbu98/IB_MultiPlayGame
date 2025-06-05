@@ -2,23 +2,28 @@
 #include "EnhancedInputComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/SpringArmComponent.h"
-#include "InputActionValue.h"
-#include "EnhancedInputSubsystems.h"
+
+
 #include "IB_MultiPlayGame/IB_Framework/FunctionLibrary/IB_BlueprintFunctionLibrary.h"
 #include "IB_MultiPlayGame/IB_Framework/IB_GAS/IB_RPGPlayerState.h"
-#include "../IB_Framework/IB_GAS/IB_RPGAbilitySystemComponent.h"
-#include "Blueprint/UserWidget.h"
 #include "IB_MultiPlayGame/IB_Framework/IB_GAS/Data/IB_CharacterClassInfo.h"
 #include "IB_MultiPlayGame/Widget/W_Overlay.h"
+#include "../IB_Framework/IB_GameInstance.h"
+#include "../IB_Framework/IB_GAS/IB_RPGAbilitySystemComponent.h"
+#include "IB_NPCBase.h"
+#include "IB_MultiPlayGame/ETC/Object/StrangeObject.h"
+#include "../ETC/BaseSpawnedItem/BaseSpawnedItem.h"
+#include "../Interfaces/InteractInterface.h"
+
+#include "InputActionValue.h"
+#include "EnhancedInputSubsystems.h"
+#include "Blueprint/UserWidget.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
-#include "../Interfaces/InteractInterface.h"
-#include "../IB_Framework/IB_GameInstance.h"
-#include "IB_NPCBase.h"
-#include "IB_MultiPlayGame/ETC/Object/StrangeObject.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+
 
 AIB_MainChar::AIB_MainChar()
 {
@@ -195,7 +200,7 @@ void AIB_MainChar::SetNPCActor_Implementation(AActor* NPCActor)
 		if (!HasAuthority())
 		{
 			LookatActor = NPCActor;
-			ServerSetNPCActor(NPCActor);
+			ServerSetNPCActor(LookatActor);
 			return;
 		}
 		LookatActor = NPCActor;
@@ -246,7 +251,6 @@ void AIB_MainChar::PlayerInteraction()
 		SereverPlayerInteraction();
 		return;
 	}
-
 	if (LookatActor&&LookatActor->Implements<UInteractInterface>())
 	{
 		if (APlayerController* PC = Cast<APlayerController>(this->GetController()))
@@ -280,6 +284,7 @@ void AIB_MainChar::PlayerInteraction()
 
 			case EInteractObjective::Item:
 			{
+				IInteractInterface::Execute_InteractWith(LookatActor, PC);
 				GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString::Printf(TEXT("Serever Interact with Item")));
 				break;
 			}
@@ -288,8 +293,6 @@ void AIB_MainChar::PlayerInteraction()
 			}
 			
 		}
-		
-		
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Interact")));
 }
@@ -332,6 +335,10 @@ EInteractObjective AIB_MainChar::DetermineInteractObjective(AActor* InteractObje
 	else if (AStrangeObject* Object = Cast<AStrangeObject>(InteractObjective))
 	{
 		return EInteractObjective::Object;
+	}
+	else if (ABaseSpawnedItem* Item = Cast<ABaseSpawnedItem>(InteractObjective))
+	{
+		return EInteractObjective::Item;
 	}
 	return EInteractObjective::None;
 

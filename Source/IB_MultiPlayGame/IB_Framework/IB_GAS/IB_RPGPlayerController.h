@@ -25,6 +25,7 @@ class UW_LocationNotify;
 class UW_QuestRewards;
 class UW_QuestNotification;
 
+
 UCLASS()
 class IB_MULTIPLAYGAME_API AIB_RPGPlayerController : public APlayerController, public IAbilitySystemInterface , public IInventoryInterface , public IRPGAbilitySystemInterface
 {
@@ -132,7 +133,13 @@ public:
 
 	UFUNCTION(Client,Reliable)
 	void ClientDisplayLocationNotification(const FText& LocationName);
-	
+
+public:
+	UFUNCTION(Server,Reliable,BlueprintCallable)
+	void ServerSpawnCannonRequest(AIB_RPGPlayerController* IB_RPGPlayerController);
+
+
+
 	
 };
 
