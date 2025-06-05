@@ -6,6 +6,7 @@
 
 class UIB_CharacterClassInfo;
 class UProjectile_Info;
+class UWeapon_Info;
 
 UCLASS()
 class IB_MULTIPLAYGAME_API AIB_RPGGameMode : public AGameMode
@@ -15,6 +16,7 @@ class IB_MULTIPLAYGAME_API AIB_RPGGameMode : public AGameMode
 public:
 	UIB_CharacterClassInfo* GetCharacterClassDefaultInfo() const;
 	UProjectile_Info* GetProjectileInfo() const;
+	UWeapon_Info* GetWeaponInfo() const;
 
 private:
 
@@ -23,6 +25,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Custom Values|Projectiles")
 	TObjectPtr<UProjectile_Info> ProjectileInfo;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Custom Values|Weapons")
+	TObjectPtr<UWeapon_Info> WeaponInfo;
 	
 	
 	

@@ -46,6 +46,7 @@ void AProjectileBase::SetProjectileParams(const FProjectileParams& Params)
 		ProjectileMovementComponent->bShouldBounce = Params.bShouldBounce;
 		ProjectileMovementComponent->Bounciness = Params.Bounciness;
 	}
+	
 }
 
 void AProjectileBase::BeginPlay()

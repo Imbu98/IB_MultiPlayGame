@@ -1,6 +1,7 @@
 #include "IB_RPGAbilitySystemComponent.h"
 #include "../IB_GAS/AbilitySystem/RPGGameplayAbility.h"
 #include "../IB_GAS/AbilitySystem/ProjectileAbility.h"
+#include "../IB_GAS/AbilitySystem/WeaponAttackAbility.h"
 
 
 void UIB_RPGAbilitySystemComponent::AddCharacterAbilities(const TArray<TSubclassOf<UGameplayAbility>>& AbilitiesToGrant)
@@ -120,5 +121,48 @@ void UIB_RPGAbilitySystemComponent::SetDynamicProjectile(const FGameplayTag& Pro
 
 void UIB_RPGAbilitySystemComponent::ServerSetDynamicProjectile_Implementation(const FGameplayTag& ProjectileTag, int32 AbilityLevel)
 {
-	SetDynamicProjectile(ProjectileTag,AbilityLevel);
+	SetDynamicProjectile(ProjectileTag, AbilityLevel);
+
 }
+
+void UIB_RPGAbilitySystemComponent::SetDynamicWeapon_Implementation(const FGameplayTag& WeaponTag, int32 AbilityLevel)
+{
+	if (!WeaponTag.IsValid())
+	{
+		return;
+	}
+
+	if (!GetAvatarActor()->HasAuthority())
+	{
+		ServerSetDynamicWeapon(WeaponTag, AbilityLevel);
+		return;
+	}
+	if (ActiveWeaponAttackAbilty.IsValid())
+	{
+		ClearAbility(ActiveWeaponAttackAbilty);
+	}
+
+	if (IsValid(DynamicWeaponAttackAbility))
+	{
+		FGameplayAbilitySpec Spec = FGameplayAbilitySpec(DynamicWeaponAttackAbility, AbilityLevel);
+		if (UWeaponAttackAbility* WeaponAttackAbility = Cast<UWeaponAttackAbility>(Spec.Ability))
+		{
+			// equipment component 만들고, item스폰 후 WeaponAttackAbility->CurrentWeaponParams를 그 item에 대입
+			
+			WeaponAttackAbility->WeaponToSpawnTag = WeaponTag;
+
+			Spec.DynamicAbilityTags.AddTag(WeaponAttackAbility->InputTag);
+
+			
+			ActiveWeaponAttackAbilty = GiveAbility(Spec);
+		}
+	}
+}
+
+void UIB_RPGAbilitySystemComponent::ServerSetDynamicWeapon_Implementation(const FGameplayTag& WeaponTag, int32 AbilityLevel)
+{
+	SetDynamicWeapon(WeaponTag, AbilityLevel);
+}
+
+
+

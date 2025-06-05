@@ -33,5 +33,9 @@ private:
 	UPROPERTY(VisibleAnywhere, meta = (AllowPrivateAccess = true))
 	TObjectPtr<USkeletalMeshComponent> WeaponSkeletalMesh;
 
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSetWeaponMesh(USkeletalMesh* InMesh);
+	
+
 	
 };

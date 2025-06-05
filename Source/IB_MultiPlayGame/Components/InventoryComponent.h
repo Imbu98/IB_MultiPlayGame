@@ -112,5 +112,10 @@ private:
 	UFUNCTION()
 	void OnRep_CachedInventory();
 
+	UFUNCTION()
+	void DefinitionItemUse(const FMasterItemDefinition& Item);
+	UFUNCTION()
+	void DefinitionItemAdd(const FGameplayTag& ItemTag, int32 NumItems);
+
 
 };

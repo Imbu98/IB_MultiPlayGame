@@ -4,8 +4,12 @@
 #include "../IB_Framework/IB_GAS/Data/IB_CharacterClassInfo.h"
 #include "../IB_Framework/FunctionLibrary/IB_BlueprintFunctionLibrary.h"
 #include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
-#include "Components/WidgetComponent.h"
 #include "../Widget/W_EnemyOverHeadBars.h"
+#include "../Components/ItemSpawnComponent.h"
+
+#include "GameplayTagContainer.h"
+
+#include "Components/WidgetComponent.h"
 #include "IB_MainChar.h"
 
 AEnemyBaseChar::AEnemyBaseChar()
@@ -17,6 +21,10 @@ AEnemyBaseChar::AEnemyBaseChar()
 	IB_RPGAbilitySystemComp->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
 	IB_RPGAttributeSet = CreateDefaultSubobject<UIB_RPGAttributeSet>("IB_RPGAttributeSet");
+
+	ItemSpawnComponent = CreateDefaultSubobject<UItemSpawnComponent>("ItemSpawnComponent");
+	ItemSpawnComponent->SetIsReplicated(true);
+
 
 	WidgetComponent = CreateDefaultSubobject<UWidgetComponent>("WidgetOverHeadBars");
 	WidgetComponent->SetupAttachment(GetMesh());
@@ -118,10 +126,15 @@ void AEnemyBaseChar::HandleEnemyDeath(AIB_RPGPlayerController* IB_RPGPlayerContr
 
 				IB_MainChar->OnObjectiveIdCalledDelegate.Broadcast(ObjectiveID, QuestSuccessDefaultValue);
 				GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Destroyer:%s,ObjectiveID:%s"), *IB_RPGPlayerController->GetName(), *ObjectiveID));
+				if (ItemSpawnComponent)
+				{
+					ItemSpawnComponent->SetFinalItemTypeAndDrop();
+				}
 				Destroy();
+				
 			}
-
 		}
+		
 	}
 }
 

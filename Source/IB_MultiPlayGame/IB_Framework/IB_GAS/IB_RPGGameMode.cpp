@@ -10,3 +10,8 @@ UProjectile_Info* AIB_RPGGameMode::GetProjectileInfo() const
 {
 	return ProjectileInfo;
 }
+
+UWeapon_Info* AIB_RPGGameMode::GetWeaponInfo() const
+{
+	return WeaponInfo;
+}
