@@ -22,7 +22,9 @@ void UCheckRoleComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 	
 	AActor* Owner = GetOwner();
+	AActor* OwnerOwner = GetOwner()->GetOwner();
 	if (!Owner) return;
+	if (!OwnerOwner) return;
 
 	ENetMode NetMode = Owner->GetNetMode();
 	FString NetModeStr;
@@ -35,11 +37,12 @@ void UCheckRoleComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	default: NetModeStr = TEXT("Unknown"); break;
 	}
 
-	FString DebugText = FString::Printf(TEXT("Authority: %s\nNetMode: %s\nRemoteRole: %s\nLocalRole: %s"),
+	FString DebugText = FString::Printf(TEXT("Authority: %s\nNetMode: %s\nRemoteRole: %s\nLocalRole: %s\nOwner:%s"),
 		Owner->HasAuthority() ? TEXT("TRUE") : TEXT("FALSE"),
 		*NetModeStr,
 		*UEnum::GetValueAsString(Owner->GetRemoteRole()),
-		*UEnum::GetValueAsString(Owner->GetLocalRole())
+		*UEnum::GetValueAsString(Owner->GetLocalRole()),
+		*OwnerOwner->GetName()
 	);
 
 	if (GetOwner()->GetNetMode() == NM_DedicatedServer)

@@ -20,11 +20,11 @@ protected:
 public:
 
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "Custom Values | Cannon")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Cannon")
 	TSubclassOf<ACannon> CannonPawn; 
 
-	UFUNCTION(Server, Reliable)
-	void ServerSpawnOwnedCannon(AIB_RPGPlayerController* IB_PlayerController);
+	UFUNCTION()
+	void SpawnOwnedCannon(AIB_RPGPlayerController* IB_PlayerController);
 
 
 

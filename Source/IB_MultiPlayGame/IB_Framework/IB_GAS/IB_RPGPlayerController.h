@@ -24,6 +24,7 @@ class UW_QuestLog;
 class UW_LocationNotify;
 class UW_QuestRewards;
 class UW_QuestNotification;
+class ACannon;
 
 
 UCLASS()
@@ -119,6 +120,9 @@ public:
 	UPROPERTY(Replicated)
 	bool bAlreadyQuest;
 
+	UPROPERTY(Replicated)
+	TObjectPtr<ACannon> OwningCannon;
+
 
 public:
 	UFUNCTION(BlueprintCallable)
@@ -135,10 +139,8 @@ public:
 	void ClientDisplayLocationNotification(const FText& LocationName);
 
 public:
-	UFUNCTION(Server,Reliable,BlueprintCallable)
-	void ServerSpawnCannonRequest(AIB_RPGPlayerController* IB_RPGPlayerController);
-
-
+	UFUNCTION(Server,Reliable)
+	void ServerSpawnCannonRequest(AIB_RPGPlayerController* IB_PlayerController);
 
 	
 };

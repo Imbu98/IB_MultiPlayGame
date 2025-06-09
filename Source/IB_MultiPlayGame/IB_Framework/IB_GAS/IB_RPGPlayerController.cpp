@@ -17,6 +17,7 @@
 #include "IB_RPGAbilitySystemComponent.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "../../ETC/Cannon/CannonSpawnManager.h"
+#include "../../ETC/Cannon/Cannon.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Blueprint/UserWidget.h"
@@ -58,6 +59,9 @@ void AIB_RPGPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME(AIB_RPGPlayerController, InventoryComponent);
 	DOREPLIFETIME(AIB_RPGPlayerController, QuestLogComponent);
 	DOREPLIFETIME(AIB_RPGPlayerController, QuestComponent);
+	DOREPLIFETIME(AIB_RPGPlayerController, OwningCannon);
+
+	
 	
 }
 
@@ -124,7 +128,7 @@ void AIB_RPGPlayerController::BeginPlay()
 		FTimerHandle TimerHandle;
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
 		{
-			ServerSpawnCannonRequest(this);
+				ServerSpawnCannonRequest(this);
 		}, 2.0f, false); // 약간의 지연
 		
 	}
@@ -282,13 +286,13 @@ void AIB_RPGPlayerController::ClientDisplayNotification_Implementation(const FOb
 	}
 }
 
-void AIB_RPGPlayerController::ServerSpawnCannonRequest_Implementation(AIB_RPGPlayerController* IB_RPGPlayerController)
+void AIB_RPGPlayerController::ServerSpawnCannonRequest_Implementation(AIB_RPGPlayerController* IB_PlayerController)
 {
 	if(ACannonSpawnManager* CannonSpawnManager = Cast<ACannonSpawnManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ACannonSpawnManager::StaticClass())))
 	{
-		CannonSpawnManager->ServerSpawnOwnedCannon(IB_RPGPlayerController);
+		CannonSpawnManager->SpawnOwnedCannon(IB_PlayerController);
+
 	}
-	
 }
 
 
