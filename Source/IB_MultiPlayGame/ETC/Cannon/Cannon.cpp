@@ -15,8 +15,7 @@ ACannon::ACannon()
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 	SetReplicateMovement(true);
-	SetNetUpdateFrequency(100.0f);
-	SetMinNetUpdateFrequency(66.f);
+	bNetUseOwnerRelevancy = true;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = true;
@@ -28,44 +27,80 @@ ACannon::ACannon()
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
 	CameraBoom->bUsePawnControlRotation = false;
+	CameraBoom->SetIsReplicated(true);
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+	FollowCamera->SetIsReplicated(true);
 
 	CannonCartMesh = CreateDefaultSubobject<UStaticMeshComponent>("CannonCartMesh");
 	CannonCartMesh->SetupAttachment(GetRootComponent());
+	CannonCartMesh->SetIsReplicated(true);
 
 	CannonBodyMesh = CreateDefaultSubobject<UStaticMeshComponent>("CannonBodyMesh");
 	CannonBodyMesh->SetupAttachment(CannonCartMesh);
+	CannonBodyMesh->SetIsReplicated(true);
 
 	CannonMuzzle = CreateDefaultSubobject<USceneComponent>("CannonMuzzle");
 	CannonMuzzle->SetupAttachment(CannonBodyMesh);
 
 	BoardingTriggerBox = CreateDefaultSubobject<UBoxComponent>("BoardingTriggerBox");
 	BoardingTriggerBox->SetupAttachment(DefaultSceneRoot);
+	BoardingTriggerBox->SetIsReplicated(true);
 
 	ParticleSystemComponent = CreateDefaultSubobject<UParticleSystemComponent>("ParticleSystemComponent");
 	ParticleSystemComponent->SetupAttachment(BoardingTriggerBox);
+	ParticleSystemComponent->SetIsReplicated(true);
 
 	WidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("WidgetComponent"));
 	WidgetComponent->SetupAttachment(DefaultSceneRoot);
+	WidgetComponent->SetIsReplicated(true);
 
 	BoardingTriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnComponentBeginOverlap);
 	BoardingTriggerBox->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnComponentEndOverlap);
 
 }
+
+void ACannon::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (HasAuthority())
+	{
+		
+		MulticastSetMesh(CannonBodyMesh->GetStaticMesh(),CannonCartMesh->GetStaticMesh());
+	}
+
+}
+
+void ACannon::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+}
+
+FString ACannon::InteractWith_Implementation(APlayerController* PlayerController)
+{
+	return FString();
+}
+
+void ACannon::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	UE_LOG(LogTemp, Warning, TEXT("PossessedBy: %s"), *NewController->GetName());
+}
+
+
 void ACannon::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor == UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
+if (OtherActor == UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
 	{
-		if (OtherActor == UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
-		{
 			if (OtherActor->Implements<UInteractInterface>())
 			{
 				IInteractInterface::Execute_SetNPCActor(OtherActor, this);
 			}
-		}
+	}
 		if (ItemOverlayMaterial && CannonBodyMesh&& CannonCartMesh)
 		{
 			CannonBodyMesh->SetOverlayMaterial(ItemOverlayMaterial);
@@ -85,19 +120,18 @@ void ACannon::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 			}
 			WidgetComponent->SetVisibility(true);
 		}
-	}
+
 }
 void ACannon::OnComponentEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (OtherActor == UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
 	{
-		if (OtherActor == UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
-		{
+		
 			if (OtherActor->Implements<UInteractInterface>())
 			{
 				IInteractInterface::Execute_SetNPCActor(OtherActor, nullptr);
 			}
-		}
+	}
 		if (ItemOverlayMaterial && CannonBodyMesh && CannonCartMesh)
 		{
 			CannonBodyMesh->SetOverlayMaterial(nullptr);
@@ -107,23 +141,34 @@ void ACannon::OnComponentEndOverlap(UPrimitiveComponent* OverlappedComponent, AA
 		{
 			WidgetComponent->SetVisibility(false);
 		}
+
+}
+
+void ACannon::MulticastSetMesh_Implementation(UStaticMesh* InCannonBodyMesh, UStaticMesh* InCannonCartMesh)
+{
+	if (HasAuthority())
+	{
+		if (CannonBodyMesh && CannonCartMesh&& BoardingTriggerBox)
+		{
+			CannonBodyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			CannonCartMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			BoardingTriggerBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			return;
+		}
+	}
+
+	if (InCannonBodyMesh && InCannonCartMesh && CannonBodyMesh && CannonCartMesh)
+	{
+		if (GetOwner())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Owner: %s, HasAuthority: %d"), *GetOwner()->GetName(), HasAuthority());
+			CannonBodyMesh->SetStaticMesh(InCannonBodyMesh);
+			CannonCartMesh->SetStaticMesh(InCannonCartMesh);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Cannon has No Owner"));
+		}
+		
 	}
 }
-void ACannon::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-
-void ACannon::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-}
-
-FString ACannon::InteractWith_Implementation(APlayerController* PlayerController)
-{
-	return FString();
-}
-

@@ -13,6 +13,9 @@ class IB_MULTIPLAYGAME_API ACannon : public APawn , public IInteractInterface
 	GENERATED_BODY()
 
 
+protected:
+	virtual void BeginPlay() override;
+
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class USpringArmComponent* CameraBoom;
@@ -26,22 +29,24 @@ public:
 
 	virtual FString InteractWith_Implementation(APlayerController* PlayerController) override;
 
+	virtual void PossessedBy(AController* NewController) override;
+
 public:
 	FORCEINLINE  USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE  UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Custom Values | Components")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Components", meta = (AllowAccess = true))
 	TObjectPtr<USceneComponent> DefaultSceneRoot;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Custom Values | Components")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Components", meta = (AllowAccess = true))
 	TObjectPtr<UStaticMeshComponent> CannonBodyMesh;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Custom Values | Components")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Components")
 	TObjectPtr<UStaticMeshComponent> CannonCartMesh;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Custom Values | Components")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Components")
 	TObjectPtr<USceneComponent> CannonMuzzle;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Custom Values | Components")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Components")
 	TObjectPtr<UBoxComponent> BoardingTriggerBox;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Custom Values | Components")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Components")
 	class UParticleSystemComponent* ParticleSystemComponent;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Components")
 	class UWidgetComponent* WidgetComponent;
@@ -55,9 +60,8 @@ public:
 	void OnComponentEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-
-protected:
-	virtual void BeginPlay() override;
-
+public:
+	UFUNCTION(NetMulticast,Reliable)
+	void MulticastSetMesh(UStaticMesh* InCannonBodyMesh, UStaticMesh* InCannonCartMesh);
 	
 };

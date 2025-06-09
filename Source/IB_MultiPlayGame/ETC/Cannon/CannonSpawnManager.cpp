@@ -2,6 +2,8 @@
 #include "Cannon.h"
 #include "../../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 
+#include "Kismet/GameplayStatics.h"
+
 ACannonSpawnManager::ACannonSpawnManager()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -11,34 +13,44 @@ ACannonSpawnManager::ACannonSpawnManager()
 	SetMinNetUpdateFrequency(66.f);
 }
 
+
 void ACannonSpawnManager::BeginPlay()
 {
 	Super::BeginPlay();
 }
 
-void ACannonSpawnManager::ServerSpawnOwnedCannon_Implementation(AIB_RPGPlayerController* IB_PlayerController)
+
+
+void ACannonSpawnManager::SpawnOwnedCannon(AIB_RPGPlayerController* IB_PlayerController)
 {
-	if (CannonPawn&& IB_PlayerController)
+	if (!HasAuthority()) return;
+
+	if (CannonPawn && IB_PlayerController)
 	{
 		FActorSpawnParameters ActorSpawnParameters;
-		ActorSpawnParameters.Owner = IB_PlayerController;
-		ActorSpawnParameters.Instigator = IB_PlayerController->GetPawn();
 		ActorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		ActorSpawnParameters.Owner = IB_PlayerController;
 		FTransform SpawnTransform;
 		SpawnTransform.SetLocation(GetActorLocation());
 		SpawnTransform.SetRotation(GetActorRotation().Quaternion());
 
 		if (ACannon* OwningSpawnedCannon = GetWorld()->SpawnActor<ACannon>(CannonPawn, SpawnTransform, ActorSpawnParameters))
 		{
-			if (IB_PlayerController)
+			OwningSpawnedCannon->SetNetUpdateFrequency(100.f);
+			OwningSpawnedCannon->SetMinNetUpdateFrequency(50.f);
+			OwningSpawnedCannon->AutoPossessPlayer = EAutoReceiveInput::Disabled;
+			OwningSpawnedCannon->AutoPossessAI = EAutoPossessAI::Disabled;
+			OwningSpawnedCannon->SetOwner(IB_PlayerController);
+			OwningSpawnedCannon->SetReplicates(true);
+			OwningSpawnedCannon->bNetUseOwnerRelevancy = true;
+
+ 			if (!OwningSpawnedCannon->GetOwner())
 			{
-				OwningSpawnedCannon->SetOwner(IB_PlayerController);
-				OwningSpawnedCannon->SetReplicates(true);
-				OwningSpawnedCannon->bOnlyRelevantToOwner = true;
-				OwningSpawnedCannon->NetUpdateFrequency = 100.f;
-				OwningSpawnedCannon->MinNetUpdateFrequency = 50.f;
+				UE_LOG(LogTemp, Error, TEXT("Cannon has NO owner on server!"));
 			}
 		}
+
+		
 	}
 }
 

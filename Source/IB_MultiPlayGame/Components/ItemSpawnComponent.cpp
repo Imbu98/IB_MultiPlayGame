@@ -20,7 +20,8 @@ void UItemSpawnComponent::BeginPlay()
 
 void UItemSpawnComponent::SetFinalItemTypeAndDrop()
 {
-	
+	if (!GetOwner()->HasAuthority()) return;
+
 	TArray<AIB_RPGPlayerController*> LocalSessionPlayers;
 
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
