@@ -26,7 +26,8 @@ enum class EInteractObjective : uint8
 	NPC = 1,
 	Item = 2,
 	Object = 3,
-	Others=4,
+	Cannon=4,
+	Others=5,
 };
 
 
@@ -78,9 +79,8 @@ public:
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputMappingContext* MappingContext;
+	UInputMappingContext* IMC_Default;
 
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
 

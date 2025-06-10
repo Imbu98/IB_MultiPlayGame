@@ -5,6 +5,7 @@
 #include "CannonSpawnManager.generated.h"
 
 class ACannon;
+class AAIController;
 
 UCLASS()
 class IB_MULTIPLAYGAME_API ACannonSpawnManager : public AActor
@@ -21,7 +22,9 @@ public:
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Cannon")
-	TSubclassOf<ACannon> CannonPawn; 
+	TSubclassOf<ACannon> BP_CannonPawn; 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Cannon")
+	TSubclassOf<AAIController> AIClass;
 
 	UFUNCTION()
 	void SpawnOwnedCannon(AIB_RPGPlayerController* IB_PlayerController);

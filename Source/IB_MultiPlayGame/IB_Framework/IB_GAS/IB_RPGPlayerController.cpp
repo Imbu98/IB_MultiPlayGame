@@ -292,6 +292,75 @@ void AIB_RPGPlayerController::ServerSpawnCannonRequest_Implementation()
 	}
 }
 
+void AIB_RPGPlayerController::SwitchController()
+{
+	if (!HasAuthority())
+	{
+		ServerSwitchController();
+		return;
+	}
+	
+		// 지금 controlled pawn이 ib_char일 때
+		if (AIB_MainChar* IB_MainChar = Cast<AIB_MainChar>(GetPawn()))
+		{
+			CachedIB_MainChar = IB_MainChar;
+			if (OwningCannon)
+			{
+				if (IsOnCannon == false)
+				{
+					Possess(OwningCannon);
+					IsOnCannon = true;
+					ClientSwitchInputMapping(IsOnCannon, CachedIB_MainChar, OwningCannon);
+					//IBPlayerController->ClosePlayerWidget();
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("AIB_RPGPlayerController::SwitchController : No OwningCannon"));
+			}
+		}
+		// 지금 controlled pawn이 ACannon일 때
+		else if (ACannon* Cannon = Cast<ACannon>(GetPawn()))
+		{
+			Possess(CachedIB_MainChar);
+			IsOnCannon = false;
+			//IBPlayerController->OpenPlayerWidget();
+
+			ClientSwitchInputMapping(IsOnCannon, CachedIB_MainChar, OwningCannon);
+		}
+	
+}
+
+void AIB_RPGPlayerController::ServerSwitchController_Implementation()
+{
+	SwitchController();
+}
+
+void AIB_RPGPlayerController::ClientSwitchInputMapping_Implementation(bool OnCannon, AIB_MainChar* IBMainChar, ACannon* Cannon)
+{
+	if (!IsValid(Cannon)) return;
+	if (!IsValid(IBMainChar)) return;
+
+	UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
+	
+		if (Subsystem != nullptr)
+		{
+			if (OnCannon == true)
+			{
+				Subsystem->RemoveMappingContext(IBMainChar->IMC_Default);
+				Subsystem->AddMappingContext(Cannon->IMC_Cannon, 1);
+				//IBPlayerController->ClosePlayerWidget();
+			}
+			else if (OnCannon ==false)
+			{
+				Subsystem->RemoveMappingContext(Cannon->IMC_Cannon);
+				Subsystem->AddMappingContext(IBMainChar->IMC_Default, 0);
+				//IBPlayerController->OpenPlayerWidget();
+			}
+		}
+
+}
+
 
 
 
