@@ -26,6 +26,9 @@ ABaseSpawnedItem::ABaseSpawnedItem()
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleComponent"));
 	CapsuleComponent->SetupAttachment(ItemStaticMesh);
 
+	NiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraComponent"));
+	NiagaraComponent->SetupAttachment(ItemSKeletalMesh);
+
 	WidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("WidgetComponent"));
 	WidgetComponent->SetupAttachment(ItemStaticMesh);
 
@@ -114,6 +117,7 @@ void ABaseSpawnedItem::InitializeWithTag(FGameplayTag InTag, EItemRarity ItemRar
 	ItemDefinition.ItemRarity = ItemRarity;
 	ItemDefinition.ItemTag = InTag;
 	SetMeshFromTag(InTag);
+	MulticastSetDropEffect(ItemRarity);
 	
 }
 
@@ -141,6 +145,44 @@ void ABaseSpawnedItem::SetMeshFromTag(FGameplayTag InItemTag)
 	else
 	{
 		
+	}
+}
+
+void ABaseSpawnedItem::MulticastSetDropEffect(EItemRarity ItemRarity)
+{
+	if (HasAuthority()) return;
+
+	//ItemDropEffect DataTable 만들어서 ITemDropEffect 설정
+	/*switch (ItemInfo.ItemRarity)
+	{
+	case E_ItemRarity::Common:
+	{
+		ItemDropEffect = ItemProperty->Common_Drop_Effect;
+		break;
+	}
+	case E_ItemRarity::Rare:
+	{
+		ItemDropEffect = ItemProperty->Rare_Drop_Effect;
+		break;
+	}
+	case E_ItemRarity::Epic:
+	{
+		ItemDropEffect = ItemProperty->Epic_Drop_Effect;
+		break;
+	}
+	case E_ItemRarity::Legendary:
+	{
+		ItemDropEffect = ItemProperty->Legendary_Drop_Effect;
+		break;
+	}
+	default:
+		break;
+	}*/
+
+	if (ItemDropEffect)
+	{
+		NiagaraComponent->SetAsset(ItemDropEffect);
+		NiagaraComponent->Activate(true);
 	}
 }
 

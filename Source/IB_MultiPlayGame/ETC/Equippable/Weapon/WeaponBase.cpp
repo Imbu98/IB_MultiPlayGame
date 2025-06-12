@@ -27,6 +27,12 @@ void AWeaponBase::SetWeaponParams(const FWeaponParams& Params)
 				HasAuthority() ? TEXT("Server") : TEXT("Client"),
 				*GetNameSafe(Params.WeaponSkeletalMesh));
 
+			/* Rarity에 따른 데미지나누기
+			if(Rarity == common)
+			{
+				DamageEffectInfo.BaseDamage = ?.?f
+			}*/
+
 			WeaponAttackMontageArray.SetNum(Params.WeaponAttackMontageArray.Num());
 			WeaponAttackMontageArray = Params.WeaponAttackMontageArray;
 
