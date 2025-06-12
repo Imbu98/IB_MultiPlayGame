@@ -13,6 +13,7 @@
 #include "IB_NPCBase.h"
 #include "IB_MultiPlayGame/ETC/Object/StrangeObject.h"
 #include "../ETC/BaseSpawnedItem/BaseSpawnedItem.h"
+#include "../ETC/Cannon/Cannon.h"
 #include "../Interfaces/InteractInterface.h"
 
 #include "InputActionValue.h"
@@ -147,7 +148,7 @@ void AIB_MainChar::NotifyControllerChanged()
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
-			Subsystem->AddMappingContext(MappingContext, 0);
+			Subsystem->AddMappingContext(IMC_Default, 0);
 		}
 	}
 }
@@ -288,6 +289,13 @@ void AIB_MainChar::PlayerInteraction()
 				GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString::Printf(TEXT("Serever Interact with Item")));
 				break;
 			}
+			case EInteractObjective::Cannon:
+			{
+				IInteractInterface::Execute_InteractWith(LookatActor, PC);
+				GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString::Printf(TEXT("Serever Interact with Cannon")));
+				break;
+			}
+
 				default:
 					break;
 			}
@@ -339,6 +347,10 @@ EInteractObjective AIB_MainChar::DetermineInteractObjective(AActor* InteractObje
 	else if (ABaseSpawnedItem* Item = Cast<ABaseSpawnedItem>(InteractObjective))
 	{
 		return EInteractObjective::Item;
+	}
+	else if (ACannon* Cannon = Cast<ACannon>(InteractObjective))
+	{
+		return EInteractObjective::Cannon;
 	}
 	return EInteractObjective::None;
 

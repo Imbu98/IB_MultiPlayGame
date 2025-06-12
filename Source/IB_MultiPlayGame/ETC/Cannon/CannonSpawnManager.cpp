@@ -2,6 +2,7 @@
 #include "Cannon.h"
 #include "../../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 
+#include "AIController.h"
 #include "Kismet/GameplayStatics.h"
 
 ACannonSpawnManager::ACannonSpawnManager()
@@ -25,17 +26,18 @@ void ACannonSpawnManager::SpawnOwnedCannon(AIB_RPGPlayerController* IB_PlayerCon
 {
 	if (!HasAuthority()) return;
 
-	if (CannonPawn && IB_PlayerController)
+	if (BP_CannonPawn && IB_PlayerController&&AIClass)
 	{
-		FActorSpawnParameters ActorSpawnParameters;
-		ActorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		ActorSpawnParameters.Owner = IB_PlayerController;
+		FActorSpawnParameters CannonSpawnParameters;
+		CannonSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		CannonSpawnParameters.Owner = IB_PlayerController;
 		FTransform SpawnTransform;
 		SpawnTransform.SetLocation(GetActorLocation());
 		SpawnTransform.SetRotation(GetActorRotation().Quaternion());
 
-		if (ACannon* OwningSpawnedCannon = GetWorld()->SpawnActor<ACannon>(CannonPawn, SpawnTransform, ActorSpawnParameters))
+		if (ACannon* OwningSpawnedCannon = GetWorld()->SpawnActor<ACannon>(BP_CannonPawn, SpawnTransform, CannonSpawnParameters))
 		{
+
 			OwningSpawnedCannon->SetNetUpdateFrequency(100.f);
 			OwningSpawnedCannon->SetMinNetUpdateFrequency(50.f);
 			OwningSpawnedCannon->AutoPossessPlayer = EAutoReceiveInput::Disabled;
@@ -44,13 +46,28 @@ void ACannonSpawnManager::SpawnOwnedCannon(AIB_RPGPlayerController* IB_PlayerCon
 			OwningSpawnedCannon->SetReplicates(true);
 			OwningSpawnedCannon->bNetUseOwnerRelevancy = true;
 
- 			if (!OwningSpawnedCannon->GetOwner())
+			FActorSpawnParameters AIControllerSpawnParameters;
+			AIControllerSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			if (AAIController* AIController = GetWorld()->SpawnActor<AAIController>(AIClass, AIControllerSpawnParameters))
 			{
-				UE_LOG(LogTemp, Error, TEXT("Cannon has NO owner on server!"));
+				UE_LOG(LogTemp, Warning, TEXT("AIController spawned: %s"), *AIController->GetName());
+				AIController->SetNetUpdateFrequency(100.f);
+				AIController->SetMinNetUpdateFrequency(50.f);
+				AIController->SetReplicates(true);
+				AIController->Possess(OwningSpawnedCannon);
+
+				if (!OwningSpawnedCannon->GetOwner())
+				{
+					UE_LOG(LogTemp, Error, TEXT("Cannon has NO owner on server!"));
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("AIController spawn FAILED!"));
+				return;
 			}
 		}
-
-		
 	}
 }
 

@@ -25,6 +25,7 @@ class UW_LocationNotify;
 class UW_QuestRewards;
 class UW_QuestNotification;
 class ACannon;
+class AIB_MainChar;
 
 
 UCLASS()
@@ -119,6 +120,12 @@ public:
 public:
 	UPROPERTY(Replicated)
 	bool bAlreadyQuest;
+	UPROPERTY();
+	bool IsOnCannon=false;
+	UPROPERTY();
+	TObjectPtr<ACannon> OwningCannon;
+	UPROPERTY();
+	TObjectPtr<AIB_MainChar> CachedIB_MainChar;
 
 public:
 	UFUNCTION(BlueprintCallable)
@@ -135,8 +142,14 @@ public:
 	void ClientDisplayLocationNotification(const FText& LocationName);
 
 public:
+	UFUNCTION()
+	void SwitchController();
+	UFUNCTION(Server,Reliable)
+	void ServerSwitchController();
 	UFUNCTION(Server,Reliable)
 	void ServerSpawnCannonRequest();
+	UFUNCTION(Client, Reliable)
+	void ClientSwitchInputMapping(bool OnCannon, AIB_MainChar* IBMainChar,ACannon* Cannon);
 
 };
 
