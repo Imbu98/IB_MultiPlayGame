@@ -1,16 +1,19 @@
 #include "W_InventorySlot.h"
-#include "Components/Button.h"
-#include "Components/TextBlock.h"
-#include "Components/Image.h"
-#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "W_DraggedImageItem.h"
 #include "Blueprint/DragDropOperation.h"
 #include "DragDropOperation/IB_DragDropOperation.h"
-#include "Blueprint/WidgetBlueprintLibrary.h"
-#include "Kismet/GameplayStatics.h"
 #include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 #include "../Components/InventoryComponent.h"
 #include "../Interfaces/InventoryInterface.h"
+
+#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "Components/Button.h"
+#include "Components/TextBlock.h"
+#include "Components/Image.h"
+#include "Components/Border.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
+
 
 
 
@@ -129,6 +132,43 @@ void UW_InventorySlot::SetQuiantityText(int32 Quantity)
 	}
 }
 
+void UW_InventorySlot::SetSlotRarityImg()
+{
+	FLinearColor BorderColor;
+
+	switch (Item.ItemRarity)
+	{
+	case EItemRarity::None:
+	{
+		BorderColor = FLinearColor::Gray;
+		break;
+	}
+	case EItemRarity::Rare:
+	{
+		BorderColor = FLinearColor::Blue;
+		break;
+	}
+	case EItemRarity::Epic:
+	{
+
+		BorderColor = FLinearColor(0.5f, 0.0f, 0.5f);
+		break;
+	}
+	case EItemRarity::Legendary:
+	{
+		BorderColor = FLinearColor(1.0f, 0.5f, 0.0f);
+		break;
+	}
+
+	default:
+		break;
+	}
+	if (Border_Frame)
+	{
+		Border_Frame->SetBrushColor(BorderColor);
+	}
+}
+
 void UW_InventorySlot::OnclickedActionButton()
 {
 	OnClickedActionButtonDelegate.Broadcast(Item);
@@ -138,12 +178,13 @@ void UW_InventorySlot::UpdateSlot()
 {
 	if (IMG_SlotImage)
 	{
-		IMG_SlotImage->SetBrushFromTexture(Item.Icon);
+		IMG_SlotImage->SetBrushFromTexture(SlotItemImage);
 	}
 	if (Text_ItemQuantity&& Item.ItemQuantity>0)
 	{
 		Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT("x %d"), Item.ItemQuantity)));
 	}
+	SetSlotRarityImg();
 }
 
 void UW_InventorySlot::ClearSlot()
@@ -155,6 +196,10 @@ void UW_InventorySlot::ClearSlot()
 	if (Text_ItemQuantity)
 	{
 		Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT(""))));
+	}
+	if (Border_Frame)
+	{
+		Border_Frame->SetBrushColor(FLinearColor::White);
 	}
     // tag초기화 추가
 	//Item.ItemTag = FGameplayTag::RequestGameplayTag(FName("Item.None"));

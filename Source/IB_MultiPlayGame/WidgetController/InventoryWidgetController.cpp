@@ -1,6 +1,8 @@
 #include "InventoryWidgetController.h"
 #include "../Interfaces/InventoryInterface.h"
 #include "../Components/InventoryComponent.h"
+#include "../IB_Framework/IB_GameInstance.h"
+#include "Kismet/GameplayStatics.h"
 
 void UInventoryWidgetController::SetOwningActor(AActor* InOwner)
 {
@@ -19,6 +21,7 @@ void UInventoryWidgetController::BindCallBacksToDependencies()
 			[this](const FPackagedInventory& InventoryContents)
 			{
 				UpdateInventory(InventoryContents);
+	
 			});
 	}
 
@@ -37,7 +40,10 @@ void UInventoryWidgetController::UpdateInventory(const FPackagedInventory& Inven
 {
 	if (IsValid(OwningInventory))
 	{
-		
+		if (UIB_GameInstance* IB_GameInstance = Cast<UIB_GameInstance>(UGameplayStatics::GetGameInstance(GetWorld())))
+		{
+			IB_GameInstance->SavePlayerInventory(OwningInventory);
+		}
 		//OwningInventory->ReConstructInventoryMap(InventoryContents);
 		BroadcastInventoryContents(InventoryContents);
 	}

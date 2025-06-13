@@ -20,6 +20,7 @@
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "../../ETC/Cannon/CannonSpawnManager.h"
 #include "../../ETC/Cannon/Cannon.h"
+#include "../IB_GameInstance.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Blueprint/UserWidget.h"
@@ -118,11 +119,17 @@ void AIB_RPGPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UIB_GameInstance* IB_GameInstance = Cast<UIB_GameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+	if (!IsValid(IB_GameInstance)) return;
+
 	if (IsValid(InventoryComponent))
 	{
+		if (!IB_GameInstance->SavedInventory.ItemTags.IsEmpty())
+		{
+			InventoryComponent->GetCachedInventory() = IB_GameInstance->SavedInventory;
+		}
 		InventoryComponent->bOwnerLocallyControlled = IsLocalController();
 	}
-	
 	
 	if (IsLocalController())
 	{

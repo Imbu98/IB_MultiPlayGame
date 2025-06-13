@@ -11,6 +11,7 @@ class UTextBlock;
 struct FGameplayTag;
 struct FMasterItemDefinition;
 class UW_DraggedImageItem;
+class UBorder;
 
 UENUM()
 enum EItemTypes : int8
@@ -39,6 +40,8 @@ public:
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UImage> IMG_SlotImage;
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<UBorder> Border_Frame;
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UTextBlock> Text_ItemQuantity;
 	UPROPERTY()
 	int32 SlotIndex;
@@ -59,6 +62,8 @@ public:
 	void SetItemImage(UTexture2D* ItemImage);
 	UFUNCTION()
 	void SetQuiantityText(int32 Quantity);
+	UFUNCTION()
+	void SetSlotRarityImg();
 
 	UFUNCTION()
 	void OnclickedActionButton();
@@ -70,6 +75,7 @@ public:
 
 	UFUNCTION()
 	void SetItem(const FMasterItemDefinition& NewItem);
+	
 
 	EItemTypes FilterCategoryTag(const FGameplayTag& Tag);
 	

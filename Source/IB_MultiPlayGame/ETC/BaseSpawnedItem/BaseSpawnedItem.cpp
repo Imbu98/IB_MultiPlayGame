@@ -5,6 +5,8 @@
 #include "../../Interfaces/InventoryInterface.h"
 #include "../../Character/IB_MainChar.h"
 
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "Components/CapsuleComponent.h"
 #include "Components\StaticMeshComponent.h"
 #include "Components/WidgetComponent.h"
@@ -27,7 +29,7 @@ ABaseSpawnedItem::ABaseSpawnedItem()
 	CapsuleComponent->SetupAttachment(ItemStaticMesh);
 
 	NiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraComponent"));
-	NiagaraComponent->SetupAttachment(ItemSKeletalMesh);
+	NiagaraComponent->SetupAttachment(ItemStaticMesh);
 
 	WidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("WidgetComponent"));
 	WidgetComponent->SetupAttachment(ItemStaticMesh);
@@ -54,8 +56,10 @@ FString ABaseSpawnedItem::InteractWith_Implementation(APlayerController* PlayerC
 			{
 				if (UInventoryComponent* InventoryComponent = IInventoryInterface::Execute_GetInventoryComponent(IB_RPGPlayerController))
 				{
-					InventoryComponent->AddItem(ItemDefinition.ItemTag, 1);
-					Destroy();
+					if (InventoryComponent->AddItem(ItemDefinition.ItemTag, 1,ItemDefinition))
+					{
+						Destroy();
+					}
 				}
 			}
 		}
@@ -66,47 +70,41 @@ FString ABaseSpawnedItem::InteractWith_Implementation(APlayerController* PlayerC
 
 void ABaseSpawnedItem::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (AIB_MainChar* IB_MainChar = Cast<AIB_MainChar>(OtherActor))
+	if (OtherActor == UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
 	{
-		if (OtherActor && OtherActor == IB_MainChar)
+		if (OtherActor->Implements<UInteractInterface>())
 		{
-			if (OtherActor->Implements<UInteractInterface>())
-			{
-				IInteractInterface::Execute_SetNPCActor(OtherActor, this);
-			}
+			IInteractInterface::Execute_SetNPCActor(OtherActor, this);
 		}
-		if (ItemOverlayMaterial && ItemStaticMesh)
-		{
-			ItemStaticMesh->SetOverlayMaterial(ItemOverlayMaterial);
-		}
-		if (WidgetComponent)
-		{
-			WidgetComponent->SetVisibility(true);
-		}
+	}
+	if (ItemOverlayMaterial && ItemStaticMesh)
+	{
+		ItemStaticMesh->SetOverlayMaterial(ItemOverlayMaterial);
+	}
+	if (WidgetComponent)
+	{
+		WidgetComponent->SetVisibility(true);
 	}
 }
 
 void ABaseSpawnedItem::OnComponentEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (AIB_MainChar* IB_MainChar = Cast<AIB_MainChar>(OtherActor))
+	if (OtherActor == UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
 	{
-		if (OtherActor && OtherActor == IB_MainChar)
+		if (OtherActor->Implements<UInteractInterface>())
 		{
-			if (OtherActor->Implements<UInteractInterface>())
-			{
-				IInteractInterface::Execute_SetNPCActor(OtherActor, nullptr);
-			}
+			IInteractInterface::Execute_SetNPCActor(OtherActor, nullptr);
 		}
-		if (ItemStaticMesh)
-		{
-			ItemStaticMesh->SetOverlayMaterial(nullptr);
-		}
+	}
+	if (ItemStaticMesh)
+	{
+		ItemStaticMesh->SetOverlayMaterial(nullptr);
+	}
 
 
-		if (WidgetComponent)
-		{
-			WidgetComponent->SetVisibility(false);
-		}
+	if (WidgetComponent)
+	{
+		WidgetComponent->SetVisibility(false);
 	}
 
 }
@@ -116,6 +114,7 @@ void ABaseSpawnedItem::InitializeWithTag(FGameplayTag InTag, EItemRarity ItemRar
 {
 	ItemDefinition.ItemRarity = ItemRarity;
 	ItemDefinition.ItemTag = InTag;
+	SetItemParams(InTag);
 	SetMeshFromTag(InTag);
 	MulticastSetDropEffect(ItemRarity);
 	
@@ -148,38 +147,97 @@ void ABaseSpawnedItem::SetMeshFromTag(FGameplayTag InItemTag)
 	}
 }
 
-void ABaseSpawnedItem::MulticastSetDropEffect(EItemRarity ItemRarity)
+void ABaseSpawnedItem::SetItemParams(FGameplayTag InItemTag)
+{
+	const FGameplayTag SwordTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Weapon.Sword"));
+	const FGameplayTag AxeTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Weapon.Axe"));
+
+	static const FString ContextString(TEXT("FindWeaponData"));
+
+	if (InItemTag.MatchesTag(SwordTag))
+	{
+		if (DT_SwordData)
+		{
+			TArray<FWeaponData*> AllRows;
+			DT_SwordData->GetAllRows<FWeaponData>(ContextString, AllRows);
+
+			for (const FWeaponData* Row : AllRows)
+			{
+				if (Row->Rarity == ItemDefinition.ItemRarity)
+				{
+					ItemDefinition.AbilityLevel = Row->DamageAbilityLevel;
+					ItemDefinition.Weight = Row->Weight;
+					break;
+				}
+			}
+		}
+	}
+	else if (InItemTag.MatchesTag(AxeTag))
+	{
+		if (DT_AxeData)
+		{
+			TArray<FWeaponData*> AllRows;
+			DT_AxeData->GetAllRows<FWeaponData>(ContextString, AllRows);
+
+			for (const FWeaponData* Row : AllRows)
+			{
+				if (Row->Rarity == ItemDefinition.ItemRarity)
+				{
+					ItemDefinition.AbilityLevel = Row->DamageAbilityLevel;
+					ItemDefinition.Weight = Row->Weight;
+					break;
+				}
+			}
+		}
+	}
+}
+
+// Client로 해도 되지만 일단 multicast
+void ABaseSpawnedItem::MulticastSetDropEffect_Implementation(EItemRarity ItemRarity)
 {
 	if (HasAuthority()) return;
 
-	//ItemDropEffect DataTable 만들어서 ITemDropEffect 설정
-	/*switch (ItemInfo.ItemRarity)
+	switch (ItemRarity)
 	{
-	case E_ItemRarity::Common:
+	case EItemRarity::Common:
 	{
-		ItemDropEffect = ItemProperty->Common_Drop_Effect;
-		break;
+		if (CommonDropEffect)
+		{
+			ItemDropEffect = CommonDropEffect;
+			break;
+		}
+		
 	}
-	case E_ItemRarity::Rare:
+	case EItemRarity::Rare:
 	{
-		ItemDropEffect = ItemProperty->Rare_Drop_Effect;
-		break;
+		if (RareDropEffect)
+		{
+			ItemDropEffect = RareDropEffect;
+			break;
+		}
+		
 	}
-	case E_ItemRarity::Epic:
+	case EItemRarity::Epic:
 	{
-		ItemDropEffect = ItemProperty->Epic_Drop_Effect;
-		break;
+		if (EpicDropEffect)
+		{
+			ItemDropEffect = EpicDropEffect;
+			break;
+		}
 	}
-	case E_ItemRarity::Legendary:
+	case EItemRarity::Legendary:
 	{
-		ItemDropEffect = ItemProperty->Legendary_Drop_Effect;
-		break;
+		if (LegendaryDropEffect)
+		{
+			ItemDropEffect = LegendaryDropEffect;
+			break;
+		}
 	}
 	default:
 		break;
-	}*/
+	}
 
-	if (ItemDropEffect)
+	if (NiagaraComponent&& ItemDropEffect)
 	{
 		NiagaraComponent->SetAsset(ItemDropEffect);
 		NiagaraComponent->Activate(true);

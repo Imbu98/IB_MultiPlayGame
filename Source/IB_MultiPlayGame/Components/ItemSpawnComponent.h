@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "../Inventory/ItemTypes.h"
 #include "ItemSpawnComponent.generated.h"
 
 class ABaseSpawnedItem;
-
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class IB_MULTIPLAYGAME_API UItemSpawnComponent : public UActorComponent

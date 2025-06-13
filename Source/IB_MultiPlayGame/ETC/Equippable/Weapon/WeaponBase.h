@@ -21,6 +21,9 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	FDamageEffectInfo DamageEffectInfo;
 
+	//DamageEffectInfo에 저장된 baseDamage가지고 데미지를 주면 된다
+
+
 	UPROPERTY(BlueprintReadWrite)
 	TArray<TObjectPtr<UAnimMontage>> WeaponAttackMontageArray;
 
@@ -35,6 +38,8 @@ private:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastSetWeaponMesh(USkeletalMesh* InMesh);
+
+
 	
 
 	

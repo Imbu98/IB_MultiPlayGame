@@ -26,6 +26,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Custom Values | Weapon")
 	FGameplayTag WeaponToSpawnTag;
 
+	UPROPERTY()
+	float WeaponDamage;
+
 private:
 	UPROPERTY()
 	TObjectPtr<AActor> AvatarActorFromInfo;

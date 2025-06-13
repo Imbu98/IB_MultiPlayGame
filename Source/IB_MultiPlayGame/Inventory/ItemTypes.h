@@ -45,9 +45,14 @@ struct FMasterItemDefinition : public FTableRowBase
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	int32 ItemQuantity;
 
-	
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
-	FText ItemName;
+	FName ItemID;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	int32 AbilityLevel;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float Weight;
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
 	TObjectPtr<UTexture2D> Icon;
@@ -61,11 +66,34 @@ struct FMasterItemDefinition : public FTableRowBase
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	EItemRarity ItemRarity;
 
+	bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
+	{
+		Ar << ItemID;
+		Ar << ItemQuantity;
+		Ar << AbilityLevel;
+		Ar << Weight;
+	
+		ItemTag.NetSerialize(Ar, Map, bOutSuccess);
+
+		uint8 RarityByte = static_cast<uint8>(ItemRarity);
+		Ar.SerializeBits(&RarityByte, 8);
+		if (Ar.IsLoading())
+		{
+			ItemRarity = static_cast<EItemRarity>(RarityByte);
+		}
+
+		bOutSuccess = true;
+		return true;
+	}
+
+	
 
 	FMasterItemDefinition() :
 		ItemTag(FGameplayTag::EmptyTag)
 		, ItemQuantity(0)
-		,ItemName(FText::FromString(TEXT("")))
+		, ItemID(NAME_None)
+		, AbilityLevel(0)
+		,Weight(0.f)
 		,Icon(nullptr)
 		,Description(FText::FromString(TEXT("")))
 		,ConsumableProps()
@@ -75,4 +103,48 @@ struct FMasterItemDefinition : public FTableRowBase
 	}
 };
 
+template<>
+struct TStructOpsTypeTraits<FMasterItemDefinition> : public TStructOpsTypeTraitsBase2<FMasterItemDefinition>
+{
+	enum
+	{
+		WithNetSerializer = true,
+	};
+};
+
+USTRUCT(BlueprintType)
+struct FWeaponData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTag WeaponTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EItemRarity Rarity;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 DamageAbilityLevel;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Weight;
+};
+
+USTRUCT(BlueprintType)
+struct FArmorData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FGameplayTag WeaponTag;
+
+	UPROPERTY()
+	EItemRarity Rarity;
+
+	UPROPERTY()
+	int32 DefenseAbilityLevel;
+
+	UPROPERTY()
+	float Weight;
+};
 

@@ -82,7 +82,6 @@ void UWeaponAttackAbility::SpawnAndAttachWeapon(const FWeaponParams& CurrentWeap
 			//Ability에서 damage effectInfo를 설정
 			FDamageEffectInfo DamageEffectInfo;
 			CaptureDamageEffectInfo(nullptr, DamageEffectInfo);
-			DamageEffectInfo.BaseDamage = SpawnedWeapon->DamageEffectInfo.BaseDamage;
 
 			SpawnedWeapon->DamageEffectInfo = DamageEffectInfo;
 			SpawnedWeapon->SetOwner(AvatarActorFromInfo);

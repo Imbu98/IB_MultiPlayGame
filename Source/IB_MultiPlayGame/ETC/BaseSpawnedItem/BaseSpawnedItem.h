@@ -8,6 +8,7 @@
 #include "BaseSpawnedItem.generated.h"
 
 class UNiagaraSystem;
+class UNiagaraComponent;
 
 UCLASS()
 class IB_MULTIPLAYGAME_API ABaseSpawnedItem : public AActor , public IInteractInterface
@@ -28,7 +29,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UCapsuleComponent* CapsuleComponent;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Item)
-	UNiagaraSystem* NiagaraComponent;
+	UNiagaraComponent* NiagaraComponent;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UWidgetComponent* WidgetComponent;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ItemMesh)
@@ -36,8 +37,20 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | DataTable")
 	UDataTable* DT_ItemData;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | DataTable")
+	UDataTable* DT_SwordData;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | DataTable")
+	UDataTable* DT_AxeData;
 	UPROPERTY()
-	UNiagaraSystem* ItemDropEffect;
+	TObjectPtr<UNiagaraSystem> ItemDropEffect;
+	UPROPERTY(EditAnywhere, Category = "Custom Values | DropEffect")
+	TObjectPtr<UNiagaraSystem>  CommonDropEffect;
+	UPROPERTY(EditAnywhere, Category = "Custom Values | DropEffect")
+	TObjectPtr<UNiagaraSystem>  RareDropEffect;
+	UPROPERTY(EditAnywhere, Category = "Custom Values | DropEffect")
+	TObjectPtr<UNiagaraSystem>  EpicDropEffect;
+	UPROPERTY(EditAnywhere, Category = "Custom Values | DropEffect")
+	TObjectPtr<UNiagaraSystem>  LegendaryDropEffect;
 	
 
 public:
@@ -56,6 +69,8 @@ public:
 	void InitializeWithTag(FGameplayTag InTag,EItemRarity ItemRarity);
 	UFUNCTION()
 	void SetMeshFromTag(FGameplayTag InItemTag);
+	UFUNCTION()
+	void SetItemParams(FGameplayTag InItemTag);
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastSetMeshFromTag(FGameplayTag InItemTag);
 	UFUNCTION(NetMulticast, Reliable)

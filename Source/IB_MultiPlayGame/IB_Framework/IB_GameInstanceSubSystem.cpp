@@ -51,12 +51,12 @@ FString UIB_GameInstanceSubSystem::RequestDungeonURL(const FString& BaseMapName)
 		if (!Instance.bLocked && Instance.CurrentPlayers < 4)
 		{
 			++Instance.CurrentPlayers;
-			return FString::Printf(TEXT("127.0.0.1:%d"), Instance.Port);
+			return FString::Printf(TEXT("192.168.0.135:%d"), Instance.Port);
 		}
 	}
 
 	int32 Port = LaunchNewDungeonServer(BaseMapName);
-	return FString::Printf(TEXT("127.0.0.1:%d"), Port);
+	return FString::Printf(TEXT("192.168.0.135:%d"), Port);
 }
 
 void UIB_GameInstanceSubSystem::LockInstance(int32 InstanceID)

@@ -99,15 +99,17 @@ void UW_Inventory::MakeItemRowWidget(const FPackagedInventory& PackagedInventory
 		// 태그가 유효한 아이템인 경우
 		if (PackagedInventory.ItemTags.IsValidIndex(i) &&
 			PackagedInventory.ItemQuantities.IsValidIndex(i) &&
-			PackagedInventory.ItemTags[i].IsValid())
+			PackagedInventory.ItemTags[i].IsValid()&&
+			PackagedInventory.ItemDefinitions[i].ItemTag.IsValid())
 		{
-			// 아이템 정보 가져오기
+			// 아이템 수량과 아이콘 정보만 가져오기
 			FMasterItemDefinition ItemData = InventoryComponent->GetItemDefinitionByTag(PackagedInventory.ItemTags[i]); // 이 함수는 OwningInventory 등에서 구현
+
 			ItemData.ItemQuantity = PackagedInventory.ItemQuantities[i];
 
 			SlotWidget->SetItemImage(ItemData.Icon);
 			SlotWidget->SetQuiantityText(ItemData.ItemQuantity);
-			SlotWidget->Item = ItemData;
+			SlotWidget->Item = PackagedInventory.ItemDefinitions[i];
 		}
 		else
 		{
@@ -143,7 +145,7 @@ void UW_Inventory::OnActionButtonClicked(const FMasterItemDefinition& Item)
 {
 	if (IsValid(InventoryComponent))
 	{
-		InventoryComponent->UseItem(Item.ItemTag,1);
+		InventoryComponent->UseItem(Item.ItemTag,1, Item);
 	}
 }
 
