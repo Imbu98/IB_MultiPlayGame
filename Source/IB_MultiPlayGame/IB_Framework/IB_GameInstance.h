@@ -9,8 +9,4 @@ class IB_MULTIPLAYGAME_API UIB_GameInstance : public UGameInstance
 {
 	GENERATED_BODY()
 	
-	UPROPERTY()
-	APlayerController* CachedLocalPlayerController;
-	
-	
 };

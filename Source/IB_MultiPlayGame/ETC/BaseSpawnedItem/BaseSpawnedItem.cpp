@@ -63,16 +63,16 @@ FString ABaseSpawnedItem::InteractWith_Implementation(APlayerController* PlayerC
 
 void ABaseSpawnedItem::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor == UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
+	if (AIB_MainChar* IB_MainChar = Cast<AIB_MainChar>(OtherActor))
 	{
-		if (OtherActor == UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
+		if (OtherActor && OtherActor == IB_MainChar)
 		{
 			if (OtherActor->Implements<UInteractInterface>())
 			{
 				IInteractInterface::Execute_SetNPCActor(OtherActor, this);
 			}
 		}
-		if (ItemOverlayMaterial&& ItemStaticMesh)
+		if (ItemOverlayMaterial && ItemStaticMesh)
 		{
 			ItemStaticMesh->SetOverlayMaterial(ItemOverlayMaterial);
 		}
@@ -85,10 +85,9 @@ void ABaseSpawnedItem::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedCo
 
 void ABaseSpawnedItem::OnComponentEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (OtherActor == UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
+	if (AIB_MainChar* IB_MainChar = Cast<AIB_MainChar>(OtherActor))
 	{
-
-		if (OtherActor == UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
+		if (OtherActor && OtherActor == IB_MainChar)
 		{
 			if (OtherActor->Implements<UInteractInterface>())
 			{
@@ -106,6 +105,7 @@ void ABaseSpawnedItem::OnComponentEndOverlap(UPrimitiveComponent* OverlappedComp
 			WidgetComponent->SetVisibility(false);
 		}
 	}
+
 }
 
 // on server

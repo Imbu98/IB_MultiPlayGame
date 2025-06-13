@@ -13,13 +13,15 @@ class IB_MULTIPLAYGAME_API AIB_RPGGameMode : public AGameMode
 {
 	GENERATED_BODY()
 
+protected:
+	virtual void BeginPlay() override;
+
 public:
 	UIB_CharacterClassInfo* GetCharacterClassDefaultInfo() const;
 	UProjectile_Info* GetProjectileInfo() const;
 	UWeapon_Info* GetWeaponInfo() const;
 
 private:
-
 	UPROPERTY(EditDefaultsOnly,Category="Custom Values|Class Defaults")
 	TObjectPtr<UIB_CharacterClassInfo> ClassDefaults;
 
@@ -28,6 +30,19 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Custom Values|Weapons")
 	TObjectPtr<UWeapon_Info> WeaponInfo;
+	UPROPERTY()
+	int32 GameModePortNumber;
+
+	void HandleDungeonClear();
+
+public:
+
+	UPROPERTY()
+	TSet<APlayerController*> ActiveControllers;
+
+	virtual void Logout(AController* Exiting) override;
+	void PostLogin(APlayerController* NewPlayer) override;
+	
 	
 	
 	

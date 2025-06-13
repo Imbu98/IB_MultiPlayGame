@@ -10,6 +10,7 @@
 #include "IB_MultiPlayGame/Widget/W_Overlay.h"
 #include "../IB_Framework/IB_GameInstance.h"
 #include "../IB_Framework/IB_GAS/IB_RPGAbilitySystemComponent.h"
+#include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 #include "IB_NPCBase.h"
 #include "IB_MultiPlayGame/ETC/Object/StrangeObject.h"
 #include "../ETC/BaseSpawnedItem/BaseSpawnedItem.h"
@@ -73,8 +74,6 @@ void AIB_MainChar::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& O
 	DOREPLIFETIME(AIB_MainChar, CharacterState);
 	DOREPLIFETIME(AIB_MainChar, LookatActor);
 	DOREPLIFETIME(AIB_MainChar, QuestObjectiveId);
-
-
 }
 
 USceneComponent* AIB_MainChar::GetDynamicSpawnPoint_Implementation()
@@ -82,38 +81,33 @@ USceneComponent* AIB_MainChar::GetDynamicSpawnPoint_Implementation()
 	return DynamicProjectileSpawnPoint;
 }
 
+
+void AIB_MainChar::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AIB_MainChar::Move);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AIB_MainChar::MoveStop);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AIB_MainChar::Look);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AIB_MainChar::PlayerInteraction);
+	}
+}
+
 void AIB_MainChar::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (IsLocallyControlled())
-	{
-		InitOverlay();
-	}
-
-	if (HasAuthority())
-	{
-		BroadCastInitialValues();
-	}
-	else
-	{
-		FTimerHandle TimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle,[this]()
-		{
-			BroadCastInitialValues();
-		},0.5f,false);
-			
-	}
+	
 }
 
 void AIB_MainChar::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	if (HasAuthority())
-	{
-		InitAbilityActorInfo();
-	}
 }
 
 void AIB_MainChar::OnRep_PlayerState()
@@ -125,17 +119,24 @@ void AIB_MainChar::OnRep_PlayerState()
 
 void AIB_MainChar::OnHealthChanged(float CurrentHealth, float MaxHealth)
 {
-	if (OverlayWidgetRef)
+	if(AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(GetOwner()))
 	{
-		OverlayWidgetRef->SetHealthBar(CurrentHealth, MaxHealth);
+		if (IB_RPGPlayerController->WBP_OverlayWidget)
+		{
+			IB_RPGPlayerController->WBP_OverlayWidget->SetHealthBar(CurrentHealth, MaxHealth);
+		}
 	}
+	
 }
 
 void AIB_MainChar::OnManaChanged(float CurrentMana, float MaxMana)
 {
-	if (OverlayWidgetRef)
+	if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(GetOwner()))
 	{
-		OverlayWidgetRef->SetManaBar(CurrentMana, MaxMana);
+		if (IB_RPGPlayerController->WBP_OverlayWidget)
+		{
+			IB_RPGPlayerController->WBP_OverlayWidget->SetManaBar(CurrentMana, MaxMana);
+		}
 	}
 	
 }
@@ -319,21 +320,6 @@ void AIB_MainChar::BroadCastInitialValues()
 	}
 }
 
-void AIB_MainChar::InitOverlay()
-{
-	if(WBP_Overlay)
-	{
-		if (APlayerController* PC = Cast<APlayerController>(Controller))
-		{
-			OverlayWidgetRef = CreateWidget<UW_Overlay>(PC,WBP_Overlay);
-		
-			if (OverlayWidgetRef)
-			{
-				OverlayWidgetRef->AddToViewport(0);
-			}
-		}
-	}
-}
 EInteractObjective AIB_MainChar::DetermineInteractObjective(AActor* InteractObjective)
 {
 	if (AIB_NPCBase* NPCBase = Cast<AIB_NPCBase>(InteractObjective))
@@ -366,22 +352,6 @@ UAbilitySystemComponent* AIB_MainChar::GetAbilitySystemComponent() const
 void AIB_MainChar::ServerSetCharacterState_Implementation(EIB_CharCycle NewState)
 {
 	CharacterState=NewState;
-}
-
-
-void AIB_MainChar::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
-	{
-		EnhancedInputComponent->BindAction(MoveAction,ETriggerEvent::Triggered,this,&AIB_MainChar::Move);
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AIB_MainChar::MoveStop);
-		EnhancedInputComponent->BindAction(LookAction,ETriggerEvent::Triggered,this,&AIB_MainChar::Look);
-		EnhancedInputComponent->BindAction(JumpAction,ETriggerEvent::Triggered,this,&ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction,ETriggerEvent::Completed,this,&ACharacter::StopJumping);
-		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AIB_MainChar::PlayerInteraction);
-	}
 }
 
 void AIB_MainChar::Move(const FInputActionValue& Value)

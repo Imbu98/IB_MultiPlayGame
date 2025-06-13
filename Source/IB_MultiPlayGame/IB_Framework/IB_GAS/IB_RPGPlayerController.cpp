@@ -12,6 +12,8 @@
 #include "../../Widget/W_LocationNotify.h"
 #include "../../Widget/W_QuestNotification.h"
 #include "../../Widget/W_QuestRewards.h"
+#include "../../Widget/W_CannonWidget.h"
+#include "../../Widget/W_Overlay.h"
 #include "../../Input/RPGSystemsInputComponents.h"
 #include "IB_RPGPlayerState.h"
 #include "IB_RPGAbilitySystemComponent.h"
@@ -30,6 +32,7 @@
 #include "AIController.h"
 #include "Kismet\GameplayStatics.h"
 
+DEFINE_LOG_CATEGORY(Imbu);
 
 AIB_RPGPlayerController::AIB_RPGPlayerController()
 {
@@ -97,6 +100,7 @@ void AIB_RPGPlayerController::SetupInputComponent()
 
 }
 
+
 UInventoryComponent* AIB_RPGPlayerController::GetInventoryComponent_Implementation()
 {
 	return InventoryComponent;
@@ -122,6 +126,8 @@ void AIB_RPGPlayerController::BeginPlay()
 	
 	if (IsLocalController())
 	{
+		ClientSwitchWidget();
+
 		FTimerHandle TimerHandle;
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
 		{
@@ -292,6 +298,7 @@ void AIB_RPGPlayerController::ServerSpawnCannonRequest_Implementation()
 	}
 }
 
+
 void AIB_RPGPlayerController::SwitchController()
 {
 	if (!HasAuthority())
@@ -308,27 +315,97 @@ void AIB_RPGPlayerController::SwitchController()
 			{
 				if (IsOnCannon == false)
 				{
-					Possess(OwningCannon);
-					IsOnCannon = true;
-					ClientSwitchInputMapping(IsOnCannon, CachedIB_MainChar, OwningCannon);
-					//IBPlayerController->ClosePlayerWidget();
+				// possess to cannon
+				IsOnCannon = true;
+				Possess(OwningCannon);
+				
+					FTimerHandle TimerHandle;
+					GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
+						{
+							ClientSwitchWidget();
+							ClientSwitchInputMapping(IsOnCannon, CachedIB_MainChar, OwningCannon);
+						}, 0.2f, false);
 				}
+				
 			}
 			else
 			{
 				UE_LOG(LogTemp, Warning, TEXT("AIB_RPGPlayerController::SwitchController : No OwningCannon"));
 			}
 		}
-		// 지금 controlled pawn이 ACannon일 때
+		// possess to IB_MainChar
 		else if (ACannon* Cannon = Cast<ACannon>(GetPawn()))
 		{
-			Possess(CachedIB_MainChar);
 			IsOnCannon = false;
-			//IBPlayerController->OpenPlayerWidget();
-
-			ClientSwitchInputMapping(IsOnCannon, CachedIB_MainChar, OwningCannon);
+			Possess(CachedIB_MainChar);
+			FTimerHandle TimerHandle;
+			GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
+				{
+					ClientSwitchWidget();
+					ClientSwitchInputMapping(IsOnCannon, CachedIB_MainChar, OwningCannon);
+				}, 0.5f, false);
+			
+			
 		}
-	
+}
+
+void AIB_RPGPlayerController::ClientSwitchWidget_Implementation()
+{
+	if (ACannon* Cannon = Cast<ACannon>(GetPawn()))
+	{
+		if (WBP_CannonWidgetClass)
+		{
+			if (WBP_CannonWidget = CreateWidget<UW_CannonWidget>(this, WBP_CannonWidgetClass))
+			{
+				WBP_CannonWidget->AddToViewport();
+			}
+		}
+		if (WBP_OverlayWidget)
+		{
+			WBP_OverlayWidget->RemoveFromParent();
+		}
+		
+	}
+	else if (AIB_MainChar* IB_MainChar = Cast<AIB_MainChar>(GetPawn()))
+	{
+		if (WBP_OverlayWidgetClass)
+		{
+			WBP_OverlayWidget = CreateWidget<UW_Overlay>(this, WBP_OverlayWidgetClass);
+
+			if (WBP_OverlayWidget)
+			{
+				WBP_OverlayWidget->AddToViewport(0);
+				HandleCharValues(IB_MainChar);
+				ServerInitCharValues(IB_MainChar);
+			}
+		}
+		if (WBP_CannonWidget)
+		{
+			WBP_CannonWidget->RemoveFromParent();
+		}
+	}
+}
+
+void AIB_RPGPlayerController::ServerInitCharValues_Implementation(AIB_MainChar* MainChar)
+{
+	if (MainChar)
+	{
+		HandleCharValues(MainChar);
+	}
+}
+void AIB_RPGPlayerController::HandleCharValues(AIB_MainChar* MainChar)
+{
+	if (MainChar)
+	{
+		MainChar->InitAbilityActorInfo();
+
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this,MainChar]()
+			{
+				MainChar->BroadCastInitialValues();
+			}, 0.3f, false);
+		
+	}
 }
 
 void AIB_RPGPlayerController::ServerSwitchController_Implementation()

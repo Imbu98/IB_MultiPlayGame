@@ -26,7 +26,10 @@ class UW_QuestRewards;
 class UW_QuestNotification;
 class ACannon;
 class AIB_MainChar;
+class UW_CannonWidget;
+class UW_Overlay;
 
+DECLARE_LOG_CATEGORY_EXTERN(Imbu, Log, All);
 
 UCLASS()
 class IB_MULTIPLAYGAME_API AIB_RPGPlayerController : public APlayerController, public IAbilitySystemInterface , public IInventoryInterface , public IRPGAbilitySystemInterface
@@ -117,10 +120,26 @@ public:
 	UPROPERTY()
 	TObjectPtr<UW_QuestNotification> WBP_QuestNotificationWidget;
 
+	UPROPERTY(EditAnywhere, Category = "Custom Values | Widget")
+	TSubclassOf<UW_CannonWidget> WBP_CannonWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UW_CannonWidget> WBP_CannonWidget;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Custom Values | Widget")
+	TSubclassOf<UUserWidget> WBP_OverlayWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UW_Overlay> WBP_OverlayWidget;
+
+	
+
+	
+	
 public:
 	UPROPERTY(Replicated)
 	bool bAlreadyQuest;
-	UPROPERTY();
+	UPROPERTY(Replicated);
 	bool IsOnCannon=false;
 	UPROPERTY();
 	TObjectPtr<ACannon> OwningCannon;
@@ -128,6 +147,7 @@ public:
 	TObjectPtr<AIB_MainChar> CachedIB_MainChar;
 
 public:
+	// Relevance On Quest
 	UFUNCTION(BlueprintCallable)
 	void DisplayQuestLog();
 
@@ -142,14 +162,24 @@ public:
 	void ClientDisplayLocationNotification(const FText& LocationName);
 
 public:
+
+	// relevance On Cannon
 	UFUNCTION()
 	void SwitchController();
 	UFUNCTION(Server,Reliable)
+	void ServerInitCharValues(AIB_MainChar* MainChar);
+	UFUNCTION(Server,Reliable)
 	void ServerSwitchController();
+	UFUNCTION()
+	void HandleCharValues(AIB_MainChar* MainChar);
+	UFUNCTION(Client, Reliable)
+	void ClientSwitchWidget();
 	UFUNCTION(Server,Reliable)
 	void ServerSpawnCannonRequest();
 	UFUNCTION(Client, Reliable)
 	void ClientSwitchInputMapping(bool OnCannon, AIB_MainChar* IBMainChar,ACannon* Cannon);
+
+	
 
 };
 

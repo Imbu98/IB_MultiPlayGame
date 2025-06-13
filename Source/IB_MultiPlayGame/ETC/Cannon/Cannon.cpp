@@ -2,6 +2,7 @@
 
 #include "../../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 #include "../../Character/IB_MainChar.h"
+#include "../../Widget/W_CannonWidget.h"
 
 #include "GameFramework\Character.h"
 #include "Kismet\GameplayStatics.h"
@@ -90,6 +91,10 @@ void ACannon::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLif
 
 	DOREPLIFETIME(ACannon, IB_RPGPlayerController);
 	DOREPLIFETIME(ACannon, IB_MainChar);
+	DOREPLIFETIME(ACannon, CurrentCannonPower);
+	DOREPLIFETIME(ACannon, IsOnCharging);
+	
+	
 }
 
 void ACannon::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -154,9 +159,18 @@ void ACannon::ClientSetCannonInfo_Implementation(AIB_RPGPlayerController* IB_Pla
 void ACannon::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-	UE_LOG(LogTemp, Warning, TEXT("PossessedBy: %s"), *NewController->GetName());
+
+	FRotator NewRotation = FRotator(0.f, 0.f, 0.f); // Pitch, Yaw, Roll
+	SetActorRotation(NewRotation);
+	
+
 }
 
+void ACannon::UnPossessed()
+{
+	Super::UnPossessed();
+
+}
 
 void ACannon::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -270,25 +284,48 @@ void ACannon::CannonCameraMove(const FInputActionValue& Value)
 
 void ACannon::ChargeCannonPower()
 {
-	IsOnCharging = true;
-	CurrentCannonPower += ChargePowerSpeed * GetWorld()->GetDeltaSeconds();
-	if (CurrentCannonPower >= MaxCannonPower)
+	if (!HasAuthority())
 	{
-		CurrentCannonPower = MaxCannonPower;
+		ServerChargeCannonPower(CurrentCannonPower,MaxCannonPower,ChargePowerSpeed);
+		return;
 	}
-	//UpdateChargeBar();
+}
 
+void ACannon::ServerChargeCannonPower_Implementation(float CurrentPower, const float MaxPower, const float CharagePower)
+{
+	IsOnCharging = true;
+	CurrentPower += CharagePower * GetWorld()->GetDeltaSeconds();
+	if (CurrentPower >= MaxPower)
+	{
+		CurrentPower = MaxPower;
+	}
+	ClientSetCannonPower(CurrentPower);
+}
+
+void ACannon::ClientSetCannonPower_Implementation(const float CurrentPower)
+{
+	CurrentCannonPower = CurrentPower;
 }
 
 void ACannon::ShootChar()
 {
+	if (!HasAuthority())
+	{
+		ServerShootChar(CurrentCannonPower);
+	}
+}
+
+void ACannon::ServerShootChar_Implementation(const float InCannonPowner)
+{
+	if (!HasAuthority()) return;
+
 	if (IB_MainChar)
 	{
 		if (CannonMuzzle != nullptr)
 		{
 			//float ApplyWeight = IBChar->InventoryComponents->InventoryWeightAmount;
 
-			FVector ForwardVector = CannonMuzzle->GetForwardVector() * (CurrentCannonPower);
+			FVector ForwardVector = CannonMuzzle->GetForwardVector() * (InCannonPowner);
 			//FVector UpVector = CannonMuzzle->GetUpVector()*(CurrentCannonPower);
 			FVector ShootingVector = (ForwardVector * 100.f);//(ApplyWeight/50.f);
 			IB_MainChar->SetActorLocation(CannonMuzzle->GetComponentLocation());
@@ -303,13 +340,25 @@ void ACannon::ShootChar()
 				{
 					//this->IB_MainChar->PlayFlyingAnimation();
 				}, 0.1f, false);
-
+		
 
 			CurrentCannonPower = 0.0f;
 			IsOnCharging = false;
-
+			ClientSetCannonProperty(CurrentCannonPower, IsOnCharging);
 		}
 	}
+}
+
+void ACannon::ClientSetCannonProperty_Implementation(const float InCannonPowner, const bool InCannonCharging)
+{
+	IsOnCharging = InCannonCharging;
+	CurrentCannonPower = InCannonPowner;
+}
+
+void ACannon::OnRep_CannonShootPower()
+{
+	UE_LOG(LogTemp, Warning, TEXT("ServerShootChar Executed! Power: %f"), CurrentCannonPower);
+	// 할 일 : UI만들기
 	//UpdateChargeBar();
 }
 
@@ -317,6 +366,7 @@ void ACannon::CannonTakeOff()
 {
 	ServerSwithchController();
 }
+
 
 void ACannon::ServerSwithchController_Implementation()
 {

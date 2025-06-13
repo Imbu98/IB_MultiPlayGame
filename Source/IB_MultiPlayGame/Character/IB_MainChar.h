@@ -10,6 +10,7 @@
 
 class UIB_RPGAbilitySystemComponent;
 class UIB_RPGAttributeSet;
+class UW_Overlay;
 
 UENUM(BlueprintType)
 enum class EIB_CharCycle : uint8
@@ -72,6 +73,11 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ServerSetNPCActor(AActor* NPCActor);
 
+	UFUNCTION(BlueprintCallable)
+	void BroadCastInitialValues();
+
+	virtual void InitAbilityActorInfo() override;
+
 public:
 
 	virtual void NotifyControllerChanged() override;
@@ -98,11 +104,6 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	EIB_CharCycle CharacterCycle;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<UUserWidget> WBP_Overlay;
-	
-	UPROPERTY()
-	class UW_Overlay* OverlayWidgetRef;
 	
 	UPROPERTY(BlueprintReadWrite,Replicated)
 	AActor* LookatActor;
@@ -113,8 +114,6 @@ public:
 	UPROPERTY(Replicated)
 	FString QuestObjectiveId;
 
-
-
 protected:
 	void Move(const FInputActionValue& Value);
 	
@@ -122,7 +121,7 @@ protected:
 
 	void MoveStop();
 
-	virtual void InitAbilityActorInfo() override;
+	
 
 	void BindCallbacksToDependencies() override;
 
@@ -134,6 +133,7 @@ protected:
 
 	UFUNCTION()
 	EInteractObjective DetermineInteractObjective(AActor* InteractObjective);
+
 
 private:
 	UPROPERTY(VisibleAnywhere,meta= (AllowPrivateAccess=true))
@@ -152,15 +152,7 @@ private:
 	void SereverPlayerInteraction();
 
 	UFUNCTION(BlueprintCallable)
-	void BroadCastInitialValues();
-	UFUNCTION()
-	void InitOverlay();
-	UFUNCTION(BlueprintCallable)
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-
-
-
-
 	
 };
 

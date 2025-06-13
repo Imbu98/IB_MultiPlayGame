@@ -9,6 +9,7 @@
 class UBoxComponent;
 class AIB_MainChar;
 class AIB_RPGPlayerController;
+class UW_CannonWidget;
 
 UCLASS()
 class IB_MULTIPLAYGAME_API ACannon : public APawn , public IInteractInterface
@@ -33,6 +34,9 @@ public:
 	virtual FString InteractWith_Implementation(APlayerController* PlayerController) override;
 
 	virtual void PossessedBy(AController* NewController) override;
+
+	virtual void UnPossessed() override;
+	
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -72,18 +76,21 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input")
 	class UInputAction* IA_TakeOff;
 
+	
+	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float CannonRotationSpeed;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float ChargePowerSpeed;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Replicated)
 	bool IsOnCharging = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<AActor> BoardingActor = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CannonProperty")
 	float MaxCannonPower;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CannonProperty")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CannonProperty", ReplicatedUsing = OnRep_CannonShootPower)
 	float CurrentCannonPower = 0;
 
 public:
@@ -93,15 +100,24 @@ public:
 	void CannonCameraMove(const FInputActionValue& Value);
 	UFUNCTION()
 	void ChargeCannonPower();
+	UFUNCTION(Server,Reliable)
+	void ServerChargeCannonPower(float CurrentPower,const float MaxPower,const float CharagePower);
+	UFUNCTION(Client,Reliable)
+	void ClientSetCannonPower(const float CurrentPower);
 	UFUNCTION()
 	void ShootChar();
+	UFUNCTION(Server,Reliable)
+	void ServerShootChar(const float InCannonPowner);
+	UFUNCTION(Client, Reliable)
+	void ClientSetCannonProperty(const float InCannonPowner,const bool InCannonCharging);
+	UFUNCTION()
+	void OnRep_CannonShootPower();
 	UFUNCTION()
 	void CannonTakeOff();
 	UFUNCTION(Server,Reliable)
 	void ServerSwithchController();
 	UFUNCTION(Client, Reliable)
 	void ClientSetCannonInfo(AIB_RPGPlayerController* IB_PlayerController, AIB_MainChar* MainChar);
-
 
 
 public:
