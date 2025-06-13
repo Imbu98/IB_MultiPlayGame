@@ -7,6 +7,8 @@
 #include "GameplayTagContainer.h"
 #include "BaseSpawnedItem.generated.h"
 
+class UNiagaraSystem;
+
 UCLASS()
 class IB_MULTIPLAYGAME_API ABaseSpawnedItem : public AActor , public IInteractInterface
 {
@@ -22,9 +24,11 @@ protected:
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UStaticMeshComponent* ItemStaticMesh;
+	TObjectPtr<UStaticMeshComponent> ItemStaticMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UCapsuleComponent* CapsuleComponent;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Item)
+	UNiagaraSystem* NiagaraComponent;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UWidgetComponent* WidgetComponent;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ItemMesh)
@@ -32,6 +36,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | DataTable")
 	UDataTable* DT_ItemData;
+	UPROPERTY()
+	UNiagaraSystem* ItemDropEffect;
 	
 
 public:
@@ -52,7 +58,8 @@ public:
 	void SetMeshFromTag(FGameplayTag InItemTag);
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastSetMeshFromTag(FGameplayTag InItemTag);
-
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSetDropEffect(EItemRarity ItemRarity);
 	
 
 };
