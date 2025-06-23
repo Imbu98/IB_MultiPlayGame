@@ -168,7 +168,7 @@ void AEnemyBaseChar::InitEnemyOverHeadBars()
 
 						OverHeadBars->SetProgressBarPercent(IB_RPGAttributeSet->GetHealth(), IB_RPGAttributeSet->GetMaxHealth());
 
-					}, 0.5f, false);
+					}, 1.0f, false);
 			}
 
 		}

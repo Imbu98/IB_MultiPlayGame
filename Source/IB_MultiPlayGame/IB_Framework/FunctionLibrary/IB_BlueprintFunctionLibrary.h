@@ -9,6 +9,7 @@
 class UIB_CharacterClassInfo;
 class UProjectile_Info;
 class UWeapon_Info;
+class UArmorInfo;
 class AIB_MainChar;
 class AIB_RPGPlayerController;
 
@@ -28,6 +29,9 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	static UWeapon_Info* GetWeaponInfo(const UObject* WorldContextObject);
+
+	UFUNCTION(BlueprintPure)
+	static UArmorInfo* GetArmorInfo(const UObject* WorldContextObject);
 
 	UFUNCTION(BlueprintCallable)
 	static void ApplyDamageEffect(const FDamageEffectInfo& DamageEffectInfo);

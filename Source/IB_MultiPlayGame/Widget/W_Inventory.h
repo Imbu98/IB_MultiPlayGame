@@ -10,6 +10,7 @@ class UTextBlock;
 struct FMasterItemDefinition;
 class UW_ItemRow;
 class UW_InventorySlot;
+class UW_EquippedItemSlot;
 
 UCLASS()
 class IB_MULTIPLAYGAME_API UW_Inventory : public UW_RPGSystemWidget
@@ -33,6 +34,10 @@ public:
 	TSubclassOf<UW_ItemRow> WBP_ItemRowClass;
 	UPROPERTY()
 	TArray<UW_ItemRow*> ActiveItemWidgets;*/
+
+
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<UW_EquippedItemSlot> WBP_EquippedItemSlot;
 
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UWrapBox> WB_InventoryContents;
@@ -70,6 +75,8 @@ public:
 
 	UFUNCTION()
 	void MakeItemRowWidget(const FPackagedInventory& PackagedInventory);
+	UFUNCTION()
+	void SetEquippedItemWidget(const FMasterItemDefinition& ItemInfo);
 
 
 };

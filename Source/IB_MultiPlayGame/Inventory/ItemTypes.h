@@ -39,39 +39,47 @@ struct FMasterItemDefinition : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
 	FGameplayTag ItemTag;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	int32 ItemQuantity;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FName ItemID;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	int32 AbilityLevel;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float  ArmorDefense;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float  WeaponAttackPower;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float Weight;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	TObjectPtr<UTexture2D> Icon;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FText Description;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FConsumableProps ConsumableProps;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	EItemRarity ItemRarity;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	bool bStackable;
 
 	bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
 	{
 		Ar << ItemID;
 		Ar << ItemQuantity;
-		Ar << AbilityLevel;
+		Ar << WeaponAttackPower;
+		Ar << ArmorDefense;
 		Ar << Weight;
+		Ar << bStackable;
 	
 		ItemTag.NetSerialize(Ar, Map, bOutSuccess);
 
@@ -92,12 +100,14 @@ struct FMasterItemDefinition : public FTableRowBase
 		ItemTag(FGameplayTag::EmptyTag)
 		, ItemQuantity(0)
 		, ItemID(NAME_None)
-		, AbilityLevel(0)
-		,Weight(0.f)
-		,Icon(nullptr)
-		,Description(FText::FromString(TEXT("")))
-		,ConsumableProps()
-		,ItemRarity(EItemRarity::None)
+		, ArmorDefense(0.f)
+		, WeaponAttackPower(0.f)
+		, Weight(0.f)
+		, Icon(nullptr)
+		, Description(FText::FromString(TEXT("")))
+		, ConsumableProps()
+		, ItemRarity(EItemRarity::None)
+		, bStackable(false)
 	{
 
 	}
@@ -121,13 +131,11 @@ struct FWeaponData : public FTableRowBase
 	FGameplayTag WeaponTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EItemRarity Rarity;
+	TMap<EItemRarity, float > WeaponAttackPowerMap;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 DamageAbilityLevel;
+	TMap<EItemRarity, float> WeaponWeightMap;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float Weight;
 };
 
 USTRUCT(BlueprintType)
@@ -135,16 +143,13 @@ struct FArmorData : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY()
-	FGameplayTag WeaponTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTag ArmorTag;
 
-	UPROPERTY()
-	EItemRarity Rarity;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TMap<EItemRarity, float> ArmorDefenseMap;
 
-	UPROPERTY()
-	int32 DefenseAbilityLevel;
-
-	UPROPERTY()
-	float Weight;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TMap<EItemRarity,float> ArmorWeightMap;
 };
 

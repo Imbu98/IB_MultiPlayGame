@@ -12,6 +12,7 @@ struct FGameplayTag;
 struct FMasterItemDefinition;
 class UW_DraggedImageItem;
 class UBorder;
+class UInventoryComponent;
 
 UENUM()
 enum EItemTypes : int8
@@ -47,6 +48,8 @@ public:
 	int32 SlotIndex;
 	UPROPERTY(EditAnywhere,Category="Image")
 	TObjectPtr<UTexture2D> SlotItemImage;
+	UPROPERTY()
+	TObjectPtr<UInventoryComponent> InventoryComponent;
 
 	UPROPERTY(EditAnywhere,Category="CustomValues|Widget")
 	TSubclassOf<UW_DraggedImageItem> WBP_DraggedImageItemClass;

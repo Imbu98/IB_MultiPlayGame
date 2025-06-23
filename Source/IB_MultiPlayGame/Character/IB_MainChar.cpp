@@ -30,6 +30,7 @@
 AIB_MainChar::AIB_MainChar()
 {
 	bReplicates=true;
+	SetReplicateMovement(true);
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
@@ -115,6 +116,7 @@ void AIB_MainChar::OnRep_PlayerState()
 	Super::OnRep_PlayerState();
 
 	InitAbilityActorInfo();
+		
 }
 
 void AIB_MainChar::OnHealthChanged(float CurrentHealth, float MaxHealth)
@@ -344,7 +346,15 @@ EInteractObjective AIB_MainChar::DetermineInteractObjective(AActor* InteractObje
 
 UAbilitySystemComponent* AIB_MainChar::GetAbilitySystemComponent() const
 {
+	
 	return IB_RPGAbilitySystemComponent;
+}
+
+void AIB_MainChar::MulticastPlayMontage_Implementation(UAnimMontage* ToPlayMontage)
+{
+	if (HasAuthority()) return;
+
+	GetMesh()->GetAnimInstance()->Montage_Play(ToPlayMontage, 1.0f);
 }
 
 

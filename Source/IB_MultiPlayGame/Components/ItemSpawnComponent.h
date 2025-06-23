@@ -19,7 +19,7 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "Custom Values|DataTable")
+	UPROPERTY(EditAnywhere, Category = "Custom Values|DataTable")
 	UDataTable* DT_DropItemTypeProbability;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | DataTable")
 	UDataTable* DT_EquppableTypeProbability;

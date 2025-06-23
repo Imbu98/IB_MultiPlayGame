@@ -1,7 +1,12 @@
 #include "WeaponAttackAbility.h"
 #include "../Data/Weapon_Info.h"
+#include "../Data/ArmorInfo.h"
 #include "../../FunctionLibrary/IB_BlueprintFunctionLibrary.h"
 #include "../../../ETC/Equippable/Weapon/WeaponBase.h"
+#include "../../../Character/IB_MainChar.h"
+#include "../IB_RPGAbilitySystemComponent.h"
+#include "../IB_RPGPlayerController.h"
+#include "../../../Components/CombatComponent.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
@@ -23,16 +28,17 @@ void UWeaponAttackAbility::OnGiveAbility(const FGameplayAbilityActorInfo* ActorI
 	Super::OnGiveAbility(ActorInfo, Spec);
 
 	AvatarActorFromInfo = GetAvatarActorFromActorInfo();
-
+	
 	if (!WeaponToSpawnTag.IsValid() || !IsValid(AvatarActorFromInfo))
 	{
 		return;
 	}
-
 	if (UWeapon_Info* WeaponInfo = UIB_BlueprintFunctionLibrary::GetWeaponInfo(AvatarActorFromInfo))
 	{
+		
 		CurrentWeaponParams = *WeaponInfo->WeaponMap.Find(WeaponToSpawnTag);
 	}
+
 	
 	// 클라에서 currentweaponparams 정보들로 스폰
 	if (AvatarActorFromInfo->HasAuthority())
@@ -47,13 +53,12 @@ void UWeaponAttackAbility::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 
 	if (HasAuthority(&ActivationInfo))
 	{
-		WeaponAttack();
-
 		FTimerHandle TimerHandle;
 		const FGameplayAbilitySpecHandle HandleCopy = Handle;
 		const FGameplayAbilityActorInfo* ActorInfoCopy = ActorInfo;
 		const FGameplayAbilityActivationInfo ActivationInfoCopy = ActivationInfo;
 
+		WeaponAttack();
 
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, HandleCopy, ActorInfoCopy, ActivationInfoCopy]()
 			{
@@ -80,10 +85,6 @@ void UWeaponAttackAbility::SpawnAndAttachWeapon(const FWeaponParams& CurrentWeap
 			SpawnedWeapon->SetReplicates(true);
 			SpawnedWeapon->SetWeaponParams(CurrentWeaponParamsRef);
 			//Ability에서 damage effectInfo를 설정
-			FDamageEffectInfo DamageEffectInfo;
-			CaptureDamageEffectInfo(nullptr, DamageEffectInfo);
-
-			SpawnedWeapon->DamageEffectInfo = DamageEffectInfo;
 			SpawnedWeapon->SetOwner(AvatarActorFromInfo);
 			SpawnedWeapon->FinishSpawning(SpawnTransform);
 
@@ -101,17 +102,28 @@ void UWeaponAttackAbility::SpawnAndAttachWeapon(const FWeaponParams& CurrentWeap
 
 void UWeaponAttackAbility::WeaponAttack()
 {
-	// combatcomponent에서 처리하자
-	if (!CurrentWeaponParams.WeaponAttackMontageArray.IsEmpty())
+	if (!IsValid(AvatarActorFromInfo)) return;
+
+	AIB_MainChar* IB_MainChar = Cast<AIB_MainChar>(AvatarActorFromInfo);
+	if (!IsValid(IB_MainChar)) return;
+	
+
+	if (AIB_RPGPlayerController* IB_PlayerController= Cast<AIB_RPGPlayerController>(AvatarActorFromInfo->GetOwner()))
 	{
-		UAbilityTask_PlayMontageAndWait* MontageTask =
-			UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-				this,               
-				NAME_None,          
-				CurrentWeaponParams.WeaponAttackMontageArray[0],
-				1.0f,                
-				FName("Start"),      
-				false               
-			);
+		if (UCombatComponent* CombatComponent = IB_PlayerController->GetCombatComponent())
+		{
+			int32 AttackIndex = CombatComponent->AttackCount;
+
+			if (CurrentWeaponParams.WeaponAttackMontageArray.Num() > 0)
+			{
+				IB_MainChar->MulticastPlayMontage(CurrentWeaponParams.WeaponAttackMontageArray[AttackIndex]);
+				CombatComponent->AttackCount++;
+
+				if (AttackIndex >= CurrentWeaponParams.WeaponAttackMontageArray.Num() - 1)
+				{
+					CombatComponent->ResetAttack();
+				}
+			}
+		}
 	}
 }

@@ -153,6 +153,10 @@ private:
 
 	UFUNCTION(BlueprintCallable)
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+public:
+	UFUNCTION(NetMulticast,Reliable)
+	void MulticastPlayMontage(UAnimMontage* ToPlayMontage);
 	
 };
 

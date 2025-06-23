@@ -147,45 +147,55 @@ void ABaseSpawnedItem::SetMeshFromTag(FGameplayTag InItemTag)
 	}
 }
 
+
 void ABaseSpawnedItem::SetItemParams(FGameplayTag InItemTag)
 {
-	const FGameplayTag SwordTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Weapon.Sword"));
-	const FGameplayTag AxeTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Weapon.Axe"));
+	// 나중에 무기 추가할거면 Item.Equippable.Weapon.Sword.KingsSword
+	// Item.Equippable.Weapon.Sword.UndeadSword 등 태그를 더 추가
+	const FGameplayTag WeaponTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Weapon"));
+	const FGameplayTag ArmorTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor"));
 
 	static const FString ContextString(TEXT("FindWeaponData"));
 
-	if (InItemTag.MatchesTag(SwordTag))
+	if (InItemTag.MatchesTag(WeaponTag))
 	{
-		if (DT_SwordData)
+		if (DT_WeaponData)
 		{
 			TArray<FWeaponData*> AllRows;
-			DT_SwordData->GetAllRows<FWeaponData>(ContextString, AllRows);
+			DT_WeaponData->GetAllRows<FWeaponData>(ContextString, AllRows);
 
 			for (const FWeaponData* Row : AllRows)
 			{
-				if (Row->Rarity == ItemDefinition.ItemRarity)
+				const float* WeaponAttackPower = Row->WeaponAttackPowerMap.Find(ItemDefinition.ItemRarity);
+				const float* Weight = Row->WeaponWeightMap.Find(ItemDefinition.ItemRarity);
+
+				if (WeaponAttackPower && Weight)
 				{
-					ItemDefinition.AbilityLevel = Row->DamageAbilityLevel;
-					ItemDefinition.Weight = Row->Weight;
-					break;
+					ItemDefinition.ArmorDefense = *WeaponAttackPower;
+					ItemDefinition.Weight = *Weight;
 				}
 			}
 		}
 	}
-	else if (InItemTag.MatchesTag(AxeTag))
+	else if (InItemTag.MatchesTag(ArmorTag))
 	{
-		if (DT_AxeData)
+		if (DT_ArmorData)
 		{
-			TArray<FWeaponData*> AllRows;
-			DT_AxeData->GetAllRows<FWeaponData>(ContextString, AllRows);
+			TArray<FArmorData*> AllRows;
+			DT_ArmorData->GetAllRows<FArmorData>(ContextString, AllRows);
 
-			for (const FWeaponData* Row : AllRows)
+			for (const FArmorData* Row : AllRows)
 			{
-				if (Row->Rarity == ItemDefinition.ItemRarity)
+				if (Row->ArmorTag == InItemTag)
 				{
-					ItemDefinition.AbilityLevel = Row->DamageAbilityLevel;
-					ItemDefinition.Weight = Row->Weight;
-					break;
+					const float* Defense = Row->ArmorDefenseMap.Find(ItemDefinition.ItemRarity);
+					const float* Weight = Row->ArmorWeightMap.Find(ItemDefinition.ItemRarity);
+
+					if (Defense && Weight)
+					{
+						ItemDefinition.ArmorDefense = *Defense;
+						ItemDefinition.Weight = *Weight;
+					}
 				}
 			}
 		}

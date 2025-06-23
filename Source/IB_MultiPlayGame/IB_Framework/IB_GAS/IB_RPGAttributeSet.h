@@ -20,6 +20,7 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
+	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& Delta) override;
 	
 	UPROPERTY(BlueprintReadOnly,ReplicatedUsing=OnRep_Health)
 	FGameplayAttributeData Health;
@@ -37,6 +38,15 @@ public:
 	FGameplayAttributeData MaxMana;
 	ATTRIBUTE_ACCESSORS(UIB_RPGAttributeSet,MaxMana);
 
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Defense)
+	FGameplayAttributeData Defense;
+	ATTRIBUTE_ACCESSORS(UIB_RPGAttributeSet, Defense);
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Attack)
+	FGameplayAttributeData Attack;
+	ATTRIBUTE_ACCESSORS(UIB_RPGAttributeSet, Attack);
+
 private:
 	UFUNCTION()
 	void OnREP_Health(const FGameplayAttributeData& OldHealth);
@@ -49,7 +59,14 @@ private:
 	
 	UFUNCTION()
 	void OnREP_MaxMana(const FGameplayAttributeData& OldMaxMana);
+
+	UFUNCTION()
+	void OnRep_Defense(const FGameplayAttributeData& OldDefense);
+
+	UFUNCTION()
+	void OnRep_Attack(const FGameplayAttributeData& OldAttack);
 	
+
 	
 	
 	

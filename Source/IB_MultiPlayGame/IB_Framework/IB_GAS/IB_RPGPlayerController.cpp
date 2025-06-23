@@ -2,8 +2,9 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "../../Components/InventoryComponent.h"
 #include "../../Components/QuestLogComponent.h"
-#include"../../Components/QuestComponent.h"
+#include "../../Components/QuestComponent.h"
 #include "../../Components/QuestGiverComponent.h"
+#include "../../Components/CombatComponent.h"
 #include "../../Character/IB_MainChar.h"
 #include "../../WidgetController/InventoryWidgetController.h"
 #include "../../Widget/W_RPGSystemWidget.h"
@@ -21,6 +22,11 @@
 #include "../../ETC/Cannon/CannonSpawnManager.h"
 #include "../../ETC/Cannon/Cannon.h"
 #include "../IB_GameInstance.h"
+#include "Data/Weapon_Info.h"
+#include "Data/ArmorInfo.h"
+#include "../FunctionLibrary/IB_BlueprintFunctionLibrary.h"
+#include "../../ETC/Equippable/Weapon/WeaponBase.h"
+#include "../../ETC/Equippable/Armor/ArmorBase.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Blueprint/UserWidget.h"
@@ -41,7 +47,6 @@ AIB_RPGPlayerController::AIB_RPGPlayerController()
 
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
 	InventoryComponent->SetIsReplicated(true);
-	
 
 	QuestLogComponent = CreateDefaultSubobject<UQuestLogComponent>("QuestLogComponent");
 	QuestLogComponent->SetIsReplicated(true);
@@ -49,6 +54,8 @@ AIB_RPGPlayerController::AIB_RPGPlayerController()
 	QuestComponent=CreateDefaultSubobject<UQuestComponent>("QuestComponent");
 	QuestComponent->SetIsReplicated(true);
 
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
+	CombatComponent->SetIsReplicated(true);
 
 	/*bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
@@ -144,6 +151,11 @@ void AIB_RPGPlayerController::BeginPlay()
 	}
 }
 
+void AIB_RPGPlayerController::OnPossess(APawn* aPawn)
+{
+	Super::OnPossess(aPawn);
+}
+
 void AIB_RPGPlayerController::AbilityInputPressed(FGameplayTag InputTag)
 {
 	if (IsValid(GetRPGAbilitySystemComponent()))
@@ -233,7 +245,11 @@ void AIB_RPGPlayerController::CreateInventoryWidget()
 			InventoryWidget->AddToViewport(0);
 		}
 	}
+}
 
+UCombatComponent* AIB_RPGPlayerController::GetCombatComponent()
+{
+	return CombatComponent;
 }
 
 void AIB_RPGPlayerController::ClientDisplayQuest_Implementation(FQuestDetails QuestDetails,FName QuestID)
@@ -274,6 +290,7 @@ void AIB_RPGPlayerController::ClientDisplayRewards_Implementation(FQuestDetails 
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("RPGPlayerController Not Local Controller, and HasAuthority"));
 	}
 }
+
 void AIB_RPGPlayerController::ClientDisplayNotification_Implementation(const FObjectiveDetails& ObjectiveDetails)
 {
 	if (this->IsLocalController() && !this->GetPawn()->HasAuthority())
@@ -379,12 +396,12 @@ void AIB_RPGPlayerController::ClientSwitchWidget_Implementation()
 		{
 			WBP_OverlayWidget = CreateWidget<UW_Overlay>(this, WBP_OverlayWidgetClass);
 
-			if (WBP_OverlayWidget)
-			{
-				WBP_OverlayWidget->AddToViewport(0);
-				HandleCharValues(IB_MainChar);
-				ServerInitCharValues(IB_MainChar);
-			}
+if (WBP_OverlayWidget)
+{
+	WBP_OverlayWidget->AddToViewport(0);
+	HandleCharValues(IB_MainChar);
+	ServerInitCharValues(IB_MainChar);
+}
 		}
 		if (WBP_CannonWidget)
 		{
@@ -407,12 +424,106 @@ void AIB_RPGPlayerController::HandleCharValues(AIB_MainChar* MainChar)
 		MainChar->InitAbilityActorInfo();
 
 		FTimerHandle TimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this,MainChar]()
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, MainChar]()
 			{
 				MainChar->BroadCastInitialValues();
-			}, 0.3f, false);
-		
+			}, 1.0f, false);
+
 	}
+}
+
+void AIB_RPGPlayerController::SetCharacterRelevant(APawn* ControlledPawn)
+{
+	if (!ControlledPawn) return;
+	int32 LocalPort = GetWorld()->URL.Port;
+
+	if (LocalPort == 7777)
+	{
+
+		ControlledPawn->bOnlyRelevantToOwner = true;
+	}
+	else
+	{
+		ControlledPawn->bOnlyRelevantToOwner = false;
+	}
+
+}
+
+void AIB_RPGPlayerController::EquipItem(const FMasterItemDefinition& ItemDefinition)
+{
+	if (!HasAuthority()) return;
+	if (ItemDefinition.ItemTag == FGameplayTag()) return;
+	if (!IsValid(InventoryComponent)) return;
+	if (!IsValid(CombatComponent)) return;
+
+	FMasterItemDefinition StaticItemDefinition = InventoryComponent->GetItemDefinitionByTag(ItemDefinition.ItemTag);
+
+	const FGameplayTag EquippablWeaponTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Weapon"));
+	const FGameplayTag EquippableArmorTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor"));
+
+	static const FString ContextString(TEXT("FindWeaponData"));
+
+	if (ItemDefinition.ItemTag.MatchesTag(EquippablWeaponTag))
+	{
+		if (UWeapon_Info* WeaponInfo = UIB_BlueprintFunctionLibrary::GetWeaponInfo(this))
+		{
+			FWeaponParams CurrentWeaponParams = *WeaponInfo->WeaponMap.Find(ItemDefinition.ItemTag);
+
+			FTransform SpawnTransform;
+
+			if (AWeaponBase* SpawnedWeapon = GetWorld()->SpawnActorDeferred<AWeaponBase>(CurrentWeaponParams.WeaponClass, SpawnTransform))
+			{
+				SpawnedWeapon->SetReplicates(true);
+				SpawnedWeapon->SetWeaponParams(CurrentWeaponParams); 
+				SpawnedWeapon->SetOwner(this->GetPawn());
+				SpawnedWeapon->SetCharacterAttack(ItemDefinition.WeaponAttackPower);
+				SpawnedWeapon->SetItemDefinition(ItemDefinition);
+				SpawnedWeapon->FinishSpawning(SpawnTransform);
+
+				CombatComponent->SetEquippedItem(SpawnedWeapon);
+
+				FName SocketName = CurrentWeaponParams.AttackSocketName;
+				USkeletalMeshComponent* Mesh = Cast<USkeletalMeshComponent>(this->GetPawn()->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
+				if (Mesh && Mesh->DoesSocketExist(SocketName))
+				{
+					SpawnedWeapon->AttachToComponent(Mesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
+
+					UE_LOG(LogTemp, Warning, TEXT("WeaponBase spawned on: %s"), GetWorld()->IsNetMode(NM_Client) ? TEXT("Client") : TEXT("Server"));
+				}
+			}
+		}
+	}
+	else if (ItemDefinition.ItemTag.MatchesTag(EquippableArmorTag))
+	{
+		if (UArmorInfo* ArmorInfo = UIB_BlueprintFunctionLibrary::GetArmorInfo(this))
+		{
+			FArmorParams CurrentArmorParams = *ArmorInfo->ArmorMaps.Find(ItemDefinition.ItemTag);
+
+			FTransform SpawnTransform;
+
+			if (AArmorBase* SpawnedArmor = GetWorld()->SpawnActorDeferred<AArmorBase>(CurrentArmorParams.ArmorClass, SpawnTransform))
+			{
+				SpawnedArmor->SetReplicates(true);
+				//SpawnedArmor->SetWeaponParams(CurrentWeaponParams); // 나중에 방어구 메쉬추가할거면 추가
+				SpawnedArmor->SetItemDefinition(ItemDefinition);
+				SpawnedArmor->SetOwner(this->GetPawn());
+				SpawnedArmor->SetCharacterDefense(ItemDefinition.ArmorDefense);
+				SpawnedArmor->FinishSpawning(SpawnTransform);
+
+				CombatComponent->SetEquippedItem(SpawnedArmor);
+
+				FName SocketName = CurrentArmorParams.AttackSocketName;
+				USkeletalMeshComponent* Mesh = Cast<USkeletalMeshComponent>(this->GetPawn()->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
+				if (Mesh && Mesh->DoesSocketExist(SocketName))
+				{
+					SpawnedArmor->AttachToComponent(Mesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
+
+					UE_LOG(LogTemp, Warning, TEXT("ArmorBase spawned on: %s"), GetWorld()->IsNetMode(NM_Client) ? TEXT("Client") : TEXT("Server"));
+				}
+			}
+		}
+	}
+	
 }
 
 void AIB_RPGPlayerController::ServerSwitchController_Implementation()

@@ -23,11 +23,8 @@ public:
 
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Custom Values | Weapon")
-	FGameplayTag WeaponToSpawnTag;
-
 	UPROPERTY()
-	float WeaponDamage;
+	FGameplayTag WeaponToSpawnTag;
 
 private:
 	UPROPERTY()
@@ -38,6 +35,6 @@ private:
 	UFUNCTION()
 	void SpawnAndAttachWeapon(const FWeaponParams& CurrentWeaponParamsRef);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION()
 	void WeaponAttack();
 };

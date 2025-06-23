@@ -275,13 +275,15 @@ FMasterItemDefinition UInventoryComponent::GetItemDefinitionByTag(const FGamepla
 void UInventoryComponent::DefinitionItemUse(const FMasterItemDefinition& StaticItemData, const FMasterItemDefinition& DynamicItemData)
 {
 	AActor* Owner = GetOwner();
-	if (Owner == nullptr)
-	{
-		return;
-	}
+	if (!IsValid(Owner)) return;
+	if (!Owner->HasAuthority()) return;
+
+	AIB_RPGPlayerController* IB_RPGPlayerContoller = Cast<AIB_RPGPlayerController>(Owner);
+	if (!IsValid(IB_RPGPlayerContoller)) return;
 
 	const FGameplayTag ConsumableTag = FGameplayTag::RequestGameplayTag(FName("Item.Consumable"));
 	const FGameplayTag EquippableTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable"));
+	
 
 	if (StaticItemData.ItemTag.MatchesTag(ConsumableTag))
 	{
@@ -293,26 +295,29 @@ void UInventoryComponent::DefinitionItemUse(const FMasterItemDefinition& StaticI
 				const FGameplayEffectSpecHandle SpecHandle = OwnerAsc->MakeOutgoingSpec(StaticItemData.ConsumableProps.ItemEffectClass,
 					StaticItemData.ConsumableProps.ItemEffectLevel, ContextHandle);
 				OwnerAsc->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-
-
-
 			}
 		}
 	}
-	// 차라리 어빌리티 레벨을 바꾸자
 	else if (DynamicItemData.ItemTag.MatchesTag(EquippableTag))
 	{
+		IB_RPGPlayerContoller->EquipItem(DynamicItemData);
+	}
+
+	// Armor를 장착하면 DT_Equippable에 저장되있는 GameplayEffect로 Defense를 +
+	/*else if (DynamicItemData.ItemTag.MatchesTag(EquippableArmorTag))
+	{
+		 gameeffect를 사용할지 고민해보자
 		if (UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Owner))
 		{
-			if (UIB_RPGAbilitySystemComponent* IB_RPGAbilitySystemComponent = Cast<UIB_RPGAbilitySystemComponent>(OwnerAsc))
+			if (IsValid(StaticItemData.ConsumableProps.ItemEffectClass))
 			{
-				if (IB_RPGAbilitySystemComponent->Implements<URPGAbilitySystemInterface>())
-				{
-					IRPGAbilitySystemInterface::Execute_SetDynamicWeapon(IB_RPGAbilitySystemComponent, DynamicItemData.ItemTag, DynamicItemData.AbilityLevel);
-				}
+				const FGameplayEffectContextHandle ContextHandle = OwnerAsc->MakeEffectContext();
+				const FGameplayEffectSpecHandle SpecHandle = OwnerAsc->MakeOutgoingSpec(StaticItemData.ConsumableProps.ItemEffectClass,
+					DynamicItemData.AbilityLevel, ContextHandle);
+				OwnerAsc->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 			}
 		}
-	}
+	}*/
 
 	AddItem(DynamicItemData.ItemTag, -1, DynamicItemData);
 
@@ -324,6 +329,9 @@ bool UInventoryComponent::DefinitionItemAdd(const FGameplayTag& ItemTag,int32 Nu
 	FGameplayTag NoneTag = FGameplayTag::RequestGameplayTag(TEXT("Item.None"));
 	FGameplayTag EquippableTag = FGameplayTag::RequestGameplayTag(TEXT("Item.Equippable"));
 
+	const FMasterItemDefinition Item = GetItemDefinitionByTag(ItemTag);
+	const bool bStackable = Item.bStackable;
+
 	if (!CachedInventory.ItemTags.Contains(NoneTag))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Inventory Is Full"));
@@ -332,8 +340,8 @@ bool UInventoryComponent::DefinitionItemAdd(const FGameplayTag& ItemTag,int32 Nu
 
 	if (CachedInventory.ItemTags.Contains(ItemTag))
 	{
-		// EquippableTag (즉, 장비면 새로운 슬롯에 넣어주기)
-		if (ItemTag.MatchesTag(EquippableTag))
+		// 여러 개 Stack 할 수 없는 아이템 ( 무기 , 방어구 등)
+		if (bStackable==false)
 		{
 			if (NumItems > 0)
 			{
@@ -351,6 +359,7 @@ bool UInventoryComponent::DefinitionItemAdd(const FGameplayTag& ItemTag,int32 Nu
 					return true;
 				}
 			}
+			// 아이템을 사용해서 개수가 0이 되면
 			else
 			{
 				int32 FoundIndex = CachedInventory.ItemTags.IndexOfByKey(ItemTag);
@@ -371,7 +380,7 @@ bool UInventoryComponent::DefinitionItemAdd(const FGameplayTag& ItemTag,int32 Nu
 			}
 			
 		}
-		// 장비가 아니면 수량+
+		// Stackable == true면 수량++
 		else
 		{
 			int32 FoundIndex = CachedInventory.ItemTags.IndexOfByKey(ItemTag);

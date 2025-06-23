@@ -38,9 +38,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | DataTable")
 	UDataTable* DT_ItemData;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | DataTable")
-	UDataTable* DT_SwordData;
+	UDataTable* DT_WeaponData;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | DataTable")
-	UDataTable* DT_AxeData;
+	UDataTable* DT_ArmorData;
+
+	
 	UPROPERTY()
 	TObjectPtr<UNiagaraSystem> ItemDropEffect;
 	UPROPERTY(EditAnywhere, Category = "Custom Values | DropEffect")

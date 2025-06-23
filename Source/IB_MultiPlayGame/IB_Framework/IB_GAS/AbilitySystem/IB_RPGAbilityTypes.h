@@ -7,6 +7,25 @@ class UGameplayEffect;
 class UAbilitySystemComponent;
 class AProjectileBase;
 class AWeaponBase;
+class AArmorBase;
+
+USTRUCT()
+struct FArmorParams
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AArmorBase> ArmorClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<USkeletalMesh> ArmorSkeletalMesh;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UStaticMesh> ArmorMesh;
+	UPROPERTY(EditDefaultsOnly)
+	FName AttackSocketName;
+
+};
 
 USTRUCT()
 struct FWeaponParams

@@ -153,7 +153,6 @@ void UIB_RPGAbilitySystemComponent::SetDynamicWeapon_Implementation(const FGamep
 
 			Spec.DynamicAbilityTags.AddTag(WeaponAttackAbility->InputTag);
 
-			
 			ActiveWeaponAttackAbilty = GiveAbility(Spec);
 		}
 	}

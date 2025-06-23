@@ -3,6 +3,8 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
+
+
 public class IB_MultiPlayGameTarget : TargetRules
 {
 	public IB_MultiPlayGameTarget(TargetInfo Target) : base(Target)
@@ -11,5 +13,5 @@ public class IB_MultiPlayGameTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V5;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_5;
 		ExtraModuleNames.Add("IB_MultiPlayGame");
-	}
+    }
 }

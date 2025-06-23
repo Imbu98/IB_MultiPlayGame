@@ -11,6 +11,8 @@ void UIB_RPGAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME_CONDITION_NOTIFY(UIB_RPGAttributeSet,MaxHealth,COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UIB_RPGAttributeSet,Mana,COND_None,REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UIB_RPGAttributeSet,MaxMana,COND_None,REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UIB_RPGAttributeSet, Defense, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UIB_RPGAttributeSet, Attack, COND_None, REPNOTIFY_Always);
 }
 
 void UIB_RPGAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data)
@@ -46,4 +48,27 @@ void UIB_RPGAttributeSet::OnREP_Mana(const FGameplayAttributeData& OldMana)
 void UIB_RPGAttributeSet::OnREP_MaxMana(const FGameplayAttributeData& OldMaxMana)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UIB_RPGAttributeSet,MaxMana,OldMaxMana);
+}
+
+void UIB_RPGAttributeSet::OnRep_Defense(const FGameplayAttributeData& OldDefense)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UIB_RPGAttributeSet, Defense, OldDefense);
+
+	UE_LOG(LogTemp, Warning, TEXT("Defense:%f"), Defense.GetCurrentValue());
+}
+
+void UIB_RPGAttributeSet::OnRep_Attack(const FGameplayAttributeData& OldAttack)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UIB_RPGAttributeSet, Attack, OldAttack);
+}
+
+void UIB_RPGAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& Delta)
+{
+	Super::PreAttributeChange(Attribute, Delta);
+
+	if (Attribute == GetHealthAttribute())
+	{
+		float Def = FMath::Clamp(Defense.GetCurrentValue(), 0.f, 100.f);
+		Delta = Delta * (200 - Def) / 200;
+	}
 }

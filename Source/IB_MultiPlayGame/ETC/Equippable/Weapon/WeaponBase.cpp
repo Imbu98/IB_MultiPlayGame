@@ -1,6 +1,10 @@
 #include "WeaponBase.h"
 #include "Components\SkeletalMeshComponent.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystemComponent.h"
+#include "Net/UnrealNetwork.h"
+
 
 AWeaponBase::AWeaponBase()
 {
@@ -11,6 +15,13 @@ AWeaponBase::AWeaponBase()
 	SetRootComponent(WeaponSkeletalMesh);
 	WeaponSkeletalMesh->SetIsReplicated(true);
 
+}
+
+void AWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AWeaponBase, ItemDefinition);
 }
 
 void AWeaponBase::SetWeaponParams(const FWeaponParams& Params)
@@ -72,5 +83,35 @@ void AWeaponBase::MulticastSetWeaponMesh_Implementation(USkeletalMesh* InMesh)
 			UE_LOG(LogTemp, Warning, TEXT("[%s] WeaponSkeletalMesh is NOT valid!"), HasAuthority() ? TEXT("Server") : TEXT("Client"));
 		}
 	}
+}
+
+void AWeaponBase::SetCharacterAttack(float AttackPower)
+{
+	WeaponAttackPower = AttackPower;
+
+	if (!IsValid(WeaponAttackEffect)) return;
+
+	if (AActor* OwnerCharacter = GetOwner())
+	{
+		if (UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerCharacter))
+		{
+			FGameplayEffectSpecHandle SpecHandle = OwnerAsc->MakeOutgoingSpec(WeaponAttackEffect, 1.f, OwnerAsc->MakeEffectContext());
+			if (SpecHandle.IsValid())
+			{
+				SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Combat.Data.Attack")), WeaponAttackPower);
+				ActiveGEHandle = OwnerAsc->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+			}
+		}
+	}
+}
+
+void AWeaponBase::SetItemDefinition(const FMasterItemDefinition& InItemDefinition)
+{
+	ItemDefinition = InItemDefinition;
+}
+
+FMasterItemDefinition AWeaponBase::GetItemDefinition()
+{
+	return ItemDefinition;
 }
 

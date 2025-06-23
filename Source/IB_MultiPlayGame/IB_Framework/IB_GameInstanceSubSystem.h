@@ -33,6 +33,13 @@ public:
 	void RemoveDungeonInstance(int32 Port);
 
 private:
+	FSocket* ListenerSocket;
+	FTimerHandle ListenTimerHandle;
+
+	void StartListeningForDungeonShutdown();
+	void PollSocket();
+
+private:
 	void LockInstance(int32 InstanceID);
 	int32 GetAvailablePort();
 	

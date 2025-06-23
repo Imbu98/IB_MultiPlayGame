@@ -19,6 +19,7 @@ class UNiagaraSystem;
 class UInputMappingContext;
 class UQuestLogComponent;
 class UQuestComponent;
+class UCombatComponent;
 class UW_QuestGiver;
 class UW_QuestLog;
 class UW_LocationNotify;
@@ -54,9 +55,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void CreateInventoryWidget();
 
+	UFUNCTION()
+	UCombatComponent* GetCombatComponent();
+
 protected:
 
 	virtual void BeginPlay() override;
+
+	virtual void OnPossess(APawn* aPawn) override;
 
 	void AbilityInputPressed(FGameplayTag InputTag);
 	void AbilityInputReleased(FGameplayTag InputTag);
@@ -72,17 +78,16 @@ private:
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,meta=(AllowPrivateAccess=true),Replicated)
 	TObjectPtr<UInventoryComponent> InventoryComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Replicated)
+	TObjectPtr<UCombatComponent> CombatComponent;
+
 	UPROPERTY()
 	TObjectPtr<UInventoryWidgetController> InventoryWidgetController;
 
 	UPROPERTY(EditDefaultsOnly, Category = "CustomValues|Widgets")
 	TSubclassOf<UInventoryWidgetController> InventoryWidgetControllerClass;
 
-	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	TObjectPtr<UW_RPGSystemWidget> InventoryWidget;
-
-	UPROPERTY(EditDefaultsOnly, Category = "CustomValues|Widgets")
-	TSubclassOf<UW_RPGSystemWidget> InventoryWidgetClass;
+	
 
 	UIB_RPGAbilitySystemComponent* GetRPGAbilitySystemComponent();
 
@@ -132,7 +137,11 @@ public:
 	UPROPERTY()
 	TObjectPtr<UW_Overlay> WBP_OverlayWidget;
 
-	
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	TObjectPtr<UW_RPGSystemWidget> InventoryWidget;
+
+	UPROPERTY(EditDefaultsOnly, Category = "CustomValues|Widgets")
+	TSubclassOf<UW_RPGSystemWidget> InventoryWidgetClass;
 
 	
 	
@@ -162,7 +171,6 @@ public:
 	void ClientDisplayLocationNotification(const FText& LocationName);
 
 public:
-
 	// relevance On Cannon
 	UFUNCTION()
 	void SwitchController();
@@ -178,6 +186,12 @@ public:
 	void ServerSpawnCannonRequest();
 	UFUNCTION(Client, Reliable)
 	void ClientSwitchInputMapping(bool OnCannon, AIB_MainChar* IBMainChar,ACannon* Cannon);
+	UFUNCTION()
+	void SetCharacterRelevant(APawn* ControlledPawn);
+
+	public:
+		// relevance On Equip
+		void EquipItem(const FMasterItemDefinition& ItemDefinition);
 
 	
 

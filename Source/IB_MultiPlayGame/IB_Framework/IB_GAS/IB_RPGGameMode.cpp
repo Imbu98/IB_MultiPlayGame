@@ -1,4 +1,9 @@
 #include "IB_RPGGameMode.h"
+
+#include "Sockets.h"
+#include "SocketSubsystem.h"
+#include "Networking.h"
+
 #include "../IB_GameInstanceSubSystem.h"
 #include "IB_RPGPlayerController.h"
 
@@ -37,12 +42,35 @@ UWeapon_Info* AIB_RPGGameMode::GetWeaponInfo() const
 	return WeaponInfo;
 }
 
+UArmorInfo* AIB_RPGGameMode::GetArmorInfo() const
+{
+	return ArmorInfo;
+}
+
 void AIB_RPGGameMode::HandleDungeonClear()
 {
-	if (UIB_GameInstanceSubSystem* Subsystem = GetGameInstance()->GetSubsystem<UIB_GameInstanceSubSystem>())
-	{
-		Subsystem->RemoveDungeonInstance(GameModePortNumber); // 미리 저장한 InstanceID 필요
-	}
+	FString Msg = FString::Printf(TEXT("%d"), GameModePortNumber);
+	FTCHARToUTF8 Convert(*Msg);
+	const uint8* Data = (const uint8*)Convert.Get();
+
+	FIPv4Address LobbyAddr;
+	FIPv4Address::Parse(TEXT("192.168.0.176"), LobbyAddr); // Replace with actual lobby server IP
+
+	TSharedRef<FInternetAddr> Addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
+	Addr->SetIp(LobbyAddr.Value);
+	Addr->SetPort(6000);
+
+	FSocket* SendSocket = FUdpSocketBuilder(TEXT("DungeonNotifySender"))
+		.AsReusable()
+		.WithBroadcast()
+		.WithSendBufferSize(2 * 1024);
+
+	int32 BytesSent = 0;
+	SendSocket->SendTo(Data, Msg.Len(), BytesSent, *Addr);
+	SendSocket->Close();
+	ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->DestroySocket(SendSocket);
+
+	UE_LOG(LogTemp, Log, TEXT("Sent shutdown notification to lobby for port %d"), GameModePortNumber);
 }
 
 void AIB_RPGGameMode::Logout(AController* Exiting)

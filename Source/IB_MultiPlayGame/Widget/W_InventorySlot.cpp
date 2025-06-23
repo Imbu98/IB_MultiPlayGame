@@ -21,12 +21,18 @@ void UW_InventorySlot::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	UpdateSlot();
+	
 
 	if (Btn_ItemSlot)
 	{
 		Btn_ItemSlot->OnClicked.Clear();
 		Btn_ItemSlot->OnClicked.AddDynamic(this, &UW_InventorySlot::OnclickedActionButton);
+	}
+	AIB_RPGPlayerController* IB_RPGPC = Cast< AIB_RPGPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	if (IB_RPGPC)
+	{
+		InventoryComponent = IInventoryInterface::Execute_GetInventoryComponent(IB_RPGPC);
+		UpdateSlot();
 	}
 }
 
@@ -65,7 +71,6 @@ void UW_InventorySlot::NativeOnDragDetected(const FGeometry& InGeometry, const F
 
 					OutOperation = DragOp;
 				}
-			
 		}
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, FString::Printf(TEXT("Draged")));
@@ -81,10 +86,6 @@ bool UW_InventorySlot::NativeOnDrop(const FGeometry& InGeometry, const FDragDrop
 
 	if (FromSlot == ToSlot) return false;
 
-	AIB_RPGPlayerController* IB_RPGPC = Cast< AIB_RPGPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-	if (IB_RPGPC)
-	{
-		UInventoryComponent* InventoryComponent = IInventoryInterface::Execute_GetInventoryComponent(IB_RPGPC);
 		if (InventoryComponent)
 		{
 			int32 SourceIndex = FromSlot->SlotIndex;
@@ -101,8 +102,6 @@ bool UW_InventorySlot::NativeOnDrop(const FGeometry& InGeometry, const FDragDrop
 			InventoryComponent->SwapItemsInPackagedInventory(CachedInventory, SourceIndex, TargetIndex);
 
 		}
-	}
-
 	return true;
 
 }
@@ -175,16 +174,27 @@ void UW_InventorySlot::OnclickedActionButton()
 }
 
 void UW_InventorySlot::UpdateSlot()
-{
-	if (IMG_SlotImage)
+{		
+	if (InventoryComponent)
 	{
-		IMG_SlotImage->SetBrushFromTexture(SlotItemImage);
+		FMasterItemDefinition StaticItemDefintion = InventoryComponent->GetItemDefinitionByTag(Item.ItemTag);
+
+		if (IMG_SlotImage)
+		{
+			IMG_SlotImage->SetBrushFromTexture(SlotItemImage);
+		}
+
+		if (Text_ItemQuantity && Item.ItemQuantity > 0)
+		{
+			Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT("x %d"), Item.ItemQuantity)));
+		}
+		else
+		{
+			Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT(""))));
+		}
+		SetSlotRarityImg();
 	}
-	if (Text_ItemQuantity&& Item.ItemQuantity>0)
-	{
-		Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT("x %d"), Item.ItemQuantity)));
-	}
-	SetSlotRarityImg();
+	
 }
 
 void UW_InventorySlot::ClearSlot()

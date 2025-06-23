@@ -1,12 +1,24 @@
 #include "IB_GameInstanceSubSystem.h"
+
 #include "Misc/Paths.h"
 #include "HAL/PlatformProcess.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
+#include "Sockets.h"
+#include "SocketSubsystem.h"
+#include "Networking.h"
 
 void UIB_GameInstanceSubSystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+
+	int32 LocalPort = GetWorld()->URL.Port;
+
+	if (LocalPort == 7777)
+	{
+		StartListeningForDungeonShutdown();
+	}
+	
 }
 
 void UIB_GameInstanceSubSystem::Deinitialize()
@@ -51,12 +63,12 @@ FString UIB_GameInstanceSubSystem::RequestDungeonURL(const FString& BaseMapName)
 		if (!Instance.bLocked && Instance.CurrentPlayers < 4)
 		{
 			++Instance.CurrentPlayers;
-			return FString::Printf(TEXT("192.168.0.135:%d"), Instance.Port);
+			return FString::Printf(TEXT("192.168.0.176:%d"), Instance.Port);
 		}
 	}
 
 	int32 Port = LaunchNewDungeonServer(BaseMapName);
-	return FString::Printf(TEXT("192.168.0.135:%d"), Port);
+	return FString::Printf(TEXT("192.168.0.176:%d"), Port);
 }
 
 void UIB_GameInstanceSubSystem::LockInstance(int32 InstanceID)
@@ -102,7 +114,8 @@ int32 UIB_GameInstanceSubSystem::GetAvailablePort()
 void UIB_GameInstanceSubSystem::RemoveDungeonInstance(int32 Port)
 {
 	UE_LOG(LogTemp, Log, TEXT("TryRemovePort: %d"), Port);
-	for (int32 i = 0; i < ActiveInstances.Num(); ++i)
+	UE_LOG(LogTemp, Log, TEXT(" ActiveInstance: %d") , ActiveInstances.Num());
+	for (int32 i = 0; i < ActiveInstances.Num(); i++)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Checking ActiveInstance[%d].Port = %d"), i, ActiveInstances[i].Port);
 		if (ActiveInstances[i].Port == Port)
@@ -119,5 +132,43 @@ void UIB_GameInstanceSubSystem::RemoveDungeonInstance(int32 Port)
 			ActiveInstances.RemoveAt(i);
 			break;
 		}
+	}
+}
+
+void UIB_GameInstanceSubSystem::StartListeningForDungeonShutdown()
+{
+	FIPv4Address Addr;
+	FIPv4Address::Parse(TEXT("0.0.0.0"), Addr); // 모든 주소에서 받음
+	FIPv4Endpoint Endpoint(Addr, 6000); // 수신 포트 (예: 6000)
+
+	ListenerSocket = FUdpSocketBuilder(TEXT("DungeonShutdownListener"))
+		.AsNonBlocking()
+		.AsReusable()
+		.BoundToEndpoint(Endpoint)
+		.WithReceiveBufferSize(2 * 1024 * 1024); // (옵션) 버퍼 사이즈
+
+	if (ListenerSocket)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Listening for dungeon shutdown messages on port 6000"));
+		GetWorld()->GetTimerManager().SetTimer(ListenTimerHandle, this, &UIB_GameInstanceSubSystem::PollSocket, 0.1f, true);
+	}
+}
+
+void UIB_GameInstanceSubSystem::PollSocket()
+{
+	if (!ListenerSocket) return;
+
+	uint8 Buffer[1024];
+	uint32 BytesRead = 0;
+	TSharedRef<FInternetAddr> Sender = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
+
+	while (ListenerSocket->HasPendingData(BytesRead))
+	{
+		int32 Read = 0;
+		ListenerSocket->RecvFrom(Buffer, sizeof(Buffer), Read, *Sender);
+		FString Received = FString(UTF8_TO_TCHAR((const char*)Buffer)).Left(Read);
+		int32 PortToRemove = FCString::Atoi(*Received);
+		UE_LOG(LogTemp, Log, TEXT("Received shutdown message from port: %d"), PortToRemove);
+		RemoveDungeonInstance(PortToRemove);
 	}
 }

@@ -48,12 +48,12 @@ void UItemSpawnComponent::SetFinalItemTypeAndDrop()
 		{
 			ItemTag = SetEquippableType();
 			ItemRarity = SetItemRarity();
-
+		
 		}
 		else if (ItemTypeTag.MatchesTag(Consumable))
 		{
 			ItemTag = SetConsumbaleType();
-
+		
 		}
 
 		FActorSpawnParameters ActorSpawnParameters;
@@ -107,7 +107,7 @@ FGameplayTag UItemSpawnComponent::SetEquippableType()
 	if (DT_EquppableTypeProbability)
 	{
 		TArray<FItemTypeProbability*> AllRows;
-		DT_EquppableTypeProbability->GetAllRows<FItemTypeProbability>(TEXT("WeaponTypeProbabilityContext"), AllRows);
+		DT_EquppableTypeProbability->GetAllRows<FItemTypeProbability>(TEXT("EquippableProbabilityContext"), AllRows);
 
 		float TotalProbability = 0.f;
 
@@ -169,7 +169,7 @@ EItemRarity UItemSpawnComponent::SetItemRarity()
 	if (DT_ItemRarityProbability)
 	{
 		TArray<FItemRarityProbability*> AllRows;
-		DT_ItemRarityProbability->GetAllRows<FItemRarityProbability>(TEXT("ConsumableTypeProbabilityContext"), AllRows);
+		DT_ItemRarityProbability->GetAllRows<FItemRarityProbability>(TEXT("RarityTypeProbabilityContext"), AllRows);
 
 		float TotalProbability = 0.f;
 
