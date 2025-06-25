@@ -3,7 +3,7 @@
 #include "../Components/CombatComponent.h"
 #include "W_ItemRow.h"
 #include "W_InventorySlot.h"
-#include "W_EquippedItemSlot.h"
+#include "W_PlayerInfo.h"
 #include "../Inventory/ItemTypes.h"
 #include "../DefineDelegates.h"
 #include "../WidgetController/InventoryWidgetController.h"
@@ -88,6 +88,12 @@ void UW_Inventory::HandleInventoryItemRecieved(const FPackagedInventory& Package
 // On client
 void UW_Inventory::MakeItemRowWidget(const FPackagedInventory& PackagedInventory)
 {
+	APlayerController* PC = GetOwningPlayer();
+	if (!IsValid(PC)) return;
+
+	UCombatComponent* CombatComponent = PC->GetComponentByClass<UCombatComponent>();
+	if (!IsValid(CombatComponent)) return;
+
 	if (!IsValid(InventoryWidgetController)) return;
 
 	if (!IsValid(InventoryComponent)) return;
@@ -129,39 +135,63 @@ void UW_Inventory::MakeItemRowWidget(const FPackagedInventory& PackagedInventory
 
 		ActiveItemWidgets.Add(SlotWidget);
 	}
+	//SetEquippedItemWidget(CombatComponent->EquippedItemsDefinition);
 }
 
 //On client
-void UW_Inventory::SetEquippedItemWidget(const FMasterItemDefinition& ItemInfo)
+void UW_Inventory::SetEquippedItemWidget(TArray<FMasterItemDefinition> EquippedItemsDefinition)
 {
-	const FGameplayTag WeaponTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Weapon"));
-	const FGameplayTag HelmetTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Helmet"));
-	const FGameplayTag ChestTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Chest"));
-	const FGameplayTag PantsTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Pants"));
-	const FGameplayTag GlovesTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Gloves"));
-	const FGameplayTag BootsTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Boots"));
+	/*if (EquippedItemsDefinition.IsEmpty()) return;
+	if (!IsValid(InventoryComponent)) return;
 
-	if (WBP_EquippedItemSlot->EquippedWeaponSlot)
-	{
-		if (ItemInfo.ItemTag.MatchesTag(WeaponTag))
+		for (FMasterItemDefinition& EquippedItemDefinition : EquippedItemsDefinition)
 		{
-			WBP_EquippedItemSlot->EquippedWeaponSlot->SetItem(ItemInfo);
-			FMasterItemDefinition StaticItemDefinition = InventoryComponent->GetItemDefinitionByTag(ItemInfo.ItemTag);
-			WBP_EquippedItemSlot->EquippedWeaponSlot->SetItemImage(StaticItemDefinition.Icon);
+			if (EquippedItemDefinition.ItemTag==FGameplayTag()) continue;
+
+			EItemParts ItemParts = EquippedItemDefinition.ItemParts;
+
+			UpdateEquippedSlot(ItemParts, EquippedItemDefinition);
+			
+		}*/
+}
+
+void UW_Inventory::UpdateEquippedSlot(EItemParts Part, const FMasterItemDefinition& Def)
+{
+	/*if (!IsValid(WBP_EquippedItemSlot)) return;
+
+	FMasterItemDefinition StaticItemDefinition = InventoryComponent->GetItemDefinitionByTag(Def.ItemTag);
+	UTexture2D* ItemIcon = StaticItemDefinition.Icon;
+	switch (Part)
+	{
+	case EItemParts::Weapon:
+	{
+		if (WBP_EquippedItemSlot->EquippedWeaponSlot)
+		{
+			WBP_EquippedItemSlot->EquippedWeaponSlot->SetItemImage(ItemIcon);
+			WBP_EquippedItemSlot->EquippedWeaponSlot->Item = Def;
 			WBP_EquippedItemSlot->EquippedWeaponSlot->UpdateSlot();
+			break;
 		}
 	}
 
-	if (WBP_EquippedItemSlot->EquippedChestSlot)
+
+
+	case EItemParts::Chest:
 	{
-		if (ItemInfo.ItemTag.MatchesTag(ChestTag))
+		if (WBP_EquippedItemSlot->EquippedChestSlot)
 		{
-			WBP_EquippedItemSlot->EquippedChestSlot->Item = ItemInfo;
-			FMasterItemDefinition StaticItemDefinition = InventoryComponent->GetItemDefinitionByTag(ItemInfo.ItemTag);
-			WBP_EquippedItemSlot->EquippedChestSlot->SetItemImage(StaticItemDefinition.Icon);
-			WBP_EquippedItemSlot->EquippedChestSlot->UpdateSlot();
+		WBP_EquippedItemSlot->EquippedChestSlot->SetItemImage(ItemIcon);
+		WBP_EquippedItemSlot->EquippedChestSlot->Item = Def;
+		WBP_EquippedItemSlot->EquippedChestSlot->UpdateSlot();
+		break;
 		}
 	}
+
+
+
+	default:
+		break;
+	}*/
 }
 
 void UW_Inventory::OnScrollBoxReset()

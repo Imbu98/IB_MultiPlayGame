@@ -29,6 +29,7 @@ class ACannon;
 class AIB_MainChar;
 class UW_CannonWidget;
 class UW_Overlay;
+class UW_PlayerInfo;
 
 DECLARE_LOG_CATEGORY_EXTERN(Imbu, Log, All);
 
@@ -54,6 +55,11 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void CreateInventoryWidget();
+	UFUNCTION(BlueprintCallable)
+	void ToggleInventoryWidget();
+	UFUNCTION(BlueprintCallable)
+	void TogglePlayerInfoWidget();
+
 
 	UFUNCTION()
 	UCombatComponent* GetCombatComponent();
@@ -142,6 +148,12 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "CustomValues|Widgets")
 	TSubclassOf<UW_RPGSystemWidget> InventoryWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	TObjectPtr<UW_PlayerInfo> WBP_PlayerInfoWidget;
+
+	UPROPERTY(EditDefaultsOnly, Category = "CustomValues|Widgets")
+	TSubclassOf<UW_PlayerInfo> WBP_PlayerInfoWidgetClass;
 
 	
 	

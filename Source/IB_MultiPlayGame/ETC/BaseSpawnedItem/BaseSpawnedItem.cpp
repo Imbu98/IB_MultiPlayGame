@@ -168,11 +168,13 @@ void ABaseSpawnedItem::SetItemParams(FGameplayTag InItemTag)
 			{
 				const float* WeaponAttackPower = Row->WeaponAttackPowerMap.Find(ItemDefinition.ItemRarity);
 				const float* Weight = Row->WeaponWeightMap.Find(ItemDefinition.ItemRarity);
+				const EItemParts WeaponParts = Row->WeaponParts;
 
 				if (WeaponAttackPower && Weight)
 				{
 					ItemDefinition.WeaponAttackPower = *WeaponAttackPower;
 					ItemDefinition.Weight = *Weight;
+					ItemDefinition.ItemParts = WeaponParts;
 				}
 			}
 		}
@@ -190,11 +192,14 @@ void ABaseSpawnedItem::SetItemParams(FGameplayTag InItemTag)
 				{
 					const float* Defense = Row->ArmorDefenseMap.Find(ItemDefinition.ItemRarity);
 					const float* Weight = Row->ArmorWeightMap.Find(ItemDefinition.ItemRarity);
+					const EItemParts ArmorParts = Row->ArmorParts;
+
 
 					if (Defense && Weight)
 					{
 						ItemDefinition.ArmorDefense = *Defense;
 						ItemDefinition.Weight = *Weight;
+						ItemDefinition.ItemParts = ArmorParts;
 					}
 				}
 			}

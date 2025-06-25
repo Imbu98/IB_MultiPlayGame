@@ -8,6 +8,7 @@
 
 class AWeaponBase;
 class AArmorBase;
+class AEquippableBase;
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -26,18 +27,11 @@ public:
 	UPROPERTY()
 	int32 AttackCount;
 
-	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)
-	TObjectPtr<AWeaponBase> EquippedWeaponBase;
 	UPROPERTY()
-	TObjectPtr<AArmorBase> EquippedHelmet;
-	UPROPERTY(ReplicatedUsing = OnRep_EquippedChest)
-	TObjectPtr<AArmorBase> EquippedChest;
-	UPROPERTY()
-	TObjectPtr<AArmorBase> EquippedPants;
-	UPROPERTY()
-	TObjectPtr<AArmorBase> EquippedGloves;
-	UPROPERTY()
-	TObjectPtr<AArmorBase> EquippedBoots;
+	TArray<AEquippableBase*> EquippedItems;
+
+	UPROPERTY(ReplicatedUsing = OnRep_EquippbaleBase)
+	TArray<FMasterItemDefinition> EquippedItemsDefinition;
 
 public:
 	UFUNCTION()
@@ -47,9 +41,8 @@ public:
 	UFUNCTION()
 	void UnEquipItem(const FMasterItemDefinition& Iteminfo);
 	UFUNCTION()
-	void OnRep_EquippedWeapon();
-	UFUNCTION()
-	void OnRep_EquippedChest();
+	void OnRep_EquippbaleBase();
+
 		
 	
 };

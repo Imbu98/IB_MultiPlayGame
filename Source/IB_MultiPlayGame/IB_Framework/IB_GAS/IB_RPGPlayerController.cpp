@@ -16,6 +16,7 @@
 #include "../../Widget/W_CannonWidget.h"
 #include "../../Widget/W_Overlay.h"
 #include "../../Input/RPGSystemsInputComponents.h"
+#include "../../Widget/W_PlayerInfo.h"
 #include "IB_RPGPlayerState.h"
 #include "IB_RPGAbilitySystemComponent.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
@@ -38,6 +39,7 @@
 #include "NavigationSystem.h"
 #include "AIController.h"
 #include "Kismet\GameplayStatics.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 
 DEFINE_LOG_CATEGORY(Imbu);
 
@@ -126,6 +128,7 @@ void AIB_RPGPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// load inventory
 	UIB_GameInstance* IB_GameInstance = Cast<UIB_GameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
 	if (!IsValid(IB_GameInstance)) return;
 
@@ -138,6 +141,7 @@ void AIB_RPGPlayerController::BeginPlay()
 		InventoryComponent->bOwnerLocallyControlled = IsLocalController();
 	}
 	
+	// Widget Switch Cannon<==>Character
 	if (IsLocalController())
 	{
 		ClientSwitchWidget();
@@ -147,8 +151,10 @@ void AIB_RPGPlayerController::BeginPlay()
 		{
 				ServerSpawnCannonRequest();
 		}, 2.0f, false); // 약간의 지연
-		
 	}
+	//Craete InventoryWidget
+	CreateInventoryWidget();
+	
 }
 
 void AIB_RPGPlayerController::OnPossess(APawn* aPawn)
@@ -235,6 +241,8 @@ UInventoryWidgetController* AIB_RPGPlayerController::GetInventoryWidgetControlle
 // on client
 void AIB_RPGPlayerController::CreateInventoryWidget()
 {
+	if (!IsLocalController()) return;
+
 	if (InventoryWidgetClass)
 	{
 		if (UUserWidget* Widget = CreateWidget<UW_RPGSystemWidget>(this, InventoryWidgetClass))
@@ -242,7 +250,46 @@ void AIB_RPGPlayerController::CreateInventoryWidget()
 			InventoryWidget = Cast<UW_RPGSystemWidget>(Widget);
 			InventoryWidget->SetWidgetController(GetInventoryWidgetController());
 			InventoryWidgetController->BroadcastInitialValues();
+			
+		}
+	}
+}
+
+void AIB_RPGPlayerController::ToggleInventoryWidget()
+{
+	if (InventoryWidget)
+	{
+		if (InventoryWidget->IsInViewport())
+		{
+			UWidgetBlueprintLibrary::SetInputMode_GameOnly(this);
+			SetShowMouseCursor(false);
+			InventoryWidget->RemoveFromParent();
+		}
+		else
+		{
+			CreateInventoryWidget();
+			UWidgetBlueprintLibrary::SetInputMode_GameAndUIEx(this, nullptr,EMouseLockMode::DoNotLock, false,false);
+			SetShowMouseCursor(true);
 			InventoryWidget->AddToViewport(0);
+		}
+	}
+}
+
+void AIB_RPGPlayerController::TogglePlayerInfoWidget()
+{
+	if (WBP_PlayerInfoWidgetClass)
+	{
+		if (WBP_PlayerInfoWidget = CreateWidget<UW_PlayerInfo>(this, WBP_PlayerInfoWidgetClass))
+		{
+			if (WBP_PlayerInfoWidget->IsInViewport())
+			{
+				WBP_PlayerInfoWidget->RemoveFromParent();
+			}
+			else
+			{
+				WBP_PlayerInfoWidget->AddToViewport();
+			}
+
 		}
 	}
 }

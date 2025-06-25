@@ -95,6 +95,8 @@ void AIB_MainChar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AIB_MainChar::PlayerInteraction);
+		EnhancedInputComponent->BindAction(OpenInventoryAction, ETriggerEvent::Started, this, &AIB_MainChar::OpenInventory);
+		EnhancedInputComponent->BindAction(OpenPlayerInfoAction, ETriggerEvent::Started, this, &AIB_MainChar::OpenPlayerInfoTab);
 	}
 }
 
@@ -121,14 +123,14 @@ void AIB_MainChar::OnRep_PlayerState()
 
 void AIB_MainChar::OnHealthChanged(float CurrentHealth, float MaxHealth)
 {
-	if(AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(GetOwner()))
+	
+	if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(GetOwner()))
 	{
 		if (IB_RPGPlayerController->WBP_OverlayWidget)
 		{
 			IB_RPGPlayerController->WBP_OverlayWidget->SetHealthBar(CurrentHealth, MaxHealth);
 		}
 	}
-	
 }
 
 void AIB_MainChar::OnManaChanged(float CurrentMana, float MaxMana)
@@ -140,7 +142,6 @@ void AIB_MainChar::OnManaChanged(float CurrentMana, float MaxMana)
 			IB_RPGPlayerController->WBP_OverlayWidget->SetManaBar(CurrentMana, MaxMana);
 		}
 	}
-	
 }
 
 void AIB_MainChar::NotifyControllerChanged()
@@ -416,6 +417,23 @@ void AIB_MainChar::MoveStop()
 	{
 
 		ServerSetCharacterState(EIB_CharCycle::Idle);
+	}
+}
+
+void AIB_MainChar::OpenInventory()
+{
+	if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(GetOwner()))
+	{
+		IB_RPGPlayerController->ToggleInventoryWidget();
+	}
+	
+}
+
+void AIB_MainChar::OpenPlayerInfoTab()
+{
+	if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(GetOwner()))
+	{
+		IB_RPGPlayerController->TogglePlayerInfoWidget();
 	}
 }
 

@@ -3,12 +3,12 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "../Inventory/ItemTypes.h"
-#include "W_EquippedItemSlot.generated.h"
+#include "W_PlayerInfo.generated.h"
 
 class UW_InventorySlot;
 
 UCLASS()
-class IB_MULTIPLAYGAME_API UW_EquippedItemSlot : public UUserWidget
+class IB_MULTIPLAYGAME_API UW_PlayerInfo : public UUserWidget
 {
 	GENERATED_BODY()
 
@@ -31,7 +31,8 @@ public:
 
 public:
 	void OnclickedEquippedButton(const FMasterItemDefinition& ItemInfo);
-
+	UFUNCTION()
+	void SetEquippedItemWidget(TArray<FMasterItemDefinition> EquippedItemsInfo);
 	
 	
 };

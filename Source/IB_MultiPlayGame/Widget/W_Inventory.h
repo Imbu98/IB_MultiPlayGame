@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "W_RPGSystemWidget.h"
+#include "../Inventory/ItemTypes.h"
 #include "W_Inventory.generated.h"
 
 class UScrollBox;
@@ -10,7 +11,8 @@ class UTextBlock;
 struct FMasterItemDefinition;
 class UW_ItemRow;
 class UW_InventorySlot;
-class UW_EquippedItemSlot;
+class UW_PlayerInfo;
+
 
 UCLASS()
 class IB_MULTIPLAYGAME_API UW_Inventory : public UW_RPGSystemWidget
@@ -37,9 +39,9 @@ public:
 
 
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	TObjectPtr<UW_EquippedItemSlot> WBP_EquippedItemSlot;
+	TObjectPtr<UW_PlayerInfo> WBP_EquippedItemSlot;
 	UPROPERTY(EditAnywhere, Category = "CustomValues|Widgets")
-	TObjectPtr<UW_EquippedItemSlot> WBP_EquippedItemSlotClass;
+	TObjectPtr<UW_PlayerInfo> WBP_EquippedItemSlotClass;
 
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UWrapBox> WB_InventoryContents;
@@ -78,7 +80,11 @@ public:
 	UFUNCTION()
 	void MakeItemRowWidget(const FPackagedInventory& PackagedInventory);
 	UFUNCTION()
-	void SetEquippedItemWidget(const FMasterItemDefinition& ItemInfo);
+	void SetEquippedItemWidget(TArray<FMasterItemDefinition> EquippedItemsDefinition);
+	UFUNCTION()
+	void UpdateEquippedSlot(EItemParts Part, const FMasterItemDefinition& Def);
+
+	
 
 
 };

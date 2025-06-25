@@ -100,6 +100,11 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* InteractAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* OpenInventoryAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* OpenPlayerInfoAction;
+	
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	EIB_CharCycle CharacterCycle;
@@ -114,12 +119,19 @@ public:
 	UPROPERTY(Replicated)
 	FString QuestObjectiveId;
 
+	UPROPERTY()
+	TObjectPtr<AIB_RPGPlayerController> CachedOwningPlayerController;
+
 protected:
 	void Move(const FInputActionValue& Value);
 	
 	void Look(const FInputActionValue& Value);
 
 	void MoveStop();
+
+	void OpenInventory();
+
+	void OpenPlayerInfoTab();
 
 	
 

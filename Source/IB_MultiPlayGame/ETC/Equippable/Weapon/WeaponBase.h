@@ -4,13 +4,14 @@
 #include "GameFramework/Actor.h"
 #include "../../../IB_Framework/IB_GAS/AbilitySystem/IB_RPGAbilityTypes.h"
 #include "../../../Inventory/ItemTypes.h"
+#include "../EquippableBase.h"
 
 #include "GameplayEffectTypes.h"
 #include "IB_MultiPlayGame/Interfaces/InteractInterface.h"
 #include "WeaponBase.generated.h"
 
 UCLASS()
-class IB_MULTIPLAYGAME_API AWeaponBase : public AActor
+class IB_MULTIPLAYGAME_API AWeaponBase : public AEquippableBase
 {
 	GENERATED_BODY()
 	
@@ -27,10 +28,7 @@ public:
 	TArray<TObjectPtr<UAnimMontage>> WeaponAttackMontageArray;
 	UFUNCTION()
 	void SetCharacterAttack(float AttackPower);
-	UFUNCTION()
-	void SetItemDefinition(const FMasterItemDefinition& InItemDefinition);
-	UFUNCTION()
-	FMasterItemDefinition GetItemDefinition();
+
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Custom Values | GamePlayEffect")
 	TSubclassOf<UGameplayEffect> WeaponAttackEffect;
@@ -50,8 +48,6 @@ private:
 	float WeaponAttackPower;
 	UPROPERTY()
 	FActiveGameplayEffectHandle ActiveGEHandle;
-	UPROPERTY(Replicated)
-	FMasterItemDefinition ItemDefinition;
 private:
 
 	UFUNCTION(NetMulticast, Reliable)

@@ -21,8 +21,6 @@ void AArmorBase::BeginPlay()
 void AArmorBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(AArmorBase, ItemDefinition);
 }
 
 void AArmorBase::SetCharacterDefense(const float& ItemDefense)
@@ -44,15 +42,3 @@ void AArmorBase::SetCharacterDefense(const float& ItemDefense)
 		}
 	}
 }
-
-void AArmorBase::SetItemDefinition(const FMasterItemDefinition& InItemDefinition)
-{
-	ItemDefinition = InItemDefinition;
-}
-
-FMasterItemDefinition AArmorBase::GetItemDefinition()
-{
-	return ItemDefinition;
-}
-
-

@@ -21,8 +21,6 @@ void UW_InventorySlot::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	
-
 	if (Btn_ItemSlot)
 	{
 		Btn_ItemSlot->OnClicked.Clear();
@@ -175,13 +173,9 @@ void UW_InventorySlot::OnclickedActionButton()
 
 void UW_InventorySlot::UpdateSlot()
 {		
-	if (InventoryComponent)
-	{
-		FMasterItemDefinition StaticItemDefintion = InventoryComponent->GetItemDefinitionByTag(Item.ItemTag);
-
 		if (IMG_SlotImage)
 		{
-			IMG_SlotImage->SetBrushFromTexture(StaticItemDefintion.Icon);
+			IMG_SlotImage->SetBrushFromTexture(SlotItemImage);
 		}
 
 		if (Text_ItemQuantity && Item.ItemQuantity > 0)
@@ -193,8 +187,6 @@ void UW_InventorySlot::UpdateSlot()
 			Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT(""))));
 		}
 		SetSlotRarityImg();
-	}
-	
 }
 
 void UW_InventorySlot::ClearSlot()

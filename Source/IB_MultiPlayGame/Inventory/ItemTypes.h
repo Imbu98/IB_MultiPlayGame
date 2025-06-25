@@ -5,6 +5,19 @@
 #include "ItemTypes.generated.h"
 
 UENUM(BlueprintType)
+enum class EItemParts : uint8
+{
+	None,
+	Weapon,
+	Helmet,
+	Chest,
+	Gloves,
+	Pants,
+	Boots,
+	ForLastItemIndex,
+};
+
+UENUM(BlueprintType)
 enum class EItemRarity : uint8
 {
 	None,
@@ -70,6 +83,9 @@ struct FMasterItemDefinition : public FTableRowBase
 	EItemRarity ItemRarity;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	EItemParts ItemParts;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	bool bStackable;
 
 	bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
@@ -90,6 +106,13 @@ struct FMasterItemDefinition : public FTableRowBase
 			ItemRarity = static_cast<EItemRarity>(RarityByte);
 		}
 
+		uint8 PartsByte = static_cast<uint8>(ItemParts);
+		Ar.SerializeBits(&PartsByte, 8);
+		if (Ar.IsLoading())
+		{
+			ItemParts = static_cast<EItemParts>(PartsByte);
+		}
+
 		bOutSuccess = true;
 		return true;
 	}
@@ -107,6 +130,7 @@ struct FMasterItemDefinition : public FTableRowBase
 		, Description(FText::FromString(TEXT("")))
 		, ConsumableProps()
 		, ItemRarity(EItemRarity::None)
+		, ItemParts(EItemParts::None)
 		, bStackable(false)
 	{
 
@@ -136,6 +160,9 @@ struct FWeaponData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TMap<EItemRarity, float> WeaponWeightMap;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EItemParts WeaponParts;
+
 };
 
 USTRUCT(BlueprintType)
@@ -151,5 +178,8 @@ struct FArmorData : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TMap<EItemRarity,float> ArmorWeightMap;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EItemParts ArmorParts;
 };
 

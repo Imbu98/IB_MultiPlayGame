@@ -1,4 +1,4 @@
-#include "W_EquippedItemSlot.h"
+#include "W_PlayerInfo.h"
 #include "W_InventorySlot.h"
 #include "../Components/InventoryComponent.h"
 #include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
@@ -7,7 +7,7 @@
 #include "Components\Button.h"
 
 
-void UW_EquippedItemSlot::NativeConstruct()
+void UW_PlayerInfo::NativeConstruct()
 {
 	if (EquippedWeaponSlot)
 	{
@@ -21,7 +21,7 @@ void UW_EquippedItemSlot::NativeConstruct()
 	}
 }
 
-void UW_EquippedItemSlot::OnclickedEquippedButton(const FMasterItemDefinition& ItemInfo)
+void UW_PlayerInfo::OnclickedEquippedButton(const FMasterItemDefinition& ItemInfo)
 {
 	AIB_RPGPlayerController* IB_RPGPC = Cast< AIB_RPGPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 	if (IB_RPGPC)
@@ -39,4 +39,9 @@ void UW_EquippedItemSlot::OnclickedEquippedButton(const FMasterItemDefinition& I
 		}
 		IB_RPGPC->ServerUnEquipItem(ItemInfo);
 	}
+}
+
+void UW_PlayerInfo::SetEquippedItemWidget(TArray<FMasterItemDefinition> EquippedItemsInfo)
+{
+
 }

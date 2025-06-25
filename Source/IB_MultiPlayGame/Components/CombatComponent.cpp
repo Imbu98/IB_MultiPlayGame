@@ -7,17 +7,27 @@
 #include "../Widget/W_RPGSystemWidget.h"
 #include "../Widget/W_Inventory.h"
 #include "../Widget/W_InventorySlot.h"
-#include "../Widget/W_EquippedItemSlot.h"
+#include "../Widget/W_PlayerInfo.h"
 
 UCombatComponent::UCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+
 }
 
 
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 총 개수는 None과 아이템 수를 세기위한 LastItemIndex 2개를 빼서 계산
+	int32 AcutualEquippedItemNum = static_cast<int32>(EItemParts::ForLastItemIndex) - 2;
+
+	for (int32 i = 0; i < AcutualEquippedItemNum; ++i)
+	{
+		EquippedItems.Emplace(nullptr);
+	}
+	
 	
 }
 
@@ -25,8 +35,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UCombatComponent, EquippedWeaponBase);
-	DOREPLIFETIME(UCombatComponent, EquippedChest);
+	DOREPLIFETIME(UCombatComponent, EquippedItemsDefinition);
 }
 
 void UCombatComponent::ResetAttack()
@@ -39,42 +48,60 @@ void UCombatComponent::SetEquippedItem(AActor* SpawnedItem)
 	if (!GetOwner()->HasAuthority()) return;
 	if (!IsValid(SpawnedItem)) return;
 
-	if (AArmorBase* ArmorBase = Cast<AArmorBase>(SpawnedItem))
+	if (AEquippableBase* EquippedItem = Cast<AEquippableBase>(SpawnedItem))
 	{
-		const FGameplayTag HelmetTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Helmet"));
+		EquippedItems.Add(EquippedItem);
+		EquippedItemsDefinition.Add(EquippedItem->GetItemDefinition());
+		GetOwner()->ForceNetUpdate();
+		/*const FGameplayTag HelmetTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Helmet"));
 		const FGameplayTag ChestTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Chest"));
 		const FGameplayTag PantsTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Pants"));
 		const FGameplayTag GlovesTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Gloves"));
-		const FGameplayTag BootsTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Boots"));
+		const FGameplayTag BootsTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Boots"));*/
 
-		FMasterItemDefinition ArmorDefinition = ArmorBase->GetItemDefinition();
+		/*FMasterItemDefinition ArmorDefinition = ArmorBase->GetItemDefinition();
 
-		if (ArmorDefinition.ItemTag.MatchesTag(HelmetTag))
+		switch (ArmorDefinition.ItemParts)
+		{
+		case EItemParts::None:
+			break;
+
+		case EItemParts::Helmet:
 		{
 			EquippedHelmet = ArmorBase;
+			break;
 		}
-		else if (ArmorDefinition.ItemTag.MatchesTag(ChestTag))
+		case EItemParts::Chest:
 		{
 			EquippedChest = ArmorBase;
+			break;
 		}
-		else if (ArmorDefinition.ItemTag.MatchesTag(PantsTag))
+		case EItemParts::Pants:
 		{
 			EquippedPants = ArmorBase;
+			break;
 		}
-		else if (ArmorDefinition.ItemTag.MatchesTag(GlovesTag))
+		case EItemParts::Gloves:
 		{
 			EquippedGloves = ArmorBase;
+			break;
 		}
-		else if (ArmorDefinition.ItemTag.MatchesTag(BootsTag))
+		case EItemParts::Boots:
 		{
 			EquippedBoots = ArmorBase;
+			break;
 		}
+		default:
+			break;
+		}
+
 	}
 	else if (AWeaponBase* WeaponBase = Cast<AWeaponBase>(SpawnedItem))
 	{
 		EquippedWeaponBase = WeaponBase;
 
-	}	
+	}	*/
+	}
 }
 
 void UCombatComponent::UnEquipItem(const FMasterItemDefinition& Iteminfo)
@@ -88,103 +115,32 @@ void UCombatComponent::UnEquipItem(const FMasterItemDefinition& Iteminfo)
 	const FGameplayTag GlovesTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Gloves"));
 	const FGameplayTag BootsTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Boots"));
 
-	if (Iteminfo.ItemTag.MatchesTag(HelmetTag))
+	for (AEquippableBase* EquippedItem : EquippedItems)
 	{
-		if (EquippedHelmet)
+		if (EquippedItem)
 		{
-			EquippedHelmet->Destroy();
-			EquippedHelmet = nullptr;
-		}
-	}
-	else if (Iteminfo.ItemTag.MatchesTag(ChestTag))
-	{
-		if (EquippedChest)
-		{
-			EquippedChest->Destroy();
-			EquippedChest = nullptr;
-		}
-	}
-	else if (Iteminfo.ItemTag.MatchesTag(PantsTag))
-	{
-		if (EquippedPants)
-		{
-			EquippedPants->Destroy();
-			EquippedPants = nullptr;
-		}
-	}
-	else if (Iteminfo.ItemTag.MatchesTag(GlovesTag))
-	{
-		if (EquippedGloves)
-		{
-			EquippedGloves->Destroy();
-			EquippedGloves = nullptr;
-		}
-	}
-	else if (Iteminfo.ItemTag.MatchesTag(BootsTag))
-	{
-		if (EquippedBoots)
-		{
-			EquippedBoots->Destroy();
-			EquippedBoots = nullptr;
-		}
-	}
-	else if (Iteminfo.ItemTag.MatchesTag(WeaponTag))
-	{
-		if (EquippedWeaponBase)
-		{
-			EquippedWeaponBase->Destroy();
-			EquippedWeaponBase = nullptr;
-		}
-		
-	}
-
-}
-
-void UCombatComponent::OnRep_EquippedWeapon()
-{
-	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, ([this]
-	{
-		if (!EquippedWeaponBase) return;
-
-		FMasterItemDefinition ItemDef = EquippedWeaponBase->GetItemDefinition();
-
-		// PlayerController → InventoryWidget → EquippedWeaponSlot 찾기
-		if (AIB_RPGPlayerController* PC = Cast<AIB_RPGPlayerController>(GetOwner()))
-		{
-			if (UW_Inventory* InventoryWidget = Cast<UW_Inventory>(PC->InventoryWidget))   // 너가 만든 함수
+			FMasterItemDefinition EquippedItmeDefinition = EquippedItem->GetItemDefinition();
+			if (EquippedItmeDefinition.ItemTag != FGameplayTag())
 			{
-				if (UW_InventorySlot* WeaponSlot = InventoryWidget->WBP_EquippedItemSlot->EquippedWeaponSlot)
+				if (EquippedItmeDefinition.ItemParts == Iteminfo.ItemParts)
 				{
-					WeaponSlot->SetItem(ItemDef);
-					WeaponSlot->UpdateSlot();
+					EquippedItem->Destroy();
+					EquippedItem=nullptr;
 				}
 			}
 		}
-	}), 0.2f, false);
-	
+	}
 }
 
-void UCombatComponent::OnRep_EquippedChest()
+// 고치기 UW_PlayerInfoWidget에서 처리하자
+void UCombatComponent::OnRep_EquippbaleBase()
 {
-	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, ([this]
+	if (AIB_RPGPlayerController* IB_RPGPlayerContoller = Cast<AIB_RPGPlayerController>(GetOwner()))
 	{
-		if (!EquippedWeaponBase) return;
-
-		FMasterItemDefinition ItemDef = EquippedWeaponBase->GetItemDefinition();
-
-		// PlayerController → InventoryWidget → EquippedWeaponSlot 찾기
-		if (AIB_RPGPlayerController* PC = Cast<AIB_RPGPlayerController>(GetOwner()))
+		if ((IB_RPGPlayerContoller->WBP_PlayerInfoWidget))
 		{
-			if (UW_Inventory* InventoryWidget = Cast<UW_Inventory>(PC->InventoryWidget))   // 너가 만든 함수
-			{
-				if (UW_InventorySlot* ChestSlot = InventoryWidget->WBP_EquippedItemSlot->EquippedChestSlot)
-				{
-					ChestSlot->SetItem(ItemDef);
-					ChestSlot->UpdateSlot();
-				}
-			}
+
+			IB_RPGPlayerContoller->WBP_PlayerInfoWidget->SetEquippedItemWidget(EquippedItemsDefinition);
 		}
-	}), 0.2f, false);
+	}
 }

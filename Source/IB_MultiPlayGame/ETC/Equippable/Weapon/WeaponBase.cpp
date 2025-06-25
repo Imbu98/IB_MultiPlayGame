@@ -21,7 +21,6 @@ void AWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AWeaponBase, ItemDefinition);
 }
 
 void AWeaponBase::SetWeaponParams(const FWeaponParams& Params)
@@ -104,14 +103,3 @@ void AWeaponBase::SetCharacterAttack(float AttackPower)
 		}
 	}
 }
-
-void AWeaponBase::SetItemDefinition(const FMasterItemDefinition& InItemDefinition)
-{
-	ItemDefinition = InItemDefinition;
-}
-
-FMasterItemDefinition AWeaponBase::GetItemDefinition()
-{
-	return ItemDefinition;
-}
-
