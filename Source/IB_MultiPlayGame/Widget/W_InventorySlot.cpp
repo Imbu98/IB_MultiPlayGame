@@ -181,7 +181,7 @@ void UW_InventorySlot::UpdateSlot()
 
 		if (IMG_SlotImage)
 		{
-			IMG_SlotImage->SetBrushFromTexture(SlotItemImage);
+			IMG_SlotImage->SetBrushFromTexture(StaticItemDefintion.Icon);
 		}
 
 		if (Text_ItemQuantity && Item.ItemQuantity > 0)

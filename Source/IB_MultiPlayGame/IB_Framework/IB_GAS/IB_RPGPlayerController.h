@@ -192,6 +192,8 @@ public:
 	public:
 		// relevance On Equip
 		void EquipItem(const FMasterItemDefinition& ItemDefinition);
+		UFUNCTION(Server,Reliable)
+		void ServerUnEquipItem(const FMasterItemDefinition& ItemDefinition);
 
 	
 

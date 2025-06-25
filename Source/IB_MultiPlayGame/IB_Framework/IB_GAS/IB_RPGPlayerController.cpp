@@ -526,6 +526,11 @@ void AIB_RPGPlayerController::EquipItem(const FMasterItemDefinition& ItemDefinit
 	
 }
 
+void AIB_RPGPlayerController::ServerUnEquipItem_Implementation(const FMasterItemDefinition& ItemDefinition)
+{
+	CombatComponent->UnEquipItem(ItemDefinition);
+}
+
 void AIB_RPGPlayerController::ServerSwitchController_Implementation()
 {
 	SwitchController();

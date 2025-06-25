@@ -38,6 +38,8 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UW_EquippedItemSlot> WBP_EquippedItemSlot;
+	UPROPERTY(EditAnywhere, Category = "CustomValues|Widgets")
+	TObjectPtr<UW_EquippedItemSlot> WBP_EquippedItemSlotClass;
 
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UWrapBox> WB_InventoryContents;

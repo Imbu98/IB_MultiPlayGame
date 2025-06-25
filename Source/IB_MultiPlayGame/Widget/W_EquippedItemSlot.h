@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "../Inventory/ItemTypes.h"
 #include "W_EquippedItemSlot.generated.h"
 
 class UW_InventorySlot;
@@ -27,6 +28,9 @@ public:
 	TObjectPtr<UW_InventorySlot> EquippedGlovesSlot;
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UW_InventorySlot> EquippedBootsSlot;
+
+public:
+	void OnclickedEquippedButton(const FMasterItemDefinition& ItemInfo);
 
 	
 	

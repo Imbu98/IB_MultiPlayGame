@@ -171,7 +171,7 @@ void ABaseSpawnedItem::SetItemParams(FGameplayTag InItemTag)
 
 				if (WeaponAttackPower && Weight)
 				{
-					ItemDefinition.ArmorDefense = *WeaponAttackPower;
+					ItemDefinition.WeaponAttackPower = *WeaponAttackPower;
 					ItemDefinition.Weight = *Weight;
 				}
 			}

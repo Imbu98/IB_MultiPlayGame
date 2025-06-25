@@ -22,6 +22,7 @@ enum EItemTypes : int8
 };
 
 UCLASS()
+
 class IB_MULTIPLAYGAME_API UW_InventorySlot : public UUserWidget
 {
 	GENERATED_BODY()

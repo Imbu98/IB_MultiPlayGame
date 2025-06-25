@@ -30,7 +30,7 @@ public:
 	TObjectPtr<AWeaponBase> EquippedWeaponBase;
 	UPROPERTY()
 	TObjectPtr<AArmorBase> EquippedHelmet;
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_EquippedChest)
 	TObjectPtr<AArmorBase> EquippedChest;
 	UPROPERTY()
 	TObjectPtr<AArmorBase> EquippedPants;
@@ -45,7 +45,11 @@ public:
 	UFUNCTION()
 	void SetEquippedItem(AActor* SpawnedItem);
 	UFUNCTION()
+	void UnEquipItem(const FMasterItemDefinition& Iteminfo);
+	UFUNCTION()
 	void OnRep_EquippedWeapon();
+	UFUNCTION()
+	void OnRep_EquippedChest();
 		
 	
 };

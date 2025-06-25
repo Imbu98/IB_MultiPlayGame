@@ -29,7 +29,6 @@ void UW_Inventory::NativeConstruct()
 		UWidgetBlueprintLibrary::SetInputMode_UIOnlyEx(PlayerController);
 		PlayerController->SetShowMouseCursor(true);
 	}
-	
 }
 
 void UW_Inventory::NativeDestruct()
@@ -142,30 +141,26 @@ void UW_Inventory::SetEquippedItemWidget(const FMasterItemDefinition& ItemInfo)
 	const FGameplayTag GlovesTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Gloves"));
 	const FGameplayTag BootsTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Boots"));
 
-
-	if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0)))
+	if (WBP_EquippedItemSlot->EquippedWeaponSlot)
 	{
-			if (WBP_EquippedItemSlot && WBP_EquippedItemSlot->EquippedWeaponSlot)
-			{
-				if (ItemInfo.ItemTag.MatchesTag(WeaponTag))
-				{
-		
-					WBP_EquippedItemSlot->EquippedWeaponSlot->Item = ItemInfo;
-					FMasterItemDefinition StaticItemDefinition = InventoryComponent->GetItemDefinitionByTag(ItemInfo.ItemTag);
-					WBP_EquippedItemSlot->EquippedWeaponSlot->SetItemImage(StaticItemDefinition.Icon);
-					WBP_EquippedItemSlot->EquippedWeaponSlot->UpdateSlot();
-				}
-			}
-			if (WBP_EquippedItemSlot && WBP_EquippedItemSlot->EquippedChestSlot)
-			{
-				if (ItemInfo.ItemTag.MatchesTag(ChestTag))
-				{
-					WBP_EquippedItemSlot->EquippedChestSlot->Item = ItemInfo;
-					FMasterItemDefinition StaticItemDefinition = InventoryComponent->GetItemDefinitionByTag(ItemInfo.ItemTag);
-					WBP_EquippedItemSlot->EquippedChestSlot->SetItemImage(StaticItemDefinition.Icon);
-					WBP_EquippedItemSlot->EquippedChestSlot->UpdateSlot();
-				}
-			}
+		if (ItemInfo.ItemTag.MatchesTag(WeaponTag))
+		{
+			WBP_EquippedItemSlot->EquippedWeaponSlot->SetItem(ItemInfo);
+			FMasterItemDefinition StaticItemDefinition = InventoryComponent->GetItemDefinitionByTag(ItemInfo.ItemTag);
+			WBP_EquippedItemSlot->EquippedWeaponSlot->SetItemImage(StaticItemDefinition.Icon);
+			WBP_EquippedItemSlot->EquippedWeaponSlot->UpdateSlot();
+		}
+	}
+
+	if (WBP_EquippedItemSlot->EquippedChestSlot)
+	{
+		if (ItemInfo.ItemTag.MatchesTag(ChestTag))
+		{
+			WBP_EquippedItemSlot->EquippedChestSlot->Item = ItemInfo;
+			FMasterItemDefinition StaticItemDefinition = InventoryComponent->GetItemDefinitionByTag(ItemInfo.ItemTag);
+			WBP_EquippedItemSlot->EquippedChestSlot->SetItemImage(StaticItemDefinition.Icon);
+			WBP_EquippedItemSlot->EquippedChestSlot->UpdateSlot();
+		}
 	}
 }
 
