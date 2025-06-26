@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "Net/Serialization/FastArraySerializer.h"
 #include "ItemTypes.generated.h"
 
 UENUM(BlueprintType)
@@ -47,6 +48,8 @@ struct FConsumableProps
 
 };
 
+
+
 USTRUCT(BlueprintType)
 struct FMasterItemDefinition : public FTableRowBase
 {
@@ -87,7 +90,7 @@ struct FMasterItemDefinition : public FTableRowBase
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	bool bStackable;
-
+	
 	bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
 	{
 		Ar << ItemID;
@@ -117,6 +120,10 @@ struct FMasterItemDefinition : public FTableRowBase
 		return true;
 	}
 
+	bool operator==(const FMasterItemDefinition& Other) const
+	{
+		return ItemTag == Other.ItemTag; 
+	}
 	
 
 	FMasterItemDefinition() :

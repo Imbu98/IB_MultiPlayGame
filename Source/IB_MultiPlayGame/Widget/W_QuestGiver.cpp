@@ -125,8 +125,8 @@ void UW_QuestGiver::SetInventoryRewards()
 				if (WBP_ItemInfoSlot = CreateWidget<UW_ItemInfoSlot>(this, WBP_ItemInfoSlotClass))
 				{
 
-					FGameplayTag ItemTag = ItemRewards.ItemTag;
-					int32 ItemQuantity = ItemRewards.ItemQuantity;
+					FGameplayTag ItemTag = ItemRewards.QuestRewardItemDefinition.ItemTag;
+					int32 ItemQuantity = ItemRewards.QuestRewardItemDefinition.ItemQuantity;
 
 					FMasterItemDefinition ItemData = InventoryComponent->GetItemDefinitionByTag(ItemTag);
 					ItemData.ItemQuantity = ItemQuantity;

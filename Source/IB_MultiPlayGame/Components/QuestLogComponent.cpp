@@ -4,6 +4,7 @@
 #include "Net/UnrealNetwork.h"
 #include "QuestGiverComponent.h"
 #include "../Character/IB_MainChar.h"
+#include "../Inventory/ItemTypes.h"
 #include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 
 
@@ -169,10 +170,8 @@ void UQuestLogComponent::ServerTurnInQuest_Implementation(const FName& QuestId)
 
 		for (FItemRewards ItemRewards : ActiveQuestData.CurrentStageDetails.ItemRewards)
 		{
-			FGameplayTag ItemTag = ItemRewards.ItemTag;
-			int32 Quantity = ItemRewards.ItemQuantity;
 
-			InventoryComponent->AddItem(ItemTag, Quantity);
+			InventoryComponent->AddItem(ItemRewards.QuestRewardItemDefinition, ItemRewards.QuestRewardItemDefinition.ItemQuantity);
 		}
 		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, FString::Printf(TEXT("XP : %d"), ActiveQuestData.CurrentStageDetails.XPReward));
 		CompleteQuest(QuestId);
@@ -186,7 +185,7 @@ void UQuestLogComponent::RemoveCurrentQuest(const FName& QuestId)
 	if (UQuestComponent* QuestComponent = GetOwner()->FindComponentByClass<UQuestComponent>())
 	{
 
-		// 1. Á¶°Ç¿¡ ¸Â´Â QuestComponent¸¦ ÀÓ½Ã ¹è¿­¿¡ ÀúÀå
+		// 1. ï¿½ï¿½ï¿½Ç¿ï¿½ ï¿½Â´ï¿½ QuestComponentï¿½ï¿½ ï¿½Ó½ï¿½ ï¿½è¿­ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		for (FActiveQuestData& ActiveQuestData : QuestComponent->CurrentQuests)
 		{
 			if (!ActiveQuestData.QuestID.IsNone() && ActiveQuestData.QuestID == QuestId)
@@ -195,7 +194,7 @@ void UQuestLogComponent::RemoveCurrentQuest(const FName& QuestId)
 			}
 		}
 
-		// 2. ÀÓ½Ã ¹è¿­¿¡ ÀÖ´Â ¿ä¼ÒµéÀ» CurrentQuests¿¡¼­ Á¦°Å
+		// 2. ï¿½Ó½ï¿½ ï¿½è¿­ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½Òµï¿½ï¿½ï¿½ CurrentQuestsï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		for (FActiveQuestData& ActiveQuestData : ToRemove)
 		{
 			QuestComponent->CurrentQuests.Remove(ActiveQuestData);

@@ -40,6 +40,7 @@
 #include "AIController.h"
 #include "Kismet\GameplayStatics.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
+#include "IB_MultiPlayGame/Widget/W_InventorySlot.h"
 
 DEFINE_LOG_CATEGORY(Imbu);
 
@@ -150,7 +151,7 @@ void AIB_RPGPlayerController::BeginPlay()
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
 		{
 				ServerSpawnCannonRequest();
-		}, 2.0f, false); // ¾à°£ÀÇ Áö¿¬
+		}, 2.0f, false); // ï¿½à°£ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	}
 	//Craete InventoryWidget
 	CreateInventoryWidget();
@@ -257,39 +258,60 @@ void AIB_RPGPlayerController::CreateInventoryWidget()
 
 void AIB_RPGPlayerController::ToggleInventoryWidget()
 {
-	if (InventoryWidget)
+	if (InventoryWidgetClass)
 	{
-		if (InventoryWidget->IsInViewport())
+		if (!InventoryWidget)
 		{
-			UWidgetBlueprintLibrary::SetInputMode_GameOnly(this);
-			SetShowMouseCursor(false);
-			InventoryWidget->RemoveFromParent();
+			CreateInventoryWidget();
+			InventoryWidget->AddToViewport();
+			SetShowMouseCursor(true);
 		}
 		else
 		{
-			CreateInventoryWidget();
-			UWidgetBlueprintLibrary::SetInputMode_GameAndUIEx(this, nullptr,EMouseLockMode::DoNotLock, false,false);
-			SetShowMouseCursor(true);
-			InventoryWidget->AddToViewport(0);
+			if (InventoryWidget->IsInViewport())
+			{
+				InventoryWidget->RemoveFromParent();
+				SetShowMouseCursor(false);
+			}
+			else
+			{
+				InventoryWidget->AddToViewport();
+				SetShowMouseCursor(true);
+			}
 		}
 	}
+	
 }
 
 void AIB_RPGPlayerController::TogglePlayerInfoWidget()
 {
+	if (!IsValid(InventoryComponent)) return;
+	if (!IsValid(CombatComponent)) return;
+	
 	if (WBP_PlayerInfoWidgetClass)
 	{
-		if (WBP_PlayerInfoWidget = CreateWidget<UW_PlayerInfo>(this, WBP_PlayerInfoWidgetClass))
+		if (!WBP_PlayerInfoWidget)
+		{
+			if (WBP_PlayerInfoWidget = CreateWidget<UW_PlayerInfo>(this, WBP_PlayerInfoWidgetClass))
+			{
+				WBP_PlayerInfoWidget->InventoryComponent = InventoryComponent;
+				WBP_PlayerInfoWidget->SetEquippedItemWidget(CombatComponent->GetEquippedItemMap());
+				WBP_PlayerInfoWidget->AddToViewport();
+				SetShowMouseCursor(true);
+			}
+		}
+		else
 		{
 			if (WBP_PlayerInfoWidget->IsInViewport())
 			{
 				WBP_PlayerInfoWidget->RemoveFromParent();
+				SetShowMouseCursor(false);
 			}
 			else
 			{
 				WBP_PlayerInfoWidget->AddToViewport();
+				SetShowMouseCursor(true);
 			}
-
 		}
 	}
 }
@@ -378,7 +400,7 @@ void AIB_RPGPlayerController::SwitchController()
 		return;
 	}
 	
-		// Áö±Ý controlled pawnÀÌ ib_charÀÏ ¶§
+		// ï¿½ï¿½ï¿½ï¿½ controlled pawnï¿½ï¿½ ib_charï¿½ï¿½ ï¿½ï¿½
 		if (AIB_MainChar* IB_MainChar = Cast<AIB_MainChar>(GetPawn()))
 		{
 			CachedIB_MainChar = IB_MainChar;
@@ -551,7 +573,7 @@ void AIB_RPGPlayerController::EquipItem(const FMasterItemDefinition& ItemDefinit
 			if (AArmorBase* SpawnedArmor = GetWorld()->SpawnActorDeferred<AArmorBase>(CurrentArmorParams.ArmorClass, SpawnTransform))
 			{
 				SpawnedArmor->SetReplicates(true);
-				//SpawnedArmor->SetWeaponParams(CurrentWeaponParams); // ³ªÁß¿¡ ¹æ¾î±¸ ¸Þ½¬Ãß°¡ÇÒ°Å¸é Ãß°¡
+				//SpawnedArmor->SetWeaponParams(CurrentWeaponParams); // ï¿½ï¿½ï¿½ß¿ï¿½ ï¿½ï¿½î±¸ ï¿½Þ½ï¿½ï¿½ß°ï¿½ï¿½Ò°Å¸ï¿½ ï¿½ß°ï¿½
 				SpawnedArmor->SetItemDefinition(ItemDefinition);
 				SpawnedArmor->SetOwner(this->GetPawn());
 				SpawnedArmor->SetCharacterDefense(ItemDefinition.ArmorDefense);
@@ -563,6 +585,7 @@ void AIB_RPGPlayerController::EquipItem(const FMasterItemDefinition& ItemDefinit
 				USkeletalMeshComponent* Mesh = Cast<USkeletalMeshComponent>(this->GetPawn()->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
 				if (Mesh && Mesh->DoesSocketExist(SocketName))
 				{
+					// AttachSocket
 					SpawnedArmor->AttachToComponent(Mesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
 
 					UE_LOG(LogTemp, Warning, TEXT("ArmorBase spawned on: %s"), GetWorld()->IsNetMode(NM_Client) ? TEXT("Client") : TEXT("Server"));

@@ -53,7 +53,7 @@ void UInventoryComponent::BeginPlay()
 
 }
 
-bool UInventoryComponent::AddItem(const FGameplayTag& ItemTag, int32 NumItems, const FMasterItemDefinition& ItemDefinition)
+bool UInventoryComponent::AddItem(const FMasterItemDefinition& ItemDefinition,int32 NumItems )
 {
 	AActor* Owner = GetOwner();
 	if (Owner == nullptr)
@@ -64,7 +64,7 @@ bool UInventoryComponent::AddItem(const FGameplayTag& ItemTag, int32 NumItems, c
 	// 이 컴포넌트를 가지고 있는 캐릭터가 클라이언트면 
 	if (!Owner->HasAuthority())
 	{
-		ServerAddItem(ItemTag, NumItems,ItemDefinition);
+		ServerAddItem(NumItems,ItemDefinition);
 		return false;
 	}
 	// QuestItem Add 처리
@@ -72,7 +72,7 @@ bool UInventoryComponent::AddItem(const FGameplayTag& ItemTag, int32 NumItems, c
 	{
 		if(AIB_MainChar* IB_MainChar = Cast<AIB_MainChar>(PlayerController->GetPawn()))
 		{
-			FString ItemTagString = ItemTag.ToString();
+			FString ItemTagString = ItemDefinition.ItemTag.ToString();
 			if (IB_MainChar->OnObjectiveIdCalledDelegate.IsBound())
 			{
 				IB_MainChar->OnObjectiveIdCalledDelegate.Broadcast(ItemTagString, NumItems);
@@ -84,12 +84,12 @@ bool UInventoryComponent::AddItem(const FGameplayTag& ItemTag, int32 NumItems, c
 	//PackageInventory(CachedInventory);
 
 	// 나중에 얘도 데이터 테이블에서 data가져와서 stackable같은걸로 처리를 해줄 수 있으면 해주자
-	return DefinitionItemAdd(ItemTag,NumItems,ItemDefinition);
+	return DefinitionItemAdd(ItemDefinition,NumItems);
 }
 
-void UInventoryComponent::ServerAddItem_Implementation(const FGameplayTag& ItemTag, int32 NumItems, const FMasterItemDefinition& ItemDefinition)
+void UInventoryComponent::ServerAddItem_Implementation(int32 NumItems, const FMasterItemDefinition& ItemDefinition)
 {
-	AddItem(ItemTag, NumItems, ItemDefinition);
+	AddItem(ItemDefinition,NumItems);
 }
 
 void UInventoryComponent::PackageInventory(FPackagedInventory& OutInventory)
@@ -211,8 +211,8 @@ int32 UInventoryComponent::QueryInventory(const FString& ItemTagString)
 	return 0;
 }
 
-
-void UInventoryComponent::UseItem(const FGameplayTag& ItemTag, int32 NumItems, const FMasterItemDefinition& DynamicItemData)
+// 몇번째 아이템이 넘어왔는지 
+void UInventoryComponent::UseItem(const FMasterItemDefinition& DynamicItemData,const int32& SlotIndex,int32 NumItems)
 {
 	AActor* Owner = GetOwner();
 	if (Owner == nullptr)
@@ -222,22 +222,50 @@ void UInventoryComponent::UseItem(const FGameplayTag& ItemTag, int32 NumItems, c
 
 	if (!Owner->HasAuthority())
 	{
-		ServerUseItem(ItemTag, NumItems, DynamicItemData);
+		ServerUseItem(DynamicItemData,SlotIndex,NumItems);
 		return;
 	}
-	const FMasterItemDefinition Item = GetItemDefinitionByTag(ItemTag);
+	
 
-	DefinitionItemUse(Item, DynamicItemData);
+	DefinitionItemUse(DynamicItemData,SlotIndex,NumItems);
 
 }
 
-void UInventoryComponent::ServerUseItem_Implementation(const FGameplayTag& ItemTag, int32 NumItems, const FMasterItemDefinition& DynamicItemData)
+void UInventoryComponent::RemoveItem(const FMasterItemDefinition& DynamicItemData,const int32& SlotIndex,int32 NumItems)
 {
-	if (CachedInventory.ItemTags.Contains(ItemTag))
-	{
-		UseItem(ItemTag, NumItems, DynamicItemData);
-	}
 
+	FGameplayTag NoneTag = FGameplayTag::RequestGameplayTag(TEXT("Item.None"));
+	
+	if (!CachedInventory.ItemTags.IsValidIndex(SlotIndex) || !CachedInventory.ItemDefinitions.IsValidIndex(SlotIndex))
+	{
+		return;
+	}
+	
+	if (CachedInventory.ItemTags[SlotIndex] == DynamicItemData.ItemTag)
+	{
+		CachedInventory.ItemQuantities[SlotIndex] -= NumItems;
+		
+		if (CachedInventory.ItemQuantities[SlotIndex] <=0)
+		{
+			CachedInventory.ItemTags[SlotIndex] = NoneTag;
+			CachedInventory.ItemDefinitions[SlotIndex] = FMasterItemDefinition();
+			CachedInventory.ItemQuantities[SlotIndex] = 0;
+		}
+
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red,
+			FString::Printf(TEXT("Slot %d cleared. Tag: %s"), SlotIndex, *DynamicItemData.ItemTag.ToString()));
+
+		// 위젯 갱신 등 브로드캐스트
+		InventoryPackageDelegate.Broadcast(CachedInventory);
+	}
+}
+
+void UInventoryComponent::ServerUseItem_Implementation( const FMasterItemDefinition& DynamicItemData,const int32& SlotIndex,int32 NumItems)
+{
+	if (CachedInventory.ItemTags.Contains(DynamicItemData.ItemTag))
+	{
+		UseItem(DynamicItemData,SlotIndex,NumItems);
+	}
 }
 
 
@@ -272,7 +300,7 @@ FMasterItemDefinition UInventoryComponent::GetItemDefinitionByTag(const FGamepla
 }
 
 
-void UInventoryComponent::DefinitionItemUse(const FMasterItemDefinition& StaticItemData, const FMasterItemDefinition& DynamicItemData)
+void UInventoryComponent::DefinitionItemUse(const FMasterItemDefinition& DynamicItemData,const int32& SlotIndex,int32 NumItems)
 {
 	AActor* Owner = GetOwner();
 	if (!IsValid(Owner)) return;
@@ -284,16 +312,17 @@ void UInventoryComponent::DefinitionItemUse(const FMasterItemDefinition& StaticI
 	const FGameplayTag ConsumableTag = FGameplayTag::RequestGameplayTag(FName("Item.Consumable"));
 	const FGameplayTag EquippableTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable"));
 	
-
-	if (StaticItemData.ItemTag.MatchesTag(ConsumableTag))
+	const FMasterItemDefinition StaticItemDefinition = GetItemDefinitionByTag(DynamicItemData.ItemTag);
+	
+	if (StaticItemDefinition.ItemTag.MatchesTag(ConsumableTag))
 	{
 		if (UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Owner))
 		{
-			if (IsValid(StaticItemData.ConsumableProps.ItemEffectClass))
+			if (IsValid(StaticItemDefinition.ConsumableProps.ItemEffectClass))
 			{
 				const FGameplayEffectContextHandle ContextHandle = OwnerAsc->MakeEffectContext();
-				const FGameplayEffectSpecHandle SpecHandle = OwnerAsc->MakeOutgoingSpec(StaticItemData.ConsumableProps.ItemEffectClass,
-					StaticItemData.ConsumableProps.ItemEffectLevel, ContextHandle);
+				const FGameplayEffectSpecHandle SpecHandle = OwnerAsc->MakeOutgoingSpec(StaticItemDefinition.ConsumableProps.ItemEffectClass,
+					StaticItemDefinition.ConsumableProps.ItemEffectLevel, ContextHandle);
 				OwnerAsc->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 			}
 		}
@@ -302,6 +331,10 @@ void UInventoryComponent::DefinitionItemUse(const FMasterItemDefinition& StaticI
 	{
 		IB_RPGPlayerContoller->EquipItem(DynamicItemData);
 	}
+
+	RemoveItem(DynamicItemData,SlotIndex,NumItems);
+
+	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Magenta, FString::Printf(TEXT("Server Item Used : %s"), *DynamicItemData.ItemTag.ToString()));
 
 	// Armor를 장착하면 DT_Equippable에 저장되있는 GameplayEffect로 Defense를 +
 	/*else if (DynamicItemData.ItemTag.MatchesTag(EquippableArmorTag))
@@ -318,18 +351,15 @@ void UInventoryComponent::DefinitionItemUse(const FMasterItemDefinition& StaticI
 			}
 		}
 	}*/
-
-	AddItem(DynamicItemData.ItemTag, -1, DynamicItemData);
-
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Magenta, FString::Printf(TEXT("Server Item Used : %s"), *DynamicItemData.ItemTag.ToString()));
+	
 }
 
-bool UInventoryComponent::DefinitionItemAdd(const FGameplayTag& ItemTag,int32 NumItems,const FMasterItemDefinition& ItemDefinition)
+bool UInventoryComponent::DefinitionItemAdd(const FMasterItemDefinition& ItemDefinition,int32 NumItems)
 {
 	FGameplayTag NoneTag = FGameplayTag::RequestGameplayTag(TEXT("Item.None"));
 	FGameplayTag EquippableTag = FGameplayTag::RequestGameplayTag(TEXT("Item.Equippable"));
 
-	const FMasterItemDefinition Item = GetItemDefinitionByTag(ItemTag);
+	const FMasterItemDefinition Item = GetItemDefinitionByTag(ItemDefinition.ItemTag);
 	const bool bStackable = Item.bStackable;
 
 	if (!CachedInventory.ItemTags.Contains(NoneTag))
@@ -338,52 +368,31 @@ bool UInventoryComponent::DefinitionItemAdd(const FGameplayTag& ItemTag,int32 Nu
 		return false;
 	}
 
-	if (CachedInventory.ItemTags.Contains(ItemTag))
+	if (CachedInventory.ItemTags.Contains(ItemDefinition.ItemTag))
 	{
 		// 여러 개 Stack 할 수 없는 아이템 ( 무기 , 방어구 등)
 		if (bStackable==false)
 		{
 			if (NumItems > 0)
 			{
-				
 				int32 NoneIndex = CachedInventory.ItemTags.IndexOfByKey(NoneTag);
 				if (NoneIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(NoneIndex))
 				{
-					CachedInventory.ItemTags[NoneIndex] = ItemTag;
+					CachedInventory.ItemTags[NoneIndex] = ItemDefinition.ItemTag;
 					CachedInventory.ItemQuantities[NoneIndex] = NumItems;
 					CachedInventory.ItemDefinitions[NoneIndex] = ItemDefinition;
 
-					GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemTag.ToString(), NumItems));
+					GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemDefinition.ItemTag.ToString(), NumItems));
 
 					InventoryPackageDelegate.Broadcast(CachedInventory);
 					return true;
 				}
 			}
-			// 아이템을 사용해서 개수가 0이 되면
-			else
-			{
-				int32 FoundIndex = CachedInventory.ItemTags.IndexOfByKey(ItemTag);
-				if (FoundIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(FoundIndex))
-				{
-					CachedInventory.ItemQuantities[FoundIndex] += NumItems;
-					if (CachedInventory.ItemQuantities[FoundIndex] <= 0)
-					{
-						CachedInventory.ItemTags[FoundIndex] = NoneTag;
-						CachedInventory.ItemDefinitions[FoundIndex] = FMasterItemDefinition();
-
-						GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemTag.ToString(), NumItems));
-
-						InventoryPackageDelegate.Broadcast(CachedInventory);
-						return true;
-					}
-				}
-			}
-			
 		}
 		// Stackable == true면 수량++
 		else
 		{
-			int32 FoundIndex = CachedInventory.ItemTags.IndexOfByKey(ItemTag);
+			int32 FoundIndex = CachedInventory.ItemTags.IndexOfByKey(ItemDefinition.ItemTag);
 			if (FoundIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(FoundIndex))
 			{
 				CachedInventory.ItemQuantities[FoundIndex] += NumItems;
@@ -391,7 +400,7 @@ bool UInventoryComponent::DefinitionItemAdd(const FGameplayTag& ItemTag,int32 Nu
 				{
 					CachedInventory.ItemTags[FoundIndex] = NoneTag;
 
-					GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemTag.ToString(), NumItems));
+					GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemDefinition.ItemTag.ToString(), NumItems));
 
 					InventoryPackageDelegate.Broadcast(CachedInventory);
 					return true;
@@ -405,11 +414,11 @@ bool UInventoryComponent::DefinitionItemAdd(const FGameplayTag& ItemTag,int32 Nu
 		int32 NoneIndex = CachedInventory.ItemTags.IndexOfByKey(NoneTag);
 		if (NoneIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(NoneIndex))
 		{
-			CachedInventory.ItemTags[NoneIndex] = ItemTag;
+			CachedInventory.ItemTags[NoneIndex] = ItemDefinition.ItemTag;
 			CachedInventory.ItemQuantities[NoneIndex] = NumItems;
 			CachedInventory.ItemDefinitions[NoneIndex] = ItemDefinition;
 
-			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemTag.ToString(), NumItems));
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemDefinition.ItemTag.ToString(), NumItems));
 			InventoryPackageDelegate.Broadcast(CachedInventory);
 
 			return true;

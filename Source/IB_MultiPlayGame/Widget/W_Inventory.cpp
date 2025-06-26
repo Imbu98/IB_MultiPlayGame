@@ -26,7 +26,7 @@ void UW_Inventory::NativeConstruct()
 	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	if (IsValid(PlayerController))
 	{
-		UWidgetBlueprintLibrary::SetInputMode_UIOnlyEx(PlayerController);
+		//UWidgetBlueprintLibrary::SetInputMode_UIOnlyEx(PlayerController);
 		PlayerController->SetShowMouseCursor(true);
 	}
 }
@@ -54,7 +54,7 @@ void UW_Inventory::BindInventoryItemDelegate()
 {
 	if (InventoryWidgetController)
 	{
-		// TabÀ» ´­·¯ InvetoryÀ§Á¬À» ¸¸µé±â Àü±îÁö´Â ItemRecieveµ¨¸®°ÔÀÌÆ®°¡ ¼±¾ðµÇÁö ¾Ê´Â´Ù ³ªÁß¿¡ ¾î¶»°Ô ÇÒÁö »ý°¢ÇØº¸ÀÚ
+		// Tabï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Invetoryï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ItemRecieveï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê´Â´ï¿½ ï¿½ï¿½ï¿½ß¿ï¿½ ï¿½î¶»ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Øºï¿½ï¿½ï¿½
 		InventoryWidgetController->InventoryItemDelegate.AddDynamic(this, &UW_Inventory::InventoryItemRecieved);
 		
 		InventoryWidgetController->InventoryBroadCastComplete.AddDynamic(this, &UW_Inventory::InventoryBroadcastComplete);
@@ -106,14 +106,14 @@ void UW_Inventory::MakeItemRowWidget(const FPackagedInventory& PackagedInventory
 		if (!SlotWidget) continue;
 		
 
-		// ÅÂ±×°¡ À¯È¿ÇÑ ¾ÆÀÌÅÛÀÎ °æ¿ì
+		// ï¿½Â±×°ï¿½ ï¿½ï¿½È¿ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
 		if (PackagedInventory.ItemTags.IsValidIndex(i) &&
 			PackagedInventory.ItemQuantities.IsValidIndex(i) &&
 			PackagedInventory.ItemTags[i].IsValid()&&
 			PackagedInventory.ItemDefinitions[i].ItemTag.IsValid())
 		{
-			// ¾ÆÀÌÅÛ ¼ö·®°ú ¾ÆÀÌÄÜ Á¤º¸¸¸ °¡Á®¿À±â
-			FMasterItemDefinition ItemData = InventoryComponent->GetItemDefinitionByTag(PackagedInventory.ItemTags[i]); // ÀÌ ÇÔ¼ö´Â OwningInventory µî¿¡¼­ ±¸Çö
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			FMasterItemDefinition ItemData = InventoryComponent->GetItemDefinitionByTag(PackagedInventory.ItemTags[i]); // ï¿½ï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½ OwningInventory ï¿½î¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
 			ItemData.ItemQuantity = PackagedInventory.ItemQuantities[i];
 
@@ -123,8 +123,8 @@ void UW_Inventory::MakeItemRowWidget(const FPackagedInventory& PackagedInventory
 		}
 		else
 		{
-			// ºó ½½·Ô Ã³¸®
-			SlotWidget->ClearSlot(); // ÀÌ ÇÔ¼ö´Â ±âº» ¾ÆÀÌÄÜ, ÅØ½ºÆ® ºñ¿ò µî ¼³Á¤
+			// ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
+			SlotWidget->ClearSlot(); // ï¿½ï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½ ï¿½âº» ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½Ø½ï¿½Æ® ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		}
 		SlotWidget->SlotIndex = i;
 
@@ -137,63 +137,6 @@ void UW_Inventory::MakeItemRowWidget(const FPackagedInventory& PackagedInventory
 	}
 	//SetEquippedItemWidget(CombatComponent->EquippedItemsDefinition);
 }
-
-//On client
-void UW_Inventory::SetEquippedItemWidget(TArray<FMasterItemDefinition> EquippedItemsDefinition)
-{
-	/*if (EquippedItemsDefinition.IsEmpty()) return;
-	if (!IsValid(InventoryComponent)) return;
-
-		for (FMasterItemDefinition& EquippedItemDefinition : EquippedItemsDefinition)
-		{
-			if (EquippedItemDefinition.ItemTag==FGameplayTag()) continue;
-
-			EItemParts ItemParts = EquippedItemDefinition.ItemParts;
-
-			UpdateEquippedSlot(ItemParts, EquippedItemDefinition);
-			
-		}*/
-}
-
-void UW_Inventory::UpdateEquippedSlot(EItemParts Part, const FMasterItemDefinition& Def)
-{
-	/*if (!IsValid(WBP_EquippedItemSlot)) return;
-
-	FMasterItemDefinition StaticItemDefinition = InventoryComponent->GetItemDefinitionByTag(Def.ItemTag);
-	UTexture2D* ItemIcon = StaticItemDefinition.Icon;
-	switch (Part)
-	{
-	case EItemParts::Weapon:
-	{
-		if (WBP_EquippedItemSlot->EquippedWeaponSlot)
-		{
-			WBP_EquippedItemSlot->EquippedWeaponSlot->SetItemImage(ItemIcon);
-			WBP_EquippedItemSlot->EquippedWeaponSlot->Item = Def;
-			WBP_EquippedItemSlot->EquippedWeaponSlot->UpdateSlot();
-			break;
-		}
-	}
-
-
-
-	case EItemParts::Chest:
-	{
-		if (WBP_EquippedItemSlot->EquippedChestSlot)
-		{
-		WBP_EquippedItemSlot->EquippedChestSlot->SetItemImage(ItemIcon);
-		WBP_EquippedItemSlot->EquippedChestSlot->Item = Def;
-		WBP_EquippedItemSlot->EquippedChestSlot->UpdateSlot();
-		break;
-		}
-	}
-
-
-
-	default:
-		break;
-	}*/
-}
-
 void UW_Inventory::OnScrollBoxReset()
 {
 	if (WB_InventoryContents)
@@ -207,11 +150,11 @@ void UW_Inventory::OnScrollBoxReset()
 	}
 }
 
-void UW_Inventory::OnActionButtonClicked(const FMasterItemDefinition& Item)
+void UW_Inventory::OnActionButtonClicked(const FMasterItemDefinition& Item,const float& SlotIndex)
 {
 	if (IsValid(InventoryComponent))
 	{
-		InventoryComponent->UseItem(Item.ItemTag,1, Item);
+		InventoryComponent->UseItem(Item,SlotIndex,1);
 	}
 }
 

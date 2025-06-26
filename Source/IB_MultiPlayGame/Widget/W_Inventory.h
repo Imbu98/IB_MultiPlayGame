@@ -36,10 +36,7 @@ public:
 	TSubclassOf<UW_ItemRow> WBP_ItemRowClass;
 	UPROPERTY()
 	TArray<UW_ItemRow*> ActiveItemWidgets;*/
-
-
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	TObjectPtr<UW_PlayerInfo> WBP_EquippedItemSlot;
+	
 	UPROPERTY(EditAnywhere, Category = "CustomValues|Widgets")
 	TObjectPtr<UW_PlayerInfo> WBP_EquippedItemSlotClass;
 
@@ -72,17 +69,14 @@ public:
 	UFUNCTION()
 	void OnScrollBoxReset();
 	UFUNCTION()
-	void OnActionButtonClicked(const FMasterItemDefinition& Item);
+	void OnActionButtonClicked(const FMasterItemDefinition& Item,const float& SlotIndex);
 
 	UFUNCTION()
 	void HandleInventoryItemRecieved(const FPackagedInventory& PackagedInventory);
 
 	UFUNCTION()
 	void MakeItemRowWidget(const FPackagedInventory& PackagedInventory);
-	UFUNCTION()
-	void SetEquippedItemWidget(TArray<FMasterItemDefinition> EquippedItemsDefinition);
-	UFUNCTION()
-	void UpdateEquippedSlot(EItemParts Part, const FMasterItemDefinition& Def);
+
 
 	
 

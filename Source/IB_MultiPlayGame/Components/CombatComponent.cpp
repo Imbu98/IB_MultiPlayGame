@@ -20,14 +20,13 @@ void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 총 개수는 None과 아이템 수를 세기위한 LastItemIndex 2개를 빼서 계산
-	int32 AcutualEquippedItemNum = static_cast<int32>(EItemParts::ForLastItemIndex) - 2;
-
-	for (int32 i = 0; i < AcutualEquippedItemNum; ++i)
+	uint8 FirstIndex =static_cast<uint8>(EItemParts::None) + 1;
+	uint8 LastIndex = static_cast<uint8>(EItemParts::ForLastItemIndex);
+	for (uint8 i =FirstIndex ; i <LastIndex ; ++i)
 	{
-		EquippedItems.Emplace(nullptr);
+		EItemParts Parts = static_cast<EItemParts>(i);
+		EquippedItemMap.Add(Parts, FMasterItemDefinition()); // Add는 이미 있으면 덮어씀
 	}
-	
 	
 }
 
@@ -37,6 +36,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	DOREPLIFETIME(UCombatComponent, EquippedItemsDefinition);
 }
+
 
 void UCombatComponent::ResetAttack()
 {
@@ -50,97 +50,85 @@ void UCombatComponent::SetEquippedItem(AActor* SpawnedItem)
 
 	if (AEquippableBase* EquippedItem = Cast<AEquippableBase>(SpawnedItem))
 	{
-		EquippedItems.Add(EquippedItem);
-		EquippedItemsDefinition.Add(EquippedItem->GetItemDefinition());
-		GetOwner()->ForceNetUpdate();
-		/*const FGameplayTag HelmetTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Helmet"));
-		const FGameplayTag ChestTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Chest"));
-		const FGameplayTag PantsTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Pants"));
-		const FGameplayTag GlovesTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Gloves"));
-		const FGameplayTag BootsTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Boots"));*/
+		FMasterItemDefinition EquippedItemDefinition=EquippedItem->GetItemDefinition();
 
-		/*FMasterItemDefinition ArmorDefinition = ArmorBase->GetItemDefinition();
-
-		switch (ArmorDefinition.ItemParts)
+		// EquippedItemActor정보와 ItemInfo Map으로 저장
+		if (!EquippedInstancedItemMap.Contains(EquippedItemDefinition.ItemParts))
 		{
-		case EItemParts::None:
-			break;
-
-		case EItemParts::Helmet:
-		{
-			EquippedHelmet = ArmorBase;
-			break;
-		}
-		case EItemParts::Chest:
-		{
-			EquippedChest = ArmorBase;
-			break;
-		}
-		case EItemParts::Pants:
-		{
-			EquippedPants = ArmorBase;
-			break;
-		}
-		case EItemParts::Gloves:
-		{
-			EquippedGloves = ArmorBase;
-			break;
-		}
-		case EItemParts::Boots:
-		{
-			EquippedBoots = ArmorBase;
-			break;
-		}
-		default:
-			break;
+			EquippedInstancedItemMap.Add(EquippedItemDefinition.ItemParts,EquippedItem);
 		}
 
-	}
-	else if (AWeaponBase* WeaponBase = Cast<AWeaponBase>(SpawnedItem))
-	{
-		EquippedWeaponBase = WeaponBase;
+		// Map을 만들기 위한 아이템 정보들 Array에 추가
+		EquippedItemsDefinition.Add(EquippedItemDefinition);
 
-	}	*/
+		// Server에서 먼저 Array로 Map을 만들고, 클라이언트RPC로 클라에서도 Map을 만들어줌 
+		for (const FMasterItemDefinition& ItemDef : EquippedItemsDefinition)
+		{
+			EquippedItemMap.Add(ItemDef.ItemParts,ItemDef);
+		}
+		//ClientSetEquippedItemMap(EquippedItemsDefinition);
 	}
 }
+void UCombatComponent::ClientSetEquippedItemMap_Implementation(const TArray<FMasterItemDefinition>& EquippedItemDefinitions)
+{
+	
+}
 
-void UCombatComponent::UnEquipItem(const FMasterItemDefinition& Iteminfo)
+void UCombatComponent::UnEquipItem(const FMasterItemDefinition& ItemInfo)
 {
 	if (!GetOwner()->HasAuthority()) return;
-
-	const FGameplayTag WeaponTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Weapon"));
-	const FGameplayTag HelmetTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Helmet"));
-	const FGameplayTag ChestTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Chest"));
-	const FGameplayTag PantsTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Pants"));
-	const FGameplayTag GlovesTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Gloves"));
-	const FGameplayTag BootsTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor.Boots"));
-
-	for (AEquippableBase* EquippedItem : EquippedItems)
+	
+	if (AEquippableBase** EquippedItemPtr = EquippedInstancedItemMap.Find(ItemInfo.ItemParts))
 	{
-		if (EquippedItem)
+		AEquippableBase* EquippedItem = *EquippedItemPtr;
+		if (IsValid(EquippedItem))
 		{
-			FMasterItemDefinition EquippedItmeDefinition = EquippedItem->GetItemDefinition();
-			if (EquippedItmeDefinition.ItemTag != FGameplayTag())
-			{
-				if (EquippedItmeDefinition.ItemParts == Iteminfo.ItemParts)
-				{
-					EquippedItem->Destroy();
-					EquippedItem=nullptr;
-				}
-			}
+			EquippedItem->Destroy();
+			EquippedInstancedItemMap.Remove(ItemInfo.ItemParts);
 		}
+	}
+	
+	int32 FoundIndex = EquippedItemsDefinition.IndexOfByPredicate(
+	[&ItemInfo](const FMasterItemDefinition& Item) {
+		return Item.ItemTag == ItemInfo.ItemTag;
+	});
+
+	if (FoundIndex != INDEX_NONE)
+	{
+		EquippedItemsDefinition.RemoveAt(FoundIndex);
 	}
 }
 
-// 고치기 UW_PlayerInfoWidget에서 처리하자
-void UCombatComponent::OnRep_EquippbaleBase()
+void UCombatComponent::OnRep_EquippedItemsDefinition()
 {
+	uint8 FirstIndex =static_cast<uint8>(EItemParts::None) + 1;
+	uint8 LastIndex = static_cast<uint8>(EItemParts::ForLastItemIndex);
+	for (uint8 i =FirstIndex ; i <LastIndex ; ++i)
+	{
+		EItemParts Parts = static_cast<EItemParts>(i);
+		EquippedItemMap.Add(Parts, FMasterItemDefinition()); // Add는 이미 있으면 덮어씀
+	}
+	
+	for (const FMasterItemDefinition& ItemDef : EquippedItemsDefinition)
+	{
+		EquippedItemMap[ItemDef.ItemParts] = ItemDef;
+	}
+	
 	if (AIB_RPGPlayerController* IB_RPGPlayerContoller = Cast<AIB_RPGPlayerController>(GetOwner()))
 	{
 		if ((IB_RPGPlayerContoller->WBP_PlayerInfoWidget))
 		{
 
-			IB_RPGPlayerContoller->WBP_PlayerInfoWidget->SetEquippedItemWidget(EquippedItemsDefinition);
+			IB_RPGPlayerContoller->WBP_PlayerInfoWidget->SetEquippedItemWidget(EquippedItemMap);
 		}
 	}
+}
+
+TMap<EItemParts, FMasterItemDefinition> UCombatComponent::GetEquippedItemMap()
+{
+	if (!EquippedItemMap.IsEmpty())
+	{
+		return EquippedItemMap;
+	}
+	return TMap<EItemParts, FMasterItemDefinition>();
 }

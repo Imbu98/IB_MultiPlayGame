@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "IB_MultiPlayGame/Inventory/ItemTypes.h"
 #include "QuestStructure.generated.h"
 
 USTRUCT(BlueprintType)
@@ -10,9 +11,7 @@ struct FItemRewards
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FGameplayTag ItemTag;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 ItemQuantity;
+	FMasterItemDefinition QuestRewardItemDefinition;
 };
 
 UENUM()

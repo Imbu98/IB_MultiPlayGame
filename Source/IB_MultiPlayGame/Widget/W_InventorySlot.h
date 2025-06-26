@@ -15,10 +15,20 @@ class UBorder;
 class UInventoryComponent;
 
 UENUM()
+enum ESlotTypes : int8
+{
+	Slot_None = 0,
+	Slot_Equippable = 1,
+	Slot_Consumable = 2,
+	Slot_ETC = 3,
+	Slot_PlayerInfo = 4,
+};
+
+UENUM()
 enum EItemTypes : int8
 {
-	None = 0,
-	Consumable = 1,
+	Item_None = 0,
+	Item_Consumable = 1,
 };
 
 UCLASS()
@@ -59,6 +69,8 @@ public:
 
 
 	FOnClickedActionButton OnClickedActionButtonDelegate;
+	
+	FOnClickedEquippedActionButton OnClickedEquippedActionButtonDelegate;
 
 	FMasterItemDefinition Item;
 

@@ -66,10 +66,13 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UFUNCTION(BlueprintCallable)
-	bool AddItem(const FGameplayTag& ItemTag, int32 NumItems = 1,const FMasterItemDefinition& ItemDefinition=FMasterItemDefinition());
+	bool AddItem(const FMasterItemDefinition& ItemDefinition=FMasterItemDefinition(),int32 NumItems = 1);
 
 	UFUNCTION(BlueprintCallable)
-	void UseItem(const FGameplayTag& ItemTag, int32 NumItems, const FMasterItemDefinition& DynamicItemData);
+	void UseItem(const FMasterItemDefinition& DynamicItemData,const int32& SlotIndex,int32 NumItems = 1);
+
+	UFUNCTION(BlueprintCallable)
+	void RemoveItem(const FMasterItemDefinition& DynamicItemData,const int32& SlotIndex,int32 NumItems=1);
 
 	UFUNCTION()
 	FMasterItemDefinition GetItemDefinitionByTag(const FGameplayTag& ItemTag)const;
@@ -113,10 +116,10 @@ private:
 	
 
 	UFUNCTION(Server, Reliable)
-	void ServerAddItem(const FGameplayTag& ItemTag, int32 NumItems, const FMasterItemDefinition& ItemDefinition);
+	void ServerAddItem(int32 NumItems, const FMasterItemDefinition& ItemDefinition);
 
 	UFUNCTION(Server, Reliable)
-	void ServerUseItem(const FGameplayTag& ItemTag, int32 NumItems, const FMasterItemDefinition& DynamicItemData);
+	void ServerUseItem(const FMasterItemDefinition& DynamicItemData,const int32& SlotIndex,int32 NumItems=1);
 
 	UFUNCTION(Server, Reliable)
 	void ServerSwapItem(int32 IndexA, int32 IndexB);
@@ -125,9 +128,9 @@ private:
 	void OnRep_CachedInventory();
 
 	UFUNCTION()
-	void DefinitionItemUse(const FMasterItemDefinition& StaticItemData, const FMasterItemDefinition& DynamicItemData);
+	void DefinitionItemUse(const FMasterItemDefinition& DynamicItemData,const int32& SlotIndex,int32 NumItems=1);
 	UFUNCTION()
-	bool DefinitionItemAdd(const FGameplayTag& ItemTag, int32 NumItems, const FMasterItemDefinition& ItemDefinition);
+	bool DefinitionItemAdd(const FMasterItemDefinition& ItemDefinition,int32 NumItems=1);
 
 
 };

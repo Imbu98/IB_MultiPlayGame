@@ -10,8 +10,9 @@ class AIB_RPGPlayerController;
 struct FActiveQuestData;
 
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnClickedEquippedActionButton,const FMasterItemDefinition&);
 // ItemUseButton Delegate
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnClickedActionButton,const FMasterItemDefinition&);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnClickedActionButton,const FMasterItemDefinition&,const float& SlotIndex);
 // QuestSystem Delegate
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnObjectiveIdCalled, FString,int32);
 // QuestLogEntryButton Delegate

@@ -5,7 +5,9 @@
 #include "../Inventory/ItemTypes.h"
 #include "W_PlayerInfo.generated.h"
 
+class UInventoryComponent;
 class UW_InventorySlot;
+
 
 UCLASS()
 class IB_MULTIPLAYGAME_API UW_PlayerInfo : public UUserWidget
@@ -28,11 +30,18 @@ public:
 	TObjectPtr<UW_InventorySlot> EquippedGlovesSlot;
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UW_InventorySlot> EquippedBootsSlot;
+	
+public:
+	UPROPERTY()
+	UInventoryComponent* InventoryComponent;
+
 
 public:
-	void OnclickedEquippedButton(const FMasterItemDefinition& ItemInfo);
 	UFUNCTION()
-	void SetEquippedItemWidget(TArray<FMasterItemDefinition> EquippedItemsInfo);
+	void OnclickedEquippedButton(const FMasterItemDefinition& ItemInfo);
+	void UpdateEquippedSlot(const FMasterItemDefinition& EquippedItems);
+	UFUNCTION()
+	void SetEquippedItemWidget(TMap<EItemParts,FMasterItemDefinition> EquippedItemsMap);
 	
 	
 };

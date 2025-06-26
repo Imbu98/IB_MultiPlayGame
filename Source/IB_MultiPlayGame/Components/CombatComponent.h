@@ -27,11 +27,17 @@ public:
 	UPROPERTY()
 	int32 AttackCount;
 
-	UPROPERTY()
-	TArray<AEquippableBase*> EquippedItems;
-
-	UPROPERTY(ReplicatedUsing = OnRep_EquippbaleBase)
+	UPROPERTY(ReplicatedUsing = OnRep_EquippedItemsDefinition)
 	TArray<FMasterItemDefinition> EquippedItemsDefinition;
+
+private:
+	UPROPERTY()
+	TMap<EItemParts,AEquippableBase*> EquippedInstancedItemMap;
+	
+	UPROPERTY()
+	TMap<EItemParts,FMasterItemDefinition> EquippedItemMap;
+	UFUNCTION(Client,Reliable)
+	void ClientSetEquippedItemMap(const TArray<FMasterItemDefinition>& EquippedItemDefinitions);
 
 public:
 	UFUNCTION()
@@ -39,9 +45,11 @@ public:
 	UFUNCTION()
 	void SetEquippedItem(AActor* SpawnedItem);
 	UFUNCTION()
-	void UnEquipItem(const FMasterItemDefinition& Iteminfo);
+	void UnEquipItem(const FMasterItemDefinition& ItemInfo);
 	UFUNCTION()
-	void OnRep_EquippbaleBase();
+	void OnRep_EquippedItemsDefinition();
+	UFUNCTION()
+	TMap<EItemParts,FMasterItemDefinition> GetEquippedItemMap();
 
 		
 	

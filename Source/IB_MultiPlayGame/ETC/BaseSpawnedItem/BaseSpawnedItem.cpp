@@ -56,7 +56,7 @@ FString ABaseSpawnedItem::InteractWith_Implementation(APlayerController* PlayerC
 			{
 				if (UInventoryComponent* InventoryComponent = IInventoryInterface::Execute_GetInventoryComponent(IB_RPGPlayerController))
 				{
-					if (InventoryComponent->AddItem(ItemDefinition.ItemTag, 1,ItemDefinition))
+					if (InventoryComponent->AddItem(ItemDefinition),1)
 					{
 						Destroy();
 					}
@@ -150,8 +150,8 @@ void ABaseSpawnedItem::SetMeshFromTag(FGameplayTag InItemTag)
 
 void ABaseSpawnedItem::SetItemParams(FGameplayTag InItemTag)
 {
-	// ³ªÁß¿¡ ¹«±â Ãß°¡ÇÒ°Å¸é Item.Equippable.Weapon.Sword.KingsSword
-	// Item.Equippable.Weapon.Sword.UndeadSword µî ÅÂ±×¸¦ ´õ Ãß°¡
+	// ï¿½ï¿½ï¿½ß¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½ï¿½Ò°Å¸ï¿½ Item.Equippable.Weapon.Sword.KingsSword
+	// Item.Equippable.Weapon.Sword.UndeadSword ï¿½ï¿½ ï¿½Â±×¸ï¿½ ï¿½ï¿½ ï¿½ß°ï¿½
 	const FGameplayTag WeaponTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Weapon"));
 	const FGameplayTag ArmorTag = FGameplayTag::RequestGameplayTag(FName("Item.Equippable.Armor"));
 
@@ -207,7 +207,7 @@ void ABaseSpawnedItem::SetItemParams(FGameplayTag InItemTag)
 	}
 }
 
-// Client·Î ÇØµµ µÇÁö¸¸ ÀÏ´Ü multicast
+// Clientï¿½ï¿½ ï¿½Øµï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ï´ï¿½ multicast
 void ABaseSpawnedItem::MulticastSetDropEffect_Implementation(EItemRarity ItemRarity)
 {
 	if (HasAuthority()) return;

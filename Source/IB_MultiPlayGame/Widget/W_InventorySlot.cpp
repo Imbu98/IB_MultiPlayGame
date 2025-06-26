@@ -25,6 +25,7 @@ void UW_InventorySlot::NativeConstruct()
 	{
 		Btn_ItemSlot->OnClicked.Clear();
 		Btn_ItemSlot->OnClicked.AddDynamic(this, &UW_InventorySlot::OnclickedActionButton);
+		
 	}
 	AIB_RPGPlayerController* IB_RPGPC = Cast< AIB_RPGPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 	if (IB_RPGPC)
@@ -60,7 +61,7 @@ void UW_InventorySlot::NativeOnDragDetected(const FGeometry& InGeometry, const F
 					DragOp->Pivot = EDragPivot::CenterCenter;
 					DragOp->ItemSlot = this;
 
-					if (Item.ItemQuantity == 0) return;  //¾ÆÀÌÅÛÀÌ ¾øÀ¸¸é ¾Æ¹«°Íµµ ¾ÈµÇ°Ô
+					if (Item.ItemQuantity == 0) return;  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Æ¹ï¿½ï¿½Íµï¿½ ï¿½ÈµÇ°ï¿½
 
 
 					DragOp->DraggedItem = Item;
@@ -168,7 +169,14 @@ void UW_InventorySlot::SetSlotRarityImg()
 
 void UW_InventorySlot::OnclickedActionButton()
 {
-	OnClickedActionButtonDelegate.Broadcast(Item);
+	if (SlotIndex>=999)
+	{
+		OnClickedEquippedActionButtonDelegate.Broadcast(Item);
+	}
+	else
+	{
+		OnClickedActionButtonDelegate.Broadcast(Item,SlotIndex);
+	}
 }
 
 void UW_InventorySlot::UpdateSlot()
@@ -203,7 +211,8 @@ void UW_InventorySlot::ClearSlot()
 	{
 		Border_Frame->SetBrushColor(FLinearColor::White);
 	}
-    // tagÃÊ±âÈ­ Ãß°¡
+	Item = FMasterItemDefinition();
+    // tagï¿½Ê±ï¿½È­ ï¿½ß°ï¿½
 	//Item.ItemTag = FGameplayTag::RequestGameplayTag(FName("Item.None"));
 }
 
@@ -217,7 +226,7 @@ EItemTypes UW_InventorySlot::FilterCategoryTag(const FGameplayTag& Tag)
 	FGameplayTag ConsumableTag = FGameplayTag::RequestGameplayTag(FName("Item.Consumable"));
 	if (Tag.MatchesTag(ConsumableTag))
 	{
-		return EItemTypes::Consumable;
+		return EItemTypes::Item_Consumable;
 	}
-	return EItemTypes::None;
+	return EItemTypes::Item_Consumable;
 }
