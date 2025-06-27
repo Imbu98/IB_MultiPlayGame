@@ -31,7 +31,14 @@ void UW_InventorySlot::NativeConstruct()
 	if (IB_RPGPC)
 	{
 		InventoryComponent = IInventoryInterface::Execute_GetInventoryComponent(IB_RPGPC);
-		UpdateSlot();
+		if (InventoryComponent)
+		{
+			FPackagedInventory PackagedInventory= InventoryComponent->GetCachedInventory();
+			FMasterItemDefinition ItemDeDefinition =  PackagedInventory.ItemDefinitions[SlotIndex];
+		}
+		
+		
+		
 	}
 }
 
@@ -87,18 +94,23 @@ bool UW_InventorySlot::NativeOnDrop(const FGeometry& InGeometry, const FDragDrop
 
 		if (InventoryComponent)
 		{
-			int32 SourceIndex = FromSlot->SlotIndex;
+			int32 SourceIndex = FromSlot->SlotIndex; 
 			int32 TargetIndex = ToSlot->SlotIndex;
-
-			FMasterItemDefinition TempItem = ToSlot->Item;
-			ToSlot->SetItem(FromSlot->Item);
-			FromSlot->SetItem(TempItem);
-
-			this->UpdateSlot();
-			FromSlot->UpdateSlot();
 
 			FPackagedInventory& CachedInventory = InventoryComponent->GetCachedInventory(); 
 			InventoryComponent->SwapItemsInPackagedInventory(CachedInventory, SourceIndex, TargetIndex);
+
+			// FMasterItemDefinition TempItem = ToSlot->Item;
+			// ToSlot->SetItem(FromSlot->Item);
+			// FromSlot->SetItem(TempItem);
+			
+			FMasterItemDefinition SourceItem = CachedInventory.ItemDefinitions[SourceIndex];
+			FMasterItemDefinition TargetItem = CachedInventory.ItemDefinitions[TargetIndex];
+			
+			this->UpdateSlot(SourceItem);
+			FromSlot->UpdateSlot(TargetItem);
+
+			
 
 		}
 	return true;
@@ -130,71 +142,33 @@ void UW_InventorySlot::SetQuiantityText(int32 Quantity)
 	}
 }
 
-void UW_InventorySlot::SetSlotRarityImg()
-{
-	FLinearColor BorderColor;
 
-	switch (Item.ItemRarity)
-	{
-	case EItemRarity::None:
-	{
-		BorderColor = FLinearColor::Gray;
-		break;
-	}
-	case EItemRarity::Rare:
-	{
-		BorderColor = FLinearColor::Blue;
-		break;
-	}
-	case EItemRarity::Epic:
-	{
-
-		BorderColor = FLinearColor(0.5f, 0.0f, 0.5f);
-		break;
-	}
-	case EItemRarity::Legendary:
-	{
-		BorderColor = FLinearColor(1.0f, 0.5f, 0.0f);
-		break;
-	}
-
-	default:
-		break;
-	}
-	if (Border_Frame)
-	{
-		Border_Frame->SetBrushColor(BorderColor);
-	}
-}
 
 void UW_InventorySlot::OnclickedActionButton()
 {
-	if (SlotIndex>=999)
-	{
-		OnClickedEquippedActionButtonDelegate.Broadcast(Item);
-	}
-	else
-	{
-		OnClickedActionButtonDelegate.Broadcast(Item,SlotIndex);
-	}
+	// 여기서 인벤토리 아이템 정보를 브로드캐스트해준다
+	FPackagedInventory& CachedInventory = InventoryComponent->GetCachedInventory();
+	FMasterItemDefinition ItemInfo = CachedInventory.ItemDefinitions[SlotIndex];
+	
+	OnClickedActionButtonDelegate.Broadcast(ItemInfo,SlotIndex);
 }
 
-void UW_InventorySlot::UpdateSlot()
+void UW_InventorySlot::UpdateSlot(const FMasterItemDefinition& ItemInfo)
 {		
 		if (IMG_SlotImage)
 		{
 			IMG_SlotImage->SetBrushFromTexture(SlotItemImage);
 		}
 
-		if (Text_ItemQuantity && Item.ItemQuantity > 0)
+		if (Text_ItemQuantity && ItemInfo.ItemQuantity > 0)
 		{
-			Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT("x %d"), Item.ItemQuantity)));
+			Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT("x %d"), ItemInfo.ItemQuantity)));
 		}
 		else
 		{
 			Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT(""))));
 		}
-		SetSlotRarityImg();
+		SetSlotRarityImg(ItemInfo);
 }
 
 void UW_InventorySlot::ClearSlot()
@@ -216,9 +190,41 @@ void UW_InventorySlot::ClearSlot()
 	//Item.ItemTag = FGameplayTag::RequestGameplayTag(FName("Item.None"));
 }
 
-void UW_InventorySlot::SetItem(const FMasterItemDefinition& NewItem)
+void UW_InventorySlot::SetSlotRarityImg(const FMasterItemDefinition& ItemInfo)
 {
-	Item = NewItem;
+	FLinearColor BorderColor;
+
+	switch (ItemInfo.ItemRarity)
+	{
+	case EItemRarity::None:
+		{
+			BorderColor = FLinearColor::Gray;
+			break;
+		}
+	case EItemRarity::Rare:
+		{
+			BorderColor = FLinearColor::Blue;
+			break;
+		}
+	case EItemRarity::Epic:
+		{
+
+			BorderColor = FLinearColor(0.5f, 0.0f, 0.5f);
+			break;
+		}
+	case EItemRarity::Legendary:
+		{
+			BorderColor = FLinearColor(1.0f, 0.5f, 0.0f);
+			break;
+		}
+
+	default:
+		break;
+	}
+	if (Border_Frame)
+	{
+		Border_Frame->SetBrushColor(BorderColor);
+	}
 }
 
 EItemTypes UW_InventorySlot::FilterCategoryTag(const FGameplayTag& Tag)

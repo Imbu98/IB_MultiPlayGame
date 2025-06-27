@@ -14,7 +14,7 @@
 #include "IB_NPCBase.h"
 #include "IB_MultiPlayGame/ETC/Object/StrangeObject.h"
 #include "../ETC/BaseSpawnedItem/BaseSpawnedItem.h"
-#include "../ETC/Cannon/Cannon.h"
+#include "../ETC/Cannon/CannonPawn.h"
 #include "../Interfaces/InteractInterface.h"
 
 #include "InputActionValue.h"
@@ -25,6 +25,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "IB_MultiPlayGame/ETC/Cannon/CannonActor.h"
 
 
 AIB_MainChar::AIB_MainChar()
@@ -337,7 +338,7 @@ EInteractObjective AIB_MainChar::DetermineInteractObjective(AActor* InteractObje
 	{
 		return EInteractObjective::Item;
 	}
-	else if (ACannon* Cannon = Cast<ACannon>(InteractObjective))
+	else if (ACannonActor* Cannon = Cast<ACannonActor>(InteractObjective))
 	{
 		return EInteractObjective::Cannon;
 	}

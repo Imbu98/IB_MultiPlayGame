@@ -1,4 +1,4 @@
-#include "Cannon.h"
+#include "CannonPawn.h"
 
 #include "../../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 #include "../../Character/IB_MainChar.h"
@@ -14,10 +14,11 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "IB_MultiPlayGame/Components/CannonSpawnComponent.h"
 #include "Net/UnrealNetwork.h"
 
 
-ACannon::ACannon()
+ACannonPawn::ACannonPawn()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
@@ -69,35 +70,33 @@ ACannon::ACannon()
 	WidgetComponent->SetupAttachment(DefaultSceneRoot);
 	WidgetComponent->SetIsReplicated(true);
 
-	BoardingTriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnComponentBeginOverlap);
-	BoardingTriggerBox->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnComponentEndOverlap);
+	
 
 }
 
-void ACannon::BeginPlay()
+void ACannonPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
 	if (HasAuthority())
 	{
-		
 		MulticastSetMesh(CannonBodyMesh->GetStaticMesh(),CannonCartMesh->GetStaticMesh());
 	}
 }
 
-void ACannon::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+void ACannonPawn::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ACannon, IB_RPGPlayerController);
-	DOREPLIFETIME(ACannon, IB_MainChar);
-	DOREPLIFETIME(ACannon, CurrentCannonPower);
-	DOREPLIFETIME(ACannon, IsOnCharging);
+	DOREPLIFETIME(ACannonPawn, IB_RPGPlayerController);
+	DOREPLIFETIME(ACannonPawn, IB_MainChar);
+	DOREPLIFETIME(ACannonPawn, CurrentCannonPower);
+	DOREPLIFETIME(ACannonPawn, IsOnCharging);
 	
 	
 }
 
-void ACannon::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void ACannonPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
@@ -126,117 +125,38 @@ void ACannon::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 }
 
-FString ACannon::InteractWith_Implementation(APlayerController* PlayerController)
-{
-	if (!HasAuthority()) return FString();
 
-	if (IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(PlayerController))
-	{
-		IB_MainChar = Cast<AIB_MainChar>(IB_RPGPlayerController->GetPawn());
-		
-
-		if (!IsValid(IB_RPGPlayerController)) return FString();
-		if (!IsValid(IB_MainChar)) return FString();
-
-		ClientSetCannonInfo(IB_RPGPlayerController, IB_MainChar);
-
-		IB_RPGPlayerController->OwningCannon = this;
-		IB_RPGPlayerController->SwitchController();
-
-		
-		return FString();
-	}
-	return FString();
-}
-
-
-void ACannon::ClientSetCannonInfo_Implementation(AIB_RPGPlayerController* IB_PlayerController, AIB_MainChar* MainChar)
+void ACannonPawn::ClientSetCannonInfo_Implementation(AIB_RPGPlayerController* IB_PlayerController, AIB_MainChar* MainChar)
 {
 	IB_RPGPlayerController = IB_PlayerController;
 	IB_MainChar = MainChar;
 }
 
-void ACannon::PossessedBy(AController* NewController)
+void ACannonPawn::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
 	FRotator NewRotation = FRotator(0.f, 0.f, 0.f); // Pitch, Yaw, Roll
 	SetActorRotation(NewRotation);
-	
-
 }
 
-void ACannon::UnPossessed()
+void ACannonPawn::UnPossessed()
 {
 	Super::UnPossessed();
 
 }
 
-void ACannon::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void ACannonPawn::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-if (OtherActor == UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
-	{
-			if (OtherActor->Implements<UInteractInterface>())
-			{
-				IInteractInterface::Execute_SetNPCActor(OtherActor, this);
-			}
-	}
-		if (ItemOverlayMaterial && CannonBodyMesh&& CannonCartMesh)
-		{
-			CannonBodyMesh->SetOverlayMaterial(ItemOverlayMaterial);
-			CannonCartMesh->SetOverlayMaterial(ItemOverlayMaterial);
-		}
-		if (WidgetComponent)
-		{
-			UUserWidget* Widget = WidgetComponent->GetUserWidgetObject();
-			if (Widget)
-			{
-				/* Cast to your custom widget class
-				if (UInteractWidget* InteractWidget = Cast<UInteractWidget>(Widget))
-				{
-					 InteractWidget¿¡ ¸¸µç ÇÔ¼ö »ç¿ë (¿¹: SetInteractionText)
-					InteractWidget->SetInteractionText(FText::FromString(TEXT("Press E to fire")));
-				}*/
-			}
-			WidgetComponent->SetVisibility(true);
-		}
 
 }
-void ACannon::OnComponentEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void ACannonPawn::OnComponentEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (OtherActor == UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
-	{
-
-		if (OtherActor->Implements<UInteractInterface>())
-		{
-			IInteractInterface::Execute_SetNPCActor(OtherActor, nullptr);
-		}
-	}
-	if (ItemOverlayMaterial && CannonBodyMesh && CannonCartMesh)
-	{
-		CannonBodyMesh->SetOverlayMaterial(nullptr);
-		CannonCartMesh->SetOverlayMaterial(nullptr);
-	}
-	if (WidgetComponent)
-	{
-		WidgetComponent->SetVisibility(false);
-	}
-
+	
 }
 
-void ACannon::MulticastSetMesh_Implementation(UStaticMesh* InCannonBodyMesh, UStaticMesh* InCannonCartMesh)
+void ACannonPawn::MulticastSetMesh_Implementation(UStaticMesh* InCannonBodyMesh, UStaticMesh* InCannonCartMesh)
 {
-	if (HasAuthority())
-	{
-		if (CannonBodyMesh && CannonCartMesh && BoardingTriggerBox)
-		{
-			CannonBodyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			CannonCartMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			BoardingTriggerBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			return;
-		}
-	}
-
 	if (InCannonBodyMesh && InCannonCartMesh && CannonBodyMesh && CannonCartMesh)
 	{
 		// Is local player
@@ -246,18 +166,10 @@ void ACannon::MulticastSetMesh_Implementation(UStaticMesh* InCannonBodyMesh, USt
 			CannonBodyMesh->SetStaticMesh(InCannonBodyMesh);
 			CannonCartMesh->SetStaticMesh(InCannonCartMesh);
 		}
-		else
-		{
-			CannonBodyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			CannonCartMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			BoardingTriggerBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			UE_LOG(LogTemp, Warning, TEXT("Cannon has No Owner"));
-		}
-
 	}
 }
 
-void ACannon::CannonRotation(const FInputActionValue& Value)
+void ACannonPawn::CannonRotation(const FInputActionValue& Value)
 {
 	if (IsOnCharging)
 	{
@@ -270,7 +182,7 @@ void ACannon::CannonRotation(const FInputActionValue& Value)
 }
 
 
-void ACannon::CannonCameraMove(const FInputActionValue& Value)
+void ACannonPawn::CannonCameraMove(const FInputActionValue& Value)
 {
 	if (IsOnCharging)
 	{
@@ -282,7 +194,7 @@ void ACannon::CannonCameraMove(const FInputActionValue& Value)
 	FollowCamera->AddLocalOffset(CameraOffset, true);
 }
 
-void ACannon::ChargeCannonPower()
+void ACannonPawn::ChargeCannonPower()
 {
 	if (!HasAuthority())
 	{
@@ -291,7 +203,7 @@ void ACannon::ChargeCannonPower()
 	}
 }
 
-void ACannon::ServerChargeCannonPower_Implementation(float CurrentPower, const float MaxPower, const float CharagePower)
+void ACannonPawn::ServerChargeCannonPower_Implementation(float CurrentPower, const float MaxPower, const float CharagePower)
 {
 	IsOnCharging = true;
 	CurrentPower += CharagePower * GetWorld()->GetDeltaSeconds();
@@ -302,12 +214,12 @@ void ACannon::ServerChargeCannonPower_Implementation(float CurrentPower, const f
 	ClientSetCannonPower(CurrentPower);
 }
 
-void ACannon::ClientSetCannonPower_Implementation(const float CurrentPower)
+void ACannonPawn::ClientSetCannonPower_Implementation(const float CurrentPower)
 {
 	CurrentCannonPower = CurrentPower;
 }
 
-void ACannon::ShootChar()
+void ACannonPawn::ShootChar()
 {
 	if (!HasAuthority())
 	{
@@ -315,7 +227,7 @@ void ACannon::ShootChar()
 	}
 }
 
-void ACannon::ServerShootChar_Implementation(const float InCannonPowner)
+void ACannonPawn::ServerShootChar_Implementation(const float InCannonPowner)
 {
 	if (!HasAuthority()) return;
 
@@ -349,26 +261,35 @@ void ACannon::ServerShootChar_Implementation(const float InCannonPowner)
 	}
 }
 
-void ACannon::ClientSetCannonProperty_Implementation(const float InCannonPowner, const bool InCannonCharging)
+void ACannonPawn::ClientSetCannonProperty_Implementation(const float InCannonPowner, const bool InCannonCharging)
 {
 	IsOnCharging = InCannonCharging;
 	CurrentCannonPower = InCannonPowner;
 }
 
-void ACannon::OnRep_CannonShootPower()
+void ACannonPawn::OnRep_CannonShootPower()
 {
 	UE_LOG(LogTemp, Warning, TEXT("ServerShootChar Executed! Power: %f"), CurrentCannonPower);
-	// ÇÒ ÀÏ : UI¸¸µé±â
+	// ï¿½ï¿½ ï¿½ï¿½ : UIï¿½ï¿½ï¿½ï¿½ï¿½
 	//UpdateChargeBar();
 }
 
-void ACannon::CannonTakeOff()
+void ACannonPawn::CannonTakeOff()
 {
-	ServerSwithchController();
+	if (IB_RPGPlayerController)
+	{
+		if (UCannonSpawnComponent* CannonSpawnComponent =  IB_RPGPlayerController->GetCannonSpawnComponent())
+		{
+			CannonSpawnComponent->SpawnOwnedCannonActor(IB_RPGPlayerController);
+			ServerSwithchController();
+			Destroyed();
+		}
+	}
+	
 }
 
 
-void ACannon::ServerSwithchController_Implementation()
+void ACannonPawn::ServerSwithchController_Implementation()
 {
 	if (IB_RPGPlayerController)
 	{

@@ -36,8 +36,10 @@ private:
 	
 	UPROPERTY()
 	TMap<EItemParts,FMasterItemDefinition> EquippedItemMap;
+	
 	UFUNCTION(Client,Reliable)
 	void ClientSetEquippedItemMap(const TArray<FMasterItemDefinition>& EquippedItemDefinitions);
+	
 
 public:
 	UFUNCTION()
@@ -45,11 +47,13 @@ public:
 	UFUNCTION()
 	void SetEquippedItem(AActor* SpawnedItem);
 	UFUNCTION()
-	void UnEquipItem(const FMasterItemDefinition& ItemInfo);
+	void UnEquipItem(const FMasterItemDefinition& ItemInfo,const float& SlotIndex);
 	UFUNCTION()
 	void OnRep_EquippedItemsDefinition();
 	UFUNCTION()
 	TMap<EItemParts,FMasterItemDefinition> GetEquippedItemMap();
+	UFUNCTION()
+	int32 DefinitionIndex(const FMasterItemDefinition& EquipItemDefinition);
 
 		
 	

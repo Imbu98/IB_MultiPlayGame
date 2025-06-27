@@ -5,6 +5,7 @@
 
 #include "kismet/GameplayStatics.h"
 #include "Components\Button.h"
+#include "IB_MultiPlayGame/Components/CombatComponent.h"
 
 
 void UW_PlayerInfo::NativeConstruct()
@@ -12,52 +13,58 @@ void UW_PlayerInfo::NativeConstruct()
 	if (EquippedWeaponSlot)
 	{
 		EquippedWeaponSlot->OnClickedEquippedActionButtonDelegate.Clear();
-		EquippedWeaponSlot->OnClickedEquippedActionButtonDelegate.AddUObject(this,&ThisClass::OnclickedEquippedButton);
-		EquippedWeaponSlot->SlotIndex=999;
+		EquippedWeaponSlot->OnClickedActionButtonDelegate.AddUObject(this,&ThisClass::OnclickedEquippedButton);
+		uint8 WeaponIndex =static_cast<uint8>(EItemParts::Weapon);
+		EquippedWeaponSlot->SlotIndex=WeaponIndex;
+		
 	}
 	if (EquippedChestSlot)
 	{
 		EquippedChestSlot->OnClickedEquippedActionButtonDelegate.Clear();
-		EquippedChestSlot->OnClickedEquippedActionButtonDelegate.AddUObject(this,&ThisClass::OnclickedEquippedButton);
-		EquippedChestSlot->SlotIndex=999;
+		EquippedChestSlot->OnClickedActionButtonDelegate.AddUObject(this,&ThisClass::OnclickedEquippedButton);
+		uint8 ChestIndex =static_cast<uint8>(EItemParts::Chest);
+		EquippedChestSlot->SlotIndex=ChestIndex;
+		
 	}
 }
 
-void UW_PlayerInfo::OnclickedEquippedButton(const FMasterItemDefinition& ItemInfo)
+void UW_PlayerInfo::OnclickedEquippedButton(const FMasterItemDefinition& ItemInfo,const float& SlotIndex)
 {
 	if (!IsValid(InventoryComponent)) return;
-	if (ItemInfo.ItemTag==FGameplayTag()) return;
+	if (!IsValid(CombatComponent)) return;
 	
 	AIB_RPGPlayerController* IB_RPGPC = Cast< AIB_RPGPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 	if (IB_RPGPC)
 	{
-		// 얘를 먼저 해줘야 ItemInfo가 남아있다
-		InventoryComponent->AddItem(ItemInfo,1);
-		IB_RPGPC->ServerUnEquipItem(ItemInfo);
-
-		// 이후 초기화
-		switch (ItemInfo.ItemParts)
+		if (CombatComponent->EquippedItemsDefinition.IsValidIndex(SlotIndex))
 		{
-		case EItemParts::Weapon:
+			FMasterItemDefinition EquippedItemInfo = CombatComponent->EquippedItemsDefinition[SlotIndex];
+			// 얘를 먼저 해줘야 ItemInfo가 남아있다
+			InventoryComponent->AddItem(EquippedItemInfo,1);
+			IB_RPGPC->ServerUnEquipItem(EquippedItemInfo,SlotIndex);
+			// 이후 초기화
+			switch (EquippedItemInfo.ItemParts)
 			{
-				if (EquippedWeaponSlot)
+			case EItemParts::Weapon:
 				{
+					if (EquippedWeaponSlot)
+					{
 					
-					EquippedWeaponSlot->ClearSlot();
-					break;
+						EquippedWeaponSlot->ClearSlot();
+						break;
+					}
 				}
-			}
 			case EItemParts::Chest:
-			{
-				if (EquippedChestSlot)
 				{
-					EquippedChestSlot->ClearSlot();
+					if (EquippedChestSlot)
+					{
+						EquippedChestSlot->ClearSlot();
+					}
 				}
-			}
 			default:
-			break;
+				break;
+			}
 		}
-		
 	}
 }
 
@@ -85,8 +92,7 @@ void UW_PlayerInfo::UpdateEquippedSlot(const FMasterItemDefinition& EquippedItem
 			if (EquippedWeaponSlot)
 			{
 				EquippedWeaponSlot->SetItemImage(ItemIcon);
-				EquippedWeaponSlot->Item = EquippedItems;
-				EquippedWeaponSlot->UpdateSlot();
+				EquippedWeaponSlot->UpdateSlot(EquippedItems);
 				break;
 			}
 		}
@@ -95,8 +101,7 @@ void UW_PlayerInfo::UpdateEquippedSlot(const FMasterItemDefinition& EquippedItem
 			if (EquippedChestSlot)
 			{
 				EquippedChestSlot->SetItemImage(ItemIcon);
-				EquippedChestSlot->Item = EquippedItems;
-				EquippedChestSlot->UpdateSlot();
+				EquippedChestSlot->UpdateSlot(EquippedItems);
 				break;
 			}
 		}

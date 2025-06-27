@@ -13,12 +13,6 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	UIB_CharacterClassInfo* GetCharacterClassDefaultInfo() const;
-	UProjectile_Info* GetProjectileInfo() const;
-	UWeapon_Info* GetWeaponInfo() const;
-	UArmorInfo* GetArmorInfo() const;
-
-public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
 	

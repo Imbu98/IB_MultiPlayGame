@@ -4,7 +4,7 @@
 #include "InputAction.h"
 #include "GameFramework/Pawn.h"
 #include "../../Interfaces/InteractInterface.h"
-#include "Cannon.generated.h"
+#include "CannonPawn.generated.h"
 
 class UBoxComponent;
 class AIB_MainChar;
@@ -12,7 +12,7 @@ class AIB_RPGPlayerController;
 class UW_CannonWidget;
 
 UCLASS()
-class IB_MULTIPLAYGAME_API ACannon : public APawn , public IInteractInterface
+class IB_MULTIPLAYGAME_API ACannonPawn : public APawn , public IInteractInterface
 {
 	GENERATED_BODY()
 
@@ -27,11 +27,9 @@ public:
 	class UCameraComponent* FollowCamera;
 
 public:
-	ACannon();
+	ACannonPawn();
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	virtual FString InteractWith_Implementation(APlayerController* PlayerController) override;
 
 	virtual void PossessedBy(AController* NewController) override;
 
