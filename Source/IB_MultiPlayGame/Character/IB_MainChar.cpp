@@ -14,7 +14,7 @@
 #include "IB_NPCBase.h"
 #include "IB_MultiPlayGame/ETC/Object/StrangeObject.h"
 #include "../ETC/BaseSpawnedItem/BaseSpawnedItem.h"
-#include "../ETC/Cannon/Cannon.h"
+#include "../ETC/Cannon/CannonPawn.h"
 #include "../Interfaces/InteractInterface.h"
 
 #include "InputActionValue.h"
@@ -337,7 +337,7 @@ EInteractObjective AIB_MainChar::DetermineInteractObjective(AActor* InteractObje
 	{
 		return EInteractObjective::Item;
 	}
-	else if (ACannon* Cannon = Cast<ACannon>(InteractObjective))
+	else if (ACannonPawn* Cannon = Cast<ACannonPawn>(InteractObjective))
 	{
 		return EInteractObjective::Cannon;
 	}

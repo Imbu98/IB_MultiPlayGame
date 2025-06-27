@@ -1,30 +1,15 @@
 #include "IB_RPGLobbyGameMode.h"
 #include "GameFramework/PlayerState.h"
+#include "IB_MultiPlayGame/Character/IB_MainChar.h"
+#include "IB_MultiPlayGame/Components/CannonSpawnComponent.h"
+#include "IB_MultiPlayGame/ETC/Cannon/CannonSpawnManager.h"
+#include "IB_MultiPlayGame/IB_Framework/IB_GAS/IB_RPGPlayerController.h"
+#include "Kismet/GameplayStatics.h"
 
 
 void AIB_RPGLobbyGameMode::BeginPlay()
 {
 	Super::BeginPlay();
-}
-
-UIB_CharacterClassInfo* AIB_RPGLobbyGameMode::GetCharacterClassDefaultInfo() const
-{
-	return ClassDefaults;
-}
-
-UProjectile_Info* AIB_RPGLobbyGameMode::GetProjectileInfo() const
-{
-	return ProjectileInfo;
-}
-
-UWeapon_Info* AIB_RPGLobbyGameMode::GetWeaponInfo() const
-{
-	return WeaponInfo;
-}
-
-UArmorInfo* AIB_RPGLobbyGameMode::GetArmorInfo() const
-{
-	return ArmorInfo;
 }
 
 void AIB_RPGLobbyGameMode::PostLogin(APlayerController* NewPlayer)
@@ -33,9 +18,20 @@ void AIB_RPGLobbyGameMode::PostLogin(APlayerController* NewPlayer)
 
 	if (NewPlayer)
 	{
-		if (APlayerState* PlayerState= NewPlayer->GetPlayerState<APlayerState>())
+		if (AIB_MainChar* MainChar= Cast<AIB_MainChar>(NewPlayer->GetPawn()))
 		{
-			PlayerState->bOnlyRelevantToOwner = true;
+			MainChar->bOnlyRelevantToOwner = true;
 		}
 	}
+
+	if (AIB_RPGPlayerController* PlayerController = Cast<AIB_RPGPlayerController>(NewPlayer))
+	{
+		
+			if (UCannonSpawnComponent* CannonSpawnComponent =  PlayerController->GetCannonSpawnComponent())
+			{
+				CannonSpawnComponent->SpawnOwnedCannonActor(PlayerController);
+			}
+		
+	}
+
 }

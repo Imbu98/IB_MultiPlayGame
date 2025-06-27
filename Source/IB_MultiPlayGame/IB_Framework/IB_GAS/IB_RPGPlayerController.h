@@ -20,12 +20,13 @@ class UInputMappingContext;
 class UQuestLogComponent;
 class UQuestComponent;
 class UCombatComponent;
+class UCannonSpawnComponent;
 class UW_QuestGiver;
 class UW_QuestLog;
 class UW_LocationNotify;
 class UW_QuestRewards;
 class UW_QuestNotification;
-class ACannon;
+class ACannonPawn;
 class AIB_MainChar;
 class UW_CannonWidget;
 class UW_Overlay;
@@ -63,6 +64,8 @@ public:
 
 	UFUNCTION()
 	UCombatComponent* GetCombatComponent();
+	UFUNCTION()
+	UCannonSpawnComponent* GetCannonSpawnComponent();
 
 protected:
 
@@ -86,6 +89,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Replicated)
 	TObjectPtr<UCombatComponent> CombatComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Replicated)
+	TObjectPtr<UCannonSpawnComponent> CannonSpawnComponent;
 
 	UPROPERTY()
 	TObjectPtr<UInventoryWidgetController> InventoryWidgetController;
@@ -163,7 +169,7 @@ public:
 	UPROPERTY(Replicated);
 	bool IsOnCannon=false;
 	UPROPERTY();
-	TObjectPtr<ACannon> OwningCannon;
+	TObjectPtr<ACannonPawn> OwningCannon;
 	UPROPERTY();
 	TObjectPtr<AIB_MainChar> CachedIB_MainChar;
 
@@ -197,7 +203,7 @@ public:
 	UFUNCTION(Server,Reliable)
 	void ServerSpawnCannonRequest();
 	UFUNCTION(Client, Reliable)
-	void ClientSwitchInputMapping(bool OnCannon, AIB_MainChar* IBMainChar,ACannon* Cannon);
+	void ClientSwitchInputMapping(bool OnCannon, AIB_MainChar* IBMainChar,ACannonPawn* Cannon);
 	UFUNCTION()
 	void SetCharacterRelevant(APawn* ControlledPawn);
 
@@ -205,7 +211,7 @@ public:
 		// relevance On Equip
 		void EquipItem(const FMasterItemDefinition& ItemDefinition);
 		UFUNCTION(Server,Reliable)
-		void ServerUnEquipItem(const FMasterItemDefinition& ItemDefinition);
+		void ServerUnEquipItem(const FMasterItemDefinition& ItemDefinition,const float& SlotIndex);
 
 	
 

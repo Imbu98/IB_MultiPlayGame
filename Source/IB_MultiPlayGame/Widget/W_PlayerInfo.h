@@ -5,6 +5,7 @@
 #include "../Inventory/ItemTypes.h"
 #include "W_PlayerInfo.generated.h"
 
+class UCombatComponent;
 class UInventoryComponent;
 class UW_InventorySlot;
 
@@ -33,12 +34,13 @@ public:
 	
 public:
 	UPROPERTY()
-	UInventoryComponent* InventoryComponent;
-
+	TObjectPtr<UInventoryComponent> InventoryComponent;
+	UPROPERTY()
+	TObjectPtr<UCombatComponent> CombatComponent;
 
 public:
 	UFUNCTION()
-	void OnclickedEquippedButton(const FMasterItemDefinition& ItemInfo);
+	void OnclickedEquippedButton(const FMasterItemDefinition& ItemInfo,const float& SlotIndex);
 	void UpdateEquippedSlot(const FMasterItemDefinition& EquippedItems);
 	UFUNCTION()
 	void SetEquippedItemWidget(TMap<EItemParts,FMasterItemDefinition> EquippedItemsMap);

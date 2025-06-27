@@ -79,19 +79,15 @@ public:
 	UFUNCTION()
 	void SetQuiantityText(int32 Quantity);
 	UFUNCTION()
-	void SetSlotRarityImg();
+	void SetSlotRarityImg(const FMasterItemDefinition& ItemInfo);
 
 	UFUNCTION()
 	void OnclickedActionButton();
 
 	UFUNCTION()
-	void UpdateSlot();
+	void UpdateSlot(const FMasterItemDefinition& ItemInfo);
 	UFUNCTION()
 	void ClearSlot();
-
-	UFUNCTION()
-	void SetItem(const FMasterItemDefinition& NewItem);
-	
 
 	EItemTypes FilterCategoryTag(const FGameplayTag& Tag);
 	

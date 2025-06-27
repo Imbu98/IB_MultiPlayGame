@@ -113,13 +113,14 @@ void UW_Inventory::MakeItemRowWidget(const FPackagedInventory& PackagedInventory
 			PackagedInventory.ItemDefinitions[i].ItemTag.IsValid())
 		{
 			// ������ ������ ������ ������ ��������
-			FMasterItemDefinition ItemData = InventoryComponent->GetItemDefinitionByTag(PackagedInventory.ItemTags[i]); // �� �Լ��� OwningInventory ��� ����
+			FMasterItemDefinition StaticItemData = InventoryComponent->GetItemDefinitionByTag(PackagedInventory.ItemTags[i]); // �� �Լ��� OwningInventory ��� ����
 
-			ItemData.ItemQuantity = PackagedInventory.ItemQuantities[i];
-
-			SlotWidget->SetItemImage(ItemData.Icon);
+			StaticItemData.ItemQuantity = PackagedInventory.ItemQuantities[i];
+			FMasterItemDefinition ItemData = PackagedInventory.ItemDefinitions[i];
+			
+			SlotWidget->SetItemImage(StaticItemData.Icon);
 			SlotWidget->SetQuiantityText(ItemData.ItemQuantity);
-			SlotWidget->Item = PackagedInventory.ItemDefinitions[i];
+			SlotWidget->UpdateSlot(ItemData);
 		}
 		else
 		{

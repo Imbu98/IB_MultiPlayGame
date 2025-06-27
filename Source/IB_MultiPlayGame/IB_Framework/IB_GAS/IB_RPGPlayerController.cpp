@@ -1,10 +1,12 @@
 #include "IB_RPGPlayerController.h"
+#include "IB_RPGPlayerController.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "../../Components/InventoryComponent.h"
 #include "../../Components/QuestLogComponent.h"
 #include "../../Components/QuestComponent.h"
 #include "../../Components/QuestGiverComponent.h"
 #include "../../Components/CombatComponent.h"
+#include "../../Components/CannonSpawnComponent.h"
 #include "../../Character/IB_MainChar.h"
 #include "../../WidgetController/InventoryWidgetController.h"
 #include "../../Widget/W_RPGSystemWidget.h"
@@ -21,7 +23,7 @@
 #include "IB_RPGAbilitySystemComponent.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "../../ETC/Cannon/CannonSpawnManager.h"
-#include "../../ETC/Cannon/Cannon.h"
+#include "../../ETC/Cannon/CannonPawn.h"
 #include "../IB_GameInstance.h"
 #include "Data/Weapon_Info.h"
 #include "Data/ArmorInfo.h"
@@ -59,6 +61,9 @@ AIB_RPGPlayerController::AIB_RPGPlayerController()
 
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
 	CombatComponent->SetIsReplicated(true);
+
+	CannonSpawnComponent = CreateDefaultSubobject<UCannonSpawnComponent>("CannonSpawnComponent");
+	CannonSpawnComponent->SetIsReplicated(true);
 
 	/*bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
@@ -147,11 +152,11 @@ void AIB_RPGPlayerController::BeginPlay()
 	{
 		ClientSwitchWidget();
 
-		FTimerHandle TimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
-		{
-				ServerSpawnCannonRequest();
-		}, 2.0f, false); // �ణ�� ����
+		// FTimerHandle TimerHandle;
+		// GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
+		// {
+		// 		ServerSpawnCannonRequest();
+		// }, 2.0f, false); // �ణ�� ����
 	}
 	//Craete InventoryWidget
 	CreateInventoryWidget();
@@ -295,6 +300,7 @@ void AIB_RPGPlayerController::TogglePlayerInfoWidget()
 			if (WBP_PlayerInfoWidget = CreateWidget<UW_PlayerInfo>(this, WBP_PlayerInfoWidgetClass))
 			{
 				WBP_PlayerInfoWidget->InventoryComponent = InventoryComponent;
+				WBP_PlayerInfoWidget->CombatComponent = CombatComponent;
 				WBP_PlayerInfoWidget->SetEquippedItemWidget(CombatComponent->GetEquippedItemMap());
 				WBP_PlayerInfoWidget->AddToViewport();
 				SetShowMouseCursor(true);
@@ -318,7 +324,20 @@ void AIB_RPGPlayerController::TogglePlayerInfoWidget()
 
 UCombatComponent* AIB_RPGPlayerController::GetCombatComponent()
 {
-	return CombatComponent;
+	if (CombatComponent)
+	{
+		return CombatComponent;
+	}
+	return nullptr;
+}
+
+UCannonSpawnComponent* AIB_RPGPlayerController::GetCannonSpawnComponent()
+{
+	if (CannonSpawnComponent)
+	{
+		return CannonSpawnComponent;
+	}
+	return nullptr;
 }
 
 void AIB_RPGPlayerController::ClientDisplayQuest_Implementation(FQuestDetails QuestDetails,FName QuestID)
@@ -384,11 +403,7 @@ void AIB_RPGPlayerController::ClientDisplayNotification_Implementation(const FOb
 
 void AIB_RPGPlayerController::ServerSpawnCannonRequest_Implementation()
 {
-	if(ACannonSpawnManager* CannonSpawnManager = Cast<ACannonSpawnManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ACannonSpawnManager::StaticClass())))
-	{
-		CannonSpawnManager->SpawnOwnedCannon(this);
-
-	}
+	
 }
 
 
@@ -427,7 +442,7 @@ void AIB_RPGPlayerController::SwitchController()
 			}
 		}
 		// possess to IB_MainChar
-		else if (ACannon* Cannon = Cast<ACannon>(GetPawn()))
+		else if (ACannonPawn* Cannon = Cast<ACannonPawn>(GetPawn()))
 		{
 			IsOnCannon = false;
 			Possess(CachedIB_MainChar);
@@ -444,7 +459,7 @@ void AIB_RPGPlayerController::SwitchController()
 
 void AIB_RPGPlayerController::ClientSwitchWidget_Implementation()
 {
-	if (ACannon* Cannon = Cast<ACannon>(GetPawn()))
+	if (ACannonPawn* Cannon = Cast<ACannonPawn>(GetPawn()))
 	{
 		if (WBP_CannonWidgetClass)
 		{
@@ -596,9 +611,9 @@ void AIB_RPGPlayerController::EquipItem(const FMasterItemDefinition& ItemDefinit
 	
 }
 
-void AIB_RPGPlayerController::ServerUnEquipItem_Implementation(const FMasterItemDefinition& ItemDefinition)
+void AIB_RPGPlayerController::ServerUnEquipItem_Implementation(const FMasterItemDefinition& ItemDefinition,const float& SlotIndex)
 {
-	CombatComponent->UnEquipItem(ItemDefinition);
+	CombatComponent->UnEquipItem(ItemDefinition,SlotIndex);
 }
 
 void AIB_RPGPlayerController::ServerSwitchController_Implementation()
@@ -606,7 +621,7 @@ void AIB_RPGPlayerController::ServerSwitchController_Implementation()
 	SwitchController();
 }
 
-void AIB_RPGPlayerController::ClientSwitchInputMapping_Implementation(bool OnCannon, AIB_MainChar* IBMainChar, ACannon* Cannon)
+void AIB_RPGPlayerController::ClientSwitchInputMapping_Implementation(bool OnCannon, AIB_MainChar* IBMainChar, ACannonPawn* Cannon)
 {
 	if (!IsValid(Cannon)) return;
 	if (!IsValid(IBMainChar)) return;

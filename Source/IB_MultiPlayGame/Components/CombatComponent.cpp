@@ -22,12 +22,20 @@ void UCombatComponent::BeginPlay()
 
 	uint8 FirstIndex =static_cast<uint8>(EItemParts::None) + 1;
 	uint8 LastIndex = static_cast<uint8>(EItemParts::ForLastItemIndex);
+	int32 RealEquipItemSlotQuantity =  LastIndex-2;
+	
+	// None과 LastItemIndex 를 빼고 초기화
+	
+	EquippedItemsDefinition.SetNum(RealEquipItemSlotQuantity);
+	EquippedItemsDefinition.Emplace(FMasterItemDefinition());
+	
 	for (uint8 i =FirstIndex ; i <LastIndex ; ++i)
 	{
 		EItemParts Parts = static_cast<EItemParts>(i);
 		EquippedItemMap.Add(Parts, FMasterItemDefinition()); // Add는 이미 있으면 덮어씀
+		
+		
 	}
-	
 }
 
 void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -36,7 +44,6 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	DOREPLIFETIME(UCombatComponent, EquippedItemsDefinition);
 }
-
 
 void UCombatComponent::ResetAttack()
 {
@@ -53,14 +60,21 @@ void UCombatComponent::SetEquippedItem(AActor* SpawnedItem)
 		FMasterItemDefinition EquippedItemDefinition=EquippedItem->GetItemDefinition();
 
 		// EquippedItemActor정보와 ItemInfo Map으로 저장
-		if (!EquippedInstancedItemMap.Contains(EquippedItemDefinition.ItemParts))
-		{
-			EquippedInstancedItemMap.Add(EquippedItemDefinition.ItemParts,EquippedItem);
-		}
+		
+		EquippedInstancedItemMap.Add(EquippedItemDefinition.ItemParts,EquippedItem);
+		
 
+		
+		//EquippedItemsDefinition.Add(EquippedItemDefinition);
+		
 		// Map을 만들기 위한 아이템 정보들 Array에 추가
-		EquippedItemsDefinition.Add(EquippedItemDefinition);
-
+		int32 EquipSlotIndex = DefinitionIndex(EquippedItemDefinition);
+		
+		if (EquippedItemsDefinition.IsValidIndex(EquipSlotIndex))
+		{
+			EquippedItemsDefinition[EquipSlotIndex] = EquippedItemDefinition;
+		}
+		
 		// Server에서 먼저 Array로 Map을 만들고, 클라이언트RPC로 클라에서도 Map을 만들어줌 
 		for (const FMasterItemDefinition& ItemDef : EquippedItemsDefinition)
 		{
@@ -74,7 +88,7 @@ void UCombatComponent::ClientSetEquippedItemMap_Implementation(const TArray<FMas
 	
 }
 
-void UCombatComponent::UnEquipItem(const FMasterItemDefinition& ItemInfo)
+void UCombatComponent::UnEquipItem(const FMasterItemDefinition& ItemInfo,const float& SlotIndex)
 {
 	if (!GetOwner()->HasAuthority()) return;
 	
@@ -84,18 +98,12 @@ void UCombatComponent::UnEquipItem(const FMasterItemDefinition& ItemInfo)
 		if (IsValid(EquippedItem))
 		{
 			EquippedItem->Destroy();
-			EquippedInstancedItemMap.Remove(ItemInfo.ItemParts);
+			EquippedInstancedItemMap[ItemInfo.ItemParts] = nullptr;
 		}
 	}
-	
-	int32 FoundIndex = EquippedItemsDefinition.IndexOfByPredicate(
-	[&ItemInfo](const FMasterItemDefinition& Item) {
-		return Item.ItemTag == ItemInfo.ItemTag;
-	});
-
-	if (FoundIndex != INDEX_NONE)
+	if (EquippedItemsDefinition.IsValidIndex(SlotIndex))
 	{
-		EquippedItemsDefinition.RemoveAt(FoundIndex);
+		EquippedItemsDefinition[SlotIndex] = FMasterItemDefinition();
 	}
 }
 
@@ -106,12 +114,15 @@ void UCombatComponent::OnRep_EquippedItemsDefinition()
 	for (uint8 i =FirstIndex ; i <LastIndex ; ++i)
 	{
 		EItemParts Parts = static_cast<EItemParts>(i);
-		EquippedItemMap.Add(Parts, FMasterItemDefinition()); // Add는 이미 있으면 덮어씀
+		EquippedItemMap.Add(Parts, FMasterItemDefinition()); // 맵에서 Add는 키가 이미 있으면 덮어씀
 	}
 	
 	for (const FMasterItemDefinition& ItemDef : EquippedItemsDefinition)
 	{
-		EquippedItemMap[ItemDef.ItemParts] = ItemDef;
+		if (ItemDef.ItemParts!=EItemParts::None)
+		{
+			EquippedItemMap[ItemDef.ItemParts] = ItemDef;
+		}
 	}
 	
 	if (AIB_RPGPlayerController* IB_RPGPlayerContoller = Cast<AIB_RPGPlayerController>(GetOwner()))
@@ -132,3 +143,34 @@ TMap<EItemParts, FMasterItemDefinition> UCombatComponent::GetEquippedItemMap()
 	}
 	return TMap<EItemParts, FMasterItemDefinition>();
 }
+
+int32 UCombatComponent::DefinitionIndex(const FMasterItemDefinition& EquipItemDefinition)
+{
+	if (EquipItemDefinition.ItemParts == EItemParts::Weapon)
+	{
+		return static_cast<uint8>(EItemParts::Weapon);
+	}
+	if (EquipItemDefinition.ItemParts == EItemParts::Helmet)
+	{
+		return static_cast<uint8>(EItemParts::Helmet);
+	}
+	if (EquipItemDefinition.ItemParts == EItemParts::Chest)
+	{
+		return static_cast<uint8>(EItemParts::Chest);
+	}
+	if (EquipItemDefinition.ItemParts == EItemParts::Gloves)
+	{
+		return static_cast<uint8>(EItemParts::Gloves);
+	}
+	if (EquipItemDefinition.ItemParts == EItemParts::Pants)
+	{
+		return static_cast<uint8>(EItemParts::Pants);
+	}
+	if (EquipItemDefinition.ItemParts == EItemParts::Boots)
+	{
+		return static_cast<uint8>(EItemParts::Boots);
+	}
+	return static_cast<uint8>(EItemParts::None);
+}
+
+
