@@ -130,6 +130,17 @@ void ACannonPawn::ClientSetCannonInfo_Implementation(AIB_RPGPlayerController* IB
 {
 	IB_RPGPlayerController = IB_PlayerController;
 	IB_MainChar = MainChar;
+
+	if (!HasAuthority())
+	{
+		ServerSetCannonInfo(IB_PlayerController, MainChar);
+	}
+}
+void ACannonPawn::ServerSetCannonInfo_Implementation(AIB_RPGPlayerController* IB_PlayerController,
+	AIB_MainChar* MainChar)
+{
+	IB_RPGPlayerController = IB_PlayerController;
+	IB_MainChar = MainChar;
 }
 
 void ACannonPawn::PossessedBy(AController* NewController)
@@ -211,12 +222,15 @@ void ACannonPawn::ServerChargeCannonPower_Implementation(float CurrentPower, con
 	{
 		CurrentPower = MaxPower;
 	}
-	ClientSetCannonPower(CurrentPower);
+	CurrentCannonPower = CurrentPower;
+	UE_LOG(LogTemp, Warning, TEXT("ServerShootChar Executed! Power: %f"), CurrentCannonPower);
+
+	//ClientSetCannonPower(CurrentPower);
 }
 
 void ACannonPawn::ClientSetCannonPower_Implementation(const float CurrentPower)
 {
-	CurrentCannonPower = CurrentPower;
+	//CurrentCannonPower = CurrentPower;
 }
 
 void ACannonPawn::ShootChar()
@@ -242,10 +256,7 @@ void ACannonPawn::ServerShootChar_Implementation(const float InCannonPowner)
 			FVector ShootingVector = (ForwardVector * 100.f);//(ApplyWeight/50.f);
 			IB_MainChar->SetActorLocation(CannonMuzzle->GetComponentLocation());
 			IB_MainChar->LaunchCharacter(ShootingVector, true, true);
-			if (IB_RPGPlayerController)
-			{
-				IB_RPGPlayerController->SwitchController();
-			}
+			CannonTakeOff();
 			//IB_MainChar->IsFlying = true;
 			FTimerHandle TimerHandle;
 			GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
@@ -282,7 +293,7 @@ void ACannonPawn::CannonTakeOff()
 		{
 			CannonSpawnComponent->SpawnOwnedCannonActor(IB_RPGPlayerController);
 			ServerSwithchController();
-			Destroyed();
+			Destroy();
 		}
 	}
 	

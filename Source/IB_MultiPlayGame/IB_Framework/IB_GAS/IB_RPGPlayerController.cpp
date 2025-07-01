@@ -42,6 +42,7 @@
 #include "AIController.h"
 #include "Kismet\GameplayStatics.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
+#include "IB_MultiPlayGame/Components/StateComponent.h"
 #include "IB_MultiPlayGame/Widget/W_InventorySlot.h"
 
 DEFINE_LOG_CATEGORY(Imbu);
@@ -61,6 +62,9 @@ AIB_RPGPlayerController::AIB_RPGPlayerController()
 
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
 	CombatComponent->SetIsReplicated(true);
+
+	StateComponent= CreateDefaultSubobject<UStateComponent>("StateComponent");
+	StateComponent->SetIsReplicated(true);
 
 	CannonSpawnComponent = CreateDefaultSubobject<UCannonSpawnComponent>("CannonSpawnComponent");
 	CannonSpawnComponent->SetIsReplicated(true);
@@ -329,6 +333,17 @@ UCombatComponent* AIB_RPGPlayerController::GetCombatComponent()
 		return CombatComponent;
 	}
 	return nullptr;
+}
+
+UStateComponent* AIB_RPGPlayerController::GetStateComponent()
+{
+	if (StateComponent)
+	{
+		return StateComponent;
+	}
+	UE_LOG(Imbu, Warning, TEXT("AIB_RPGPlayerController::GetStateComponent : No StateComponent"));	
+	return nullptr;
+	
 }
 
 UCannonSpawnComponent* AIB_RPGPlayerController::GetCannonSpawnComponent()

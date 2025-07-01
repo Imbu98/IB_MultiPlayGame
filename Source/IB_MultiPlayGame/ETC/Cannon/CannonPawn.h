@@ -116,6 +116,9 @@ public:
 	void ServerSwithchController();
 	UFUNCTION(Client, Reliable)
 	void ClientSetCannonInfo(AIB_RPGPlayerController* IB_PlayerController, AIB_MainChar* MainChar);
+	UFUNCTION(Server, Reliable)
+	void ServerSetCannonInfo(AIB_RPGPlayerController* IB_PlayerController, AIB_MainChar* MainChar);
+	
 
 
 public:

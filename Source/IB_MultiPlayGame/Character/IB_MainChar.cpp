@@ -16,10 +16,13 @@
 #include "../ETC/BaseSpawnedItem/BaseSpawnedItem.h"
 #include "../ETC/Cannon/CannonPawn.h"
 #include "../Interfaces/InteractInterface.h"
+#include "IB_MultiPlayGame/Components/CombatComponent.h"
+#include "IB_MultiPlayGame/Components/StateComponent.h"
 
 #include "InputActionValue.h"
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
+#include "Chaos/ChaosPerfTest.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -76,6 +79,7 @@ void AIB_MainChar::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& O
 	DOREPLIFETIME(AIB_MainChar, CharacterState);
 	DOREPLIFETIME(AIB_MainChar, LookatActor);
 	DOREPLIFETIME(AIB_MainChar, QuestObjectiveId);
+	DOREPLIFETIME(AIB_MainChar, IsCanMove);
 }
 
 USceneComponent* AIB_MainChar::GetDynamicSpawnPoint_Implementation()
@@ -90,14 +94,15 @@ void AIB_MainChar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AIB_MainChar::Move);
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AIB_MainChar::MoveStop);
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AIB_MainChar::Look);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AIB_MainChar::PlayerInteraction);
-		EnhancedInputComponent->BindAction(OpenInventoryAction, ETriggerEvent::Started, this, &AIB_MainChar::OpenInventory);
-		EnhancedInputComponent->BindAction(OpenPlayerInfoAction, ETriggerEvent::Started, this, &AIB_MainChar::OpenPlayerInfoTab);
+		EnhancedInputComponent->BindAction(IB_MoveAction, ETriggerEvent::Triggered, this, &AIB_MainChar::Move);
+		EnhancedInputComponent->BindAction(IB_MoveAction, ETriggerEvent::Completed, this, &AIB_MainChar::MoveStop);
+		EnhancedInputComponent->BindAction(IB_LookAction, ETriggerEvent::Triggered, this, &AIB_MainChar::Look);
+		EnhancedInputComponent->BindAction(IB_JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
+		EnhancedInputComponent->BindAction(IB_JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+		EnhancedInputComponent->BindAction(IB_InteractAction, ETriggerEvent::Started, this, &AIB_MainChar::PlayerInteraction);
+		EnhancedInputComponent->BindAction(IB_OpenInventoryAction, ETriggerEvent::Started, this, &AIB_MainChar::OpenInventory);
+		EnhancedInputComponent->BindAction(IB_OpenPlayerInfoAction, ETriggerEvent::Started, this, &AIB_MainChar::OpenPlayerInfoTab);
+		EnhancedInputComponent->BindAction(IB_AttackAction, ETriggerEvent::Triggered, this, &AIB_MainChar::PlayerAttack);
 	}
 }
 
@@ -112,6 +117,8 @@ void AIB_MainChar::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
+	//CachedOwningPlayerController = Cast<AIB_RPGPlayerController>(NewController);
+	
 }
 
 void AIB_MainChar::OnRep_PlayerState()
@@ -352,14 +359,6 @@ UAbilitySystemComponent* AIB_MainChar::GetAbilitySystemComponent() const
 	return IB_RPGAbilitySystemComponent;
 }
 
-void AIB_MainChar::MulticastPlayMontage_Implementation(UAnimMontage* ToPlayMontage)
-{
-	if (HasAuthority()) return;
-
-	GetMesh()->GetAnimInstance()->Montage_Play(ToPlayMontage, 1.0f);
-}
-
-
 
 void AIB_MainChar::ServerSetCharacterState_Implementation(EIB_CharCycle NewState)
 {
@@ -368,29 +367,37 @@ void AIB_MainChar::ServerSetCharacterState_Implementation(EIB_CharCycle NewState
 
 void AIB_MainChar::Move(const FInputActionValue& Value)
 {
-	FVector2D MovementVector = Value.Get<FVector2D>();
+	if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(Controller))
+	{
+		UStateComponent* StateComponent = IB_RPGPlayerController->GetStateComponent();
+		if (!IsValid(StateComponent)) return;
 
-	if (Controller != nullptr)
-	{
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
-		
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		
-		AddMovementInput(ForwardDirection, MovementVector.Y);
-		AddMovementInput(RightDirection, MovementVector.X);
-	}
+		if (StateComponent->GetCurrentState().MatchesTag(FGameplayTag::RequestGameplayTag("Player.Action"))) return;
 	
-	if (HasAuthority())
-	{
-		CharacterState=EIB_CharCycle::Walk;
-	}
-	else
-	{
+		FVector2D MovementVector = Value.Get<FVector2D>();
+
+		if (Controller != nullptr)
+		{
+			const FRotator Rotation = Controller->GetControlRotation();
+			const FRotator YawRotation(0, Rotation.Yaw, 0);
 		
-		ServerSetCharacterState(EIB_CharCycle::Walk);
+			const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		
+			const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		
+			AddMovementInput(ForwardDirection, MovementVector.Y);
+			AddMovementInput(RightDirection, MovementVector.X);
+		}
+	
+		if (HasAuthority())
+		{
+			CharacterState=EIB_CharCycle::Walk;
+		}
+		else
+		{
+		
+			ServerSetCharacterState(EIB_CharCycle::Walk);
+		}
 	}
 	
 }
@@ -405,6 +412,43 @@ void AIB_MainChar::Look(const FInputActionValue& Value)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+	}
+}
+
+void AIB_MainChar::PlayerAttack()
+{
+	if (!HasAuthority())
+	{
+		ServerPlayerAttack();
+		return;
+	}
+}
+
+void AIB_MainChar::ServerPlayerAttack_Implementation()
+{
+	if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(Controller))
+	{
+		UCombatComponent* CombatComponent = IB_RPGPlayerController->GetCombatComponent();
+		UStateComponent* StateComponent = IB_RPGPlayerController->GetStateComponent();
+		if (!IsValid(CombatComponent)) return;
+		if (!IsValid(StateComponent)) return;
+		FGameplayTag IdleTag =  FGameplayTag::RequestGameplayTag("Player.Idle");
+		FGameplayTag AttackTag =  FGameplayTag::RequestGameplayTag("Player.Action.Attack");
+		
+		{
+			if (CombatComponent->IsAttachedWeapon)
+			{
+				if (StateComponent->GetCurrentState().MatchesTag(IdleTag))
+				{
+					if (UAnimMontage* AttackMontage = CombatComponent->GetWeaponAnimMontage())
+					{
+						MulticastPlayMontage(AttackMontage);
+						CombatComponent->AttackCount++;
+						StateComponent->SetCurrentState(AttackTag);
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -438,6 +482,12 @@ void AIB_MainChar::OpenPlayerInfoTab()
 	}
 }
 
+void AIB_MainChar::MulticastPlayMontage_Implementation(UAnimMontage* ToPlayMontage)
+{
+	if (HasAuthority()) return;
+
+	GetMesh()->GetAnimInstance()->Montage_Play(ToPlayMontage, 1.0f);
+}
 
 
 

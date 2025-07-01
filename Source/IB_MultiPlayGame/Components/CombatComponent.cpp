@@ -1,4 +1,6 @@
 #include "CombatComponent.h"
+
+#include "StateComponent.h"
 #include "../ETC/Equippable/Armor/ArmorBase.h"
 #include "../ETC/Equippable/Weapon/WeaponBase.h"
 #include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
@@ -8,6 +10,7 @@
 #include "../Widget/W_Inventory.h"
 #include "../Widget/W_InventorySlot.h"
 #include "../Widget/W_PlayerInfo.h"
+#include "IB_MultiPlayGame/Character/IB_MainChar.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -24,7 +27,7 @@ void UCombatComponent::BeginPlay()
 	uint8 LastIndex = static_cast<uint8>(EItemParts::ForLastItemIndex);
 	int32 RealEquipItemSlotQuantity =  LastIndex-2;
 	
-	// None°ú LastItemIndex ¸¦ »©°í ÃÊ±âÈ­
+	// Noneï¿½ï¿½ LastItemIndex ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­
 	
 	EquippedItemsDefinition.SetNum(RealEquipItemSlotQuantity);
 	EquippedItemsDefinition.Emplace(FMasterItemDefinition());
@@ -32,7 +35,7 @@ void UCombatComponent::BeginPlay()
 	for (uint8 i =FirstIndex ; i <LastIndex ; ++i)
 	{
 		EItemParts Parts = static_cast<EItemParts>(i);
-		EquippedItemMap.Add(Parts, FMasterItemDefinition()); // Add´Â ÀÌ¹Ì ÀÖÀ¸¸é µ¤¾î¾¸
+		EquippedItemMap.Add(Parts, FMasterItemDefinition()); // Addï¿½ï¿½ ï¿½Ì¹ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½î¾¸
 		
 		
 	}
@@ -47,7 +50,30 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 void UCombatComponent::ResetAttack()
 {
-	AttackCount = 0;
+	if (GetOwner())
+	{
+		if (!GetOwner()->HasAuthority())
+		{
+			ServerResetAttack();
+			return;
+		}
+		if (UStateComponent* StateComponent = GetOwner()->FindComponentByClass<UStateComponent>())
+		{
+			StateComponent->ResetCurrentState();
+			AttackCount = 0;
+		}
+	}
+}
+
+void UCombatComponent::ServerResetAttack_Implementation()
+{
+	if (GetOwner())
+	{
+		if (GetOwner()->HasAuthority())
+		{
+			ResetAttack();
+		}
+	}
 }
 
 void UCombatComponent::SetEquippedItem(AActor* SpawnedItem)
@@ -59,15 +85,13 @@ void UCombatComponent::SetEquippedItem(AActor* SpawnedItem)
 	{
 		FMasterItemDefinition EquippedItemDefinition=EquippedItem->GetItemDefinition();
 
-		// EquippedItemActorÁ¤º¸¿Í ItemInfo MapÀ¸·Î ÀúÀå
+		// EquippedItemActorï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ItemInfo Mapï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		
 		EquippedInstancedItemMap.Add(EquippedItemDefinition.ItemParts,EquippedItem);
 		
-
-		
 		//EquippedItemsDefinition.Add(EquippedItemDefinition);
 		
-		// MapÀ» ¸¸µé±â À§ÇÑ ¾ÆÀÌÅÛ Á¤º¸µé Array¿¡ Ãß°¡
+		// Mapï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Arrayï¿½ï¿½ ï¿½ß°ï¿½
 		int32 EquipSlotIndex = DefinitionIndex(EquippedItemDefinition);
 		
 		if (EquippedItemsDefinition.IsValidIndex(EquipSlotIndex))
@@ -75,14 +99,19 @@ void UCombatComponent::SetEquippedItem(AActor* SpawnedItem)
 			EquippedItemsDefinition[EquipSlotIndex] = EquippedItemDefinition;
 		}
 		
-		// Server¿¡¼­ ¸ÕÀú Array·Î MapÀ» ¸¸µé°í, Å¬¶óÀÌ¾ðÆ®RPC·Î Å¬¶ó¿¡¼­µµ MapÀ» ¸¸µé¾îÁÜ 
+		// Serverï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Arrayï¿½ï¿½ Mapï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½, Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ®RPCï¿½ï¿½ Å¬ï¿½ó¿¡¼ï¿½ï¿½ï¿½ Mapï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 
 		for (const FMasterItemDefinition& ItemDef : EquippedItemsDefinition)
 		{
 			EquippedItemMap.Add(ItemDef.ItemParts,ItemDef);
 		}
+		if (EquippedItemDefinition.ItemParts==EItemParts::Weapon)
+		{
+			IsAttachedWeapon=true;
+		}
 		//ClientSetEquippedItemMap(EquippedItemsDefinition);
 	}
 }
+
 void UCombatComponent::ClientSetEquippedItemMap_Implementation(const TArray<FMasterItemDefinition>& EquippedItemDefinitions)
 {
 	
@@ -90,6 +119,10 @@ void UCombatComponent::ClientSetEquippedItemMap_Implementation(const TArray<FMas
 
 void UCombatComponent::UnEquipItem(const FMasterItemDefinition& ItemInfo,const float& SlotIndex)
 {
+	if (ItemInfo.ItemParts==EItemParts::Weapon)
+	{
+		IsAttachedWeapon=false;
+	}
 	if (!GetOwner()->HasAuthority()) return;
 	
 	if (AEquippableBase** EquippedItemPtr = EquippedInstancedItemMap.Find(ItemInfo.ItemParts))
@@ -107,6 +140,29 @@ void UCombatComponent::UnEquipItem(const FMasterItemDefinition& ItemInfo,const f
 	}
 }
 
+UAnimMontage* UCombatComponent::GetWeaponAnimMontage()
+{
+	if (EquippedInstancedItemMap.Find(EItemParts::Weapon))
+	{
+		if (AEquippableBase* EquippableItem  =*EquippedInstancedItemMap.Find(EItemParts::Weapon))
+		{
+			if (AWeaponBase* Weapon = Cast<AWeaponBase>(EquippableItem))
+			{
+				if (Weapon->WeaponAttackMontageArray.Num() > 0)
+				{
+					int32 WeaponMontageNum =Weapon->WeaponAttackMontageArray.Num()-1;
+					if (AttackCount>WeaponMontageNum)
+					{
+						ResetAttack();
+					}
+					return Weapon->WeaponAttackMontageArray[AttackCount];
+				}
+			}
+		}
+	}
+	return nullptr;
+}
+
 void UCombatComponent::OnRep_EquippedItemsDefinition()
 {
 	uint8 FirstIndex =static_cast<uint8>(EItemParts::None) + 1;
@@ -114,7 +170,7 @@ void UCombatComponent::OnRep_EquippedItemsDefinition()
 	for (uint8 i =FirstIndex ; i <LastIndex ; ++i)
 	{
 		EItemParts Parts = static_cast<EItemParts>(i);
-		EquippedItemMap.Add(Parts, FMasterItemDefinition()); // ¸Ê¿¡¼­ Add´Â Å°°¡ ÀÌ¹Ì ÀÖÀ¸¸é µ¤¾î¾¸
+		EquippedItemMap.Add(Parts, FMasterItemDefinition()); // ï¿½Ê¿ï¿½ï¿½ï¿½ Addï¿½ï¿½ Å°ï¿½ï¿½ ï¿½Ì¹ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½î¾¸
 	}
 	
 	for (const FMasterItemDefinition& ItemDef : EquippedItemsDefinition)

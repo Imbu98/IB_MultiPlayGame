@@ -21,7 +21,13 @@ void UCannonSpawnComponent::BeginPlay()
 
 void UCannonSpawnComponent::SpawnOwnedCannonActor(AIB_RPGPlayerController* IB_PlayerController)
 {
-	if (!GetOwner()->HasAuthority()) return;
+	if (!IsValid(GetOwner())) return;
+	
+	if (!GetOwner()->HasAuthority())
+	{
+		ServerSpawnOwnedCannonActor(IB_PlayerController);
+		return;
+	}
 
 	if (BP_CannonActor && IB_PlayerController) //BP_CannonActor추가
 	{
@@ -43,6 +49,16 @@ void UCannonSpawnComponent::SpawnOwnedCannonActor(AIB_RPGPlayerController* IB_Pl
 				
 			}
 		}
+	}
+}
+
+void UCannonSpawnComponent::ServerSpawnOwnedCannonActor_Implementation(AIB_RPGPlayerController* IB_PlayerController)
+{
+	if (!IsValid(IB_PlayerController)) return;
+	
+	if (IB_PlayerController->HasAuthority())
+	{
+		SpawnOwnedCannonActor(IB_PlayerController);
 	}
 }
 

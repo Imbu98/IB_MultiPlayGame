@@ -27,6 +27,9 @@ public:
 	UPROPERTY()
 	int32 AttackCount;
 
+	UPROPERTY()
+	bool IsAttachedWeapon= false;
+	
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedItemsDefinition)
 	TArray<FMasterItemDefinition> EquippedItemsDefinition;
 
@@ -44,10 +47,14 @@ private:
 public:
 	UFUNCTION()
 	void ResetAttack();
+	UFUNCTION(Server,Reliable)
+	void ServerResetAttack();
 	UFUNCTION()
 	void SetEquippedItem(AActor* SpawnedItem);
 	UFUNCTION()
 	void UnEquipItem(const FMasterItemDefinition& ItemInfo,const float& SlotIndex);
+	UFUNCTION()
+	UAnimMontage* GetWeaponAnimMontage();
 	UFUNCTION()
 	void OnRep_EquippedItemsDefinition();
 	UFUNCTION()

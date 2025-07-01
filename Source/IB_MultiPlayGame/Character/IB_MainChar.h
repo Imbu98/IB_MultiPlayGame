@@ -88,22 +88,24 @@ public:
 	UInputMappingContext* IMC_Default;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* JumpAction;
+	UInputAction* IB_JumpAction;
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* MoveAction;
+	UInputAction* IB_MoveAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* IB_LookAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* IB_AttackAction;
 
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* LookAction;
-
+	UInputAction* IB_InteractAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* InteractAction;
+	UInputAction* IB_OpenInventoryAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* OpenInventoryAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* OpenPlayerInfoAction;
+	UInputAction* IB_OpenPlayerInfoAction;
 	
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
@@ -122,15 +124,35 @@ public:
 	UPROPERTY()
 	TObjectPtr<AIB_RPGPlayerController> CachedOwningPlayerController;
 
+	UPROPERTY(Replicated)
+	bool IsCanMove=true;
+
 protected:
+	UFUNCTION()
 	void Move(const FInputActionValue& Value);
-	
+
+	UFUNCTION()
 	void Look(const FInputActionValue& Value);
 
+	UFUNCTION()
 	void MoveStop();
 
+	UFUNCTION()
+	void PlayerInteraction();
+
+	UFUNCTION(Server,Reliable)
+	void SereverPlayerInteraction();
+
+	UFUNCTION()
+	void PlayerAttack();
+	
+	UFUNCTION(Server,Reliable)
+	void ServerPlayerAttack();
+
+	UFUNCTION()
 	void OpenInventory();
 
+	UFUNCTION()
 	void OpenPlayerInfoTab();
 
 	
@@ -157,11 +179,7 @@ private:
 	UPROPERTY(BlueprintReadOnly,meta=(AllowPrivateAccess=true))
 	TObjectPtr<UIB_RPGAttributeSet> IB_RPGAttributeSet;
 
-	UFUNCTION()
-	void PlayerInteraction();
-
-	UFUNCTION(Server,Reliable)
-	void SereverPlayerInteraction();
+	
 
 	UFUNCTION(BlueprintCallable)
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;

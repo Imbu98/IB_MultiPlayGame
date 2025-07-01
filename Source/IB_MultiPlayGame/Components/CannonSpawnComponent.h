@@ -43,6 +43,8 @@ protected:
 public:
 	UFUNCTION()
 	void SpawnOwnedCannonActor(AIB_RPGPlayerController* IB_PlayerController);
+	UFUNCTION(Server, Reliable)
+	void ServerSpawnOwnedCannonActor(AIB_RPGPlayerController* IB_PlayerController);
 	UFUNCTION()
 	void SpawnOwnedCannonPawn(AIB_RPGPlayerController* IB_PlayerController);
 

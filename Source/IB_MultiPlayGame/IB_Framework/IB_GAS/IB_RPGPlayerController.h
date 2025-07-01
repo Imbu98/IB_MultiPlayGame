@@ -10,6 +10,7 @@
 #include "../../QuestSystem/QuestStructure.h"
 #include "IB_RPGPlayerController.generated.h"
 
+class UStateComponent;
 class UInventoryWidgetController;
 class UW_RPGSystemWidget;
 class URPGInputConfig;
@@ -65,6 +66,8 @@ public:
 	UFUNCTION()
 	UCombatComponent* GetCombatComponent();
 	UFUNCTION()
+	UStateComponent* GetStateComponent();
+	UFUNCTION()
 	UCannonSpawnComponent* GetCannonSpawnComponent();
 
 protected:
@@ -92,6 +95,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Replicated)
 	TObjectPtr<UCannonSpawnComponent> CannonSpawnComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Replicated)
+	TObjectPtr<UStateComponent> StateComponent;
 
 	UPROPERTY()
 	TObjectPtr<UInventoryWidgetController> InventoryWidgetController;
