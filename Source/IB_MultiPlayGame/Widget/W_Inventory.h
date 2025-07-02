@@ -5,13 +5,17 @@
 #include "../Inventory/ItemTypes.h"
 #include "W_Inventory.generated.h"
 
+class UWidgetSwitcher;
+struct FPackagedInventory;
 class UScrollBox;
 class UWrapBox;
 class UTextBlock;
+class UButton;
 struct FMasterItemDefinition;
 class UW_ItemRow;
 class UW_InventorySlot;
 class UW_PlayerInfo;
+
 
 
 UCLASS()
@@ -41,13 +45,33 @@ public:
 	TObjectPtr<UW_PlayerInfo> WBP_EquippedItemSlotClass;
 
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	TObjectPtr<UWrapBox> WB_InventoryContents;
+	TObjectPtr<UButton> Btn_EquippableInventory;
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<UButton> Btn_ConsumableInventory;
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<UButton> Btn_ETCInventory;
+
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<UWidgetSwitcher>WidgetSwitcher_InventorySwitcher;
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<UWrapBox> WB_EquippableInventoryContents;
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<UWrapBox> WB_ConsumableInventoryContents;
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<UWrapBox> WB_ETCInventoryContents;
+	
 	UPROPERTY()
 	UW_InventorySlot* WBP_InventorySlot;
 	UPROPERTY(EditAnywhere, Category = "CustomValues|Widgets")
 	TSubclassOf<UW_InventorySlot> WBP_InventorySlotClass;
 	UPROPERTY()
-	TArray<UW_InventorySlot*> ActiveItemWidgets;
+	TArray<UW_InventorySlot*> EquippableSlots;
+
+	UPROPERTY()
+	TArray<UW_InventorySlot*> ConsumableSlots;
+
+	UPROPERTY()
+	TArray<UW_InventorySlot*> ETCSlots;
 
 	UPROPERTY()
 	int32 InventorySlotIndex=0;
@@ -63,20 +87,35 @@ public:
 	void BindInventoryItemDelegate();
 
 	UFUNCTION()
-	void InventoryItemRecieved(const FPackagedInventory& PackagedInventory);
+	void InventoryItemRecieved(const FUserInventory& PackagedInventory,const EItemTypes InventoryType);
 	UFUNCTION()
 	void InventoryBroadcastComplete();
 	UFUNCTION()
-	void OnScrollBoxReset();
+	void BroadcastOnclickEvent(ESlotTypes SlotType);
+	UFUNCTION()
+	void ResetActiveWidgets(TArray<UW_InventorySlot*>& ActiveWidget);
 	UFUNCTION()
 	void OnActionButtonClicked(const FMasterItemDefinition& Item,const float& SlotIndex);
 
 	UFUNCTION()
-	void HandleInventoryItemRecieved(const FPackagedInventory& PackagedInventory);
+	void OnEquippableButtonClicked();
+	UFUNCTION()
+	void OnComsumbableButtonClicked();
+	UFUNCTION()
+	void OnETCButtonClicked();
 
 	UFUNCTION()
-	void MakeItemRowWidget(const FPackagedInventory& PackagedInventory);
-
+	void HandleInventoryItemRecieved(const FUserInventory& PackagedInventory,const EItemTypes InventoryType);
+	
+	UFUNCTION()
+	void MakeItemRowWidget(const FUserInventory& PackagedInventory,const EItemTypes InventoryType);
+	UFUNCTION()
+	void InitializeSlots();
+	UFUNCTION()
+	void UpdateItemWidgets(const FPackagedInventory& SubInventory, ESlotTypes SlotType,UWrapBox* InventoryContentsWrapBox);
+	UFUNCTION()
+	void CreateInventorySlot(UWrapBox* InventoryContentsWrapBox,ESlotTypes SlotType);
+	
 
 	
 

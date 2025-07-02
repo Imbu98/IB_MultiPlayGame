@@ -15,6 +15,14 @@
 #include "Kismet/GameplayStatics.h"
 #include "BlueprintGameplayTagLibrary.h"
 
+bool FUserInventory::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
+{
+	EquippableInventory.NetSerialize(Ar, Map, bOutSuccess);
+	ConsumableInventory.NetSerialize(Ar, Map, bOutSuccess);
+	ETCInventory.NetSerialize(Ar, Map, bOutSuccess);
+
+	return true;
+}
 
 bool FPackagedInventory::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
 {
@@ -34,8 +42,8 @@ UInventoryComponent::UInventoryComponent()
 void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(UInventoryComponent, CachedInventory);
+	
+	DOREPLIFETIME(UInventoryComponent, CachedUserInventory);
 }
 
 
@@ -46,8 +54,14 @@ void UInventoryComponent::BeginPlay()
 	if (IsFirstStart==true)
 	{
 		FGameplayTag NoneTag = FGameplayTag::RequestGameplayTag(TEXT("Item.None"));
-		CachedInventory.Initialize(Inventorysize, NoneTag, 0);
-		ReConstructInventoryMap(CachedInventory);
+		CachedUserInventory.ConsumableInventory.Initialize(Inventorysize, NoneTag, 0);
+		CachedUserInventory.EquippableInventory.InventoryType = EItemTypes::Item_Equippable;
+		
+		CachedUserInventory.EquippableInventory.Initialize(Inventorysize, NoneTag, 0);
+		CachedUserInventory.ConsumableInventory.InventoryType = EItemTypes::Item_Consumable;
+		
+		CachedUserInventory.ETCInventory.Initialize(Inventorysize, NoneTag, 0);
+		CachedUserInventory.ETCInventory.InventoryType = EItemTypes::Item_ETC;
 		IsFirstStart = false;
 	}
 
@@ -92,35 +106,12 @@ void UInventoryComponent::ServerAddItem_Implementation(int32 NumItems, const FMa
 	AddItem(ItemDefinition,NumItems);
 }
 
-void UInventoryComponent::PackageInventory(FPackagedInventory& OutInventory)
-{
-	OutInventory.ItemTags.Empty();
-	OutInventory.ItemQuantities.Empty();
-
-	for (const auto& Pair : InventoryTagMap)
-	{
-		if (Pair.Value > 0)
-		{
-			OutInventory.ItemTags.Add(Pair.Key);
-			OutInventory.ItemQuantities.Add(Pair.Value);
-		}
-		else
-		{
-			FGameplayTag NoneTag = FGameplayTag::RequestGameplayTag(TEXT("Item.None"));
-			if (NoneTag.IsValid())
-			{
-				OutInventory.ItemTags.Add(NoneTag);
-				OutInventory.ItemQuantities.Add(0);
-			}
-		}
-	}
-}
-
 void UInventoryComponent::SwapItemsInPackagedInventory(FPackagedInventory& CachedInventoryRef, int32 IndexA, int32 IndexB)
 {
+	
 	if (!GetOwner()->HasAuthority())
 	{
-		ServerSwapItem(IndexA,IndexB);
+		ServerSwapItem(CachedInventoryRef,IndexA,IndexB);
 		return;
 	}
 	if (!CachedInventoryRef.ItemTags.IsValidIndex(IndexA) || !CachedInventoryRef.ItemTags.IsValidIndex(IndexB))
@@ -132,40 +123,22 @@ void UInventoryComponent::SwapItemsInPackagedInventory(FPackagedInventory& Cache
 	
 	CachedInventoryRef.ItemQuantities.Swap(IndexA, IndexB);
 
-	InventoryPackageDelegate.Broadcast(CachedInventoryRef);
+	DefinitionSetInventory(CachedInventoryRef);
+	
+	ClientUpdateUserInventory(CachedUserInventory,CachedInventoryRef.InventoryType);
 
 	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Swapping %d <--> %d"), IndexA, IndexB));
 }
 
-void UInventoryComponent::ServerSwapItem_Implementation(int32 IndexA, int32 IndexB)
+void UInventoryComponent::ServerSwapItem_Implementation(FPackagedInventory CachedInventoryRef, int32 IndexA, int32 IndexB)
 {
-	SwapItemsInPackagedInventory(CachedInventory, IndexA, IndexB);
+	SwapItemsInPackagedInventory(CachedInventoryRef, IndexA, IndexB);
 }
 
-void UInventoryComponent::ReConstructInventoryMap(const FPackagedInventory& Inventory)
+
+FUserInventory& UInventoryComponent::GetCachedUserInventory()
 {
-	InventoryTagMap.Empty();
-
-	for (int32 i = 0; i < Inventorysize;++i)
-	{
-		if (!Inventory.ItemTags.IsValidIndex(i) || !Inventory.ItemQuantities.IsValidIndex(i)) return;
-
-		InventoryTagMap.Emplace(Inventory.ItemTags[i], Inventory.ItemQuantities[i]);
-
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Tag Added: %s // Quantity Added :%d"), *Inventory.ItemTags[i].ToString(), Inventory.ItemQuantities[i]));
-	}
-	
-	
-}
-
-TMap<FGameplayTag, int32> UInventoryComponent::GetInventoryTagMap()
-{
-	return InventoryTagMap;
-}
-
-FPackagedInventory& UInventoryComponent::GetCachedInventory()
-{
-	return CachedInventory;
+	return CachedUserInventory;
 }
 
 int32 UInventoryComponent::GetInventorySize()
@@ -173,14 +146,26 @@ int32 UInventoryComponent::GetInventorySize()
 	return Inventorysize;
 }
 
-void UInventoryComponent::OnRep_CachedInventory()
+void UInventoryComponent::OnRep_CachedUserInventory()
 {
 	if (bOwnerLocallyControlled)
 	{
-		InventoryPackageDelegate.Broadcast(CachedInventory);
-
+		//UserInventoryPackageDelegate.Broadcast(CachedUserInventory);
 	}
+}
 
+void UInventoryComponent::ClientUpdateUserInventory_Implementation(const FUserInventory& UserInventory,
+	const EItemTypes InventoryType)
+{
+	if (bOwnerLocallyControlled)
+	{
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle,[this,InventoryType]()
+		{
+			UserInventoryPackageDelegate.Broadcast(CachedUserInventory,InventoryType);
+		},0.05f,false);
+		
+	}
 }
 
 int32 UInventoryComponent::QueryInventory(const FString& ItemTagString)
@@ -200,12 +185,20 @@ int32 UInventoryComponent::QueryInventory(const FString& ItemTagString)
 		UE_LOG(LogTemp, Warning, TEXT("GameplayTag '%s' is not registered."), *TagString);
 	}
 
-	// 단일 FPackagedInventory 안에서 인덱스 탐색 후 수량 return;
-	for (int32 Index = 0; Index < CachedInventory.ItemTags.Num(); ++Index)
+	const TArray<FPackagedInventory*> Inventories = {
+		&CachedUserInventory.EquippableInventory,
+		&CachedUserInventory.ConsumableInventory,
+		&CachedUserInventory.ETCInventory
+	};
+
+	for (const FPackagedInventory* Inventory : Inventories)
 	{
-		if (CachedInventory.ItemTags[Index] == Tag)
+		for (int32 Index = 0; Index < Inventory->ItemTags.Num(); ++Index)
 		{
-			return CachedInventory.ItemQuantities[Index];
+			if (Inventory->ItemTags[Index] == Tag)
+			{
+				return Inventory->ItemQuantities.IsValidIndex(Index) ? Inventory->ItemQuantities[Index] : 0;
+			}
 		}
 	}
 	return 0;
@@ -235,34 +228,39 @@ void UInventoryComponent::RemoveItem(const FMasterItemDefinition& DynamicItemDat
 {
 
 	FGameplayTag NoneTag = FGameplayTag::RequestGameplayTag(TEXT("Item.None"));
+
+	FPackagedInventory Inventory =  DefinitionGetInventory(DynamicItemData.ItemTag);
 	
-	if (!CachedInventory.ItemTags.IsValidIndex(SlotIndex) || !CachedInventory.ItemDefinitions.IsValidIndex(SlotIndex))
+	if (!Inventory.ItemTags.IsValidIndex(SlotIndex) || !Inventory.ItemDefinitions.IsValidIndex(SlotIndex))
 	{
 		return;
 	}
 	
-	if (CachedInventory.ItemTags[SlotIndex] == DynamicItemData.ItemTag)
+	if (Inventory.ItemTags[SlotIndex] == DynamicItemData.ItemTag)
 	{
-		CachedInventory.ItemQuantities[SlotIndex] -= NumItems;
+		Inventory.ItemQuantities[SlotIndex] -= NumItems;
 		
-		if (CachedInventory.ItemQuantities[SlotIndex] <=0)
+		if (Inventory.ItemQuantities[SlotIndex] <=0)
 		{
-			CachedInventory.ItemTags[SlotIndex] = NoneTag;
-			CachedInventory.ItemDefinitions[SlotIndex] = FMasterItemDefinition();
-			CachedInventory.ItemQuantities[SlotIndex] = 0;
+			Inventory.ItemTags[SlotIndex] = NoneTag;
+			Inventory.ItemDefinitions[SlotIndex] = FMasterItemDefinition();
+			Inventory.ItemQuantities[SlotIndex] = 0;
 		}
 
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red,
 			FString::Printf(TEXT("Slot %d cleared. Tag: %s"), SlotIndex, *DynamicItemData.ItemTag.ToString()));
 
+		DefinitionSetInventory(Inventory);
 		// 위젯 갱신 등 브로드캐스트
-		InventoryPackageDelegate.Broadcast(CachedInventory);
+		ClientUpdateUserInventory(CachedUserInventory,Inventory.InventoryType);
 	}
 }
 
 void UInventoryComponent::ServerUseItem_Implementation( const FMasterItemDefinition& DynamicItemData,const int32& SlotIndex,int32 NumItems)
 {
-	if (CachedInventory.ItemTags.Contains(DynamicItemData.ItemTag))
+	FPackagedInventory Inventory =  DefinitionGetInventory(DynamicItemData.ItemTag);
+	
+	if (Inventory.ItemTags.Contains(DynamicItemData.ItemTag))
 	{
 		UseItem(DynamicItemData,SlotIndex,NumItems);
 	}
@@ -362,29 +360,33 @@ bool UInventoryComponent::DefinitionItemAdd(const FMasterItemDefinition& ItemDef
 	const FMasterItemDefinition Item = GetItemDefinitionByTag(ItemDefinition.ItemTag);
 	const bool bStackable = Item.bStackable;
 
-	if (!CachedInventory.ItemTags.Contains(NoneTag))
+	FPackagedInventory Inventory = DefinitionGetInventory(ItemDefinition.ItemTag);
+
+	if (!Inventory.ItemTags.Contains(NoneTag))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Inventory Is Full"));
 		return false;
 	}
 
-	if (CachedInventory.ItemTags.Contains(ItemDefinition.ItemTag))
+	if (Inventory.ItemTags.Contains(ItemDefinition.ItemTag))
 	{
 		// 여러 개 Stack 할 수 없는 아이템 ( 무기 , 방어구 등)
 		if (bStackable==false)
 		{
 			if (NumItems > 0)
 			{
-				int32 NoneIndex = CachedInventory.ItemTags.IndexOfByKey(NoneTag);
-				if (NoneIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(NoneIndex))
+				int32 NoneIndex = Inventory.ItemTags.IndexOfByKey(NoneTag);
+				if (NoneIndex != INDEX_NONE && Inventory.ItemQuantities.IsValidIndex(NoneIndex))
 				{
-					CachedInventory.ItemTags[NoneIndex] = ItemDefinition.ItemTag;
-					CachedInventory.ItemQuantities[NoneIndex] = NumItems;
-					CachedInventory.ItemDefinitions[NoneIndex] = ItemDefinition;
+					Inventory.ItemTags[NoneIndex] = ItemDefinition.ItemTag;
+					Inventory.ItemQuantities[NoneIndex] = NumItems;
+					Inventory.ItemDefinitions[NoneIndex] = ItemDefinition;
 
 					GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemDefinition.ItemTag.ToString(), NumItems));
 
-					InventoryPackageDelegate.Broadcast(CachedInventory);
+					DefinitionSetInventory(Inventory);
+
+					ClientUpdateUserInventory(CachedUserInventory,Inventory.InventoryType);
 					return true;
 				}
 			}
@@ -392,17 +394,19 @@ bool UInventoryComponent::DefinitionItemAdd(const FMasterItemDefinition& ItemDef
 		// Stackable == true면 수량++
 		else
 		{
-			int32 FoundIndex = CachedInventory.ItemTags.IndexOfByKey(ItemDefinition.ItemTag);
-			if (FoundIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(FoundIndex))
+			int32 FoundIndex = Inventory.ItemTags.IndexOfByKey(ItemDefinition.ItemTag);
+			if (FoundIndex != INDEX_NONE && Inventory.ItemQuantities.IsValidIndex(FoundIndex))
 			{
-				CachedInventory.ItemQuantities[FoundIndex] += NumItems;
-				if (CachedInventory.ItemQuantities[FoundIndex] <= 0)
+				Inventory.ItemQuantities[FoundIndex] += NumItems;
+				if (Inventory.ItemQuantities[FoundIndex] <= 0)
 				{
-					CachedInventory.ItemTags[FoundIndex] = NoneTag;
+					Inventory.ItemTags[FoundIndex] = NoneTag;
 
 					GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemDefinition.ItemTag.ToString(), NumItems));
 
-					InventoryPackageDelegate.Broadcast(CachedInventory);
+					DefinitionSetInventory(Inventory);
+					
+					ClientUpdateUserInventory(CachedUserInventory,Inventory.InventoryType);
 					return true;
 				}
 			}
@@ -411,15 +415,17 @@ bool UInventoryComponent::DefinitionItemAdd(const FMasterItemDefinition& ItemDef
 	}
 	else
 	{
-		int32 NoneIndex = CachedInventory.ItemTags.IndexOfByKey(NoneTag);
-		if (NoneIndex != INDEX_NONE && CachedInventory.ItemQuantities.IsValidIndex(NoneIndex))
+		int32 NoneIndex = Inventory.ItemTags.IndexOfByKey(NoneTag);
+		if (NoneIndex != INDEX_NONE && Inventory.ItemQuantities.IsValidIndex(NoneIndex))
 		{
-			CachedInventory.ItemTags[NoneIndex] = ItemDefinition.ItemTag;
-			CachedInventory.ItemQuantities[NoneIndex] = NumItems;
-			CachedInventory.ItemDefinitions[NoneIndex] = ItemDefinition;
+			Inventory.ItemTags[NoneIndex] = ItemDefinition.ItemTag;
+			Inventory.ItemQuantities[NoneIndex] = NumItems;
+			Inventory.ItemDefinitions[NoneIndex] = ItemDefinition;
 
 			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemDefinition.ItemTag.ToString(), NumItems));
-			InventoryPackageDelegate.Broadcast(CachedInventory);
+			DefinitionSetInventory(Inventory);
+			
+			ClientUpdateUserInventory(CachedUserInventory,Inventory.InventoryType);
 
 			return true;
 		}
@@ -441,4 +447,46 @@ bool UInventoryComponent::DefinitionItemAdd(const FMasterItemDefinition& ItemDef
 
 	
 	return false;
+}
+
+void UInventoryComponent::DefinitionSetInventory(FPackagedInventory& Inventory)
+{
+
+	if (Inventory.InventoryType==EItemTypes::Item_Equippable)
+	{
+		CachedUserInventory.EquippableInventory = Inventory;
+	}
+	else if (Inventory.InventoryType==EItemTypes::Item_Consumable)
+	{
+		CachedUserInventory.ConsumableInventory = Inventory;
+	}
+	else if (Inventory.InventoryType==EItemTypes::Item_ETC)
+	{
+		CachedUserInventory.ETCInventory = Inventory;
+	}
+}
+
+FPackagedInventory UInventoryComponent::DefinitionGetInventory(const FGameplayTag& ItemTag)
+{
+	FGameplayTag EquippableTag = FGameplayTag::RequestGameplayTag("Item.Equippable");
+	FGameplayTag ConsumableTag = FGameplayTag::RequestGameplayTag("Item.Consumable");
+	FGameplayTag ETCTag = FGameplayTag::RequestGameplayTag("Item.ETC");
+
+	if (ItemTag.MatchesTag(EquippableTag) )
+	{
+		return CachedUserInventory.EquippableInventory;
+	}
+	if (ItemTag.MatchesTag(ConsumableTag))
+	{
+		return CachedUserInventory.ConsumableInventory;
+	}
+	if (ItemTag.MatchesTag(ETCTag))
+	{
+		return CachedUserInventory.ETCInventory;
+	}
+	
+	UE_LOG(Imbu, Error, TEXT("NOInventory"));
+	
+	return FPackagedInventory();
+	
 }

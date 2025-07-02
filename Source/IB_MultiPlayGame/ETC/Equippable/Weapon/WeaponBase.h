@@ -46,8 +46,7 @@ private:
 	TObjectPtr<USkeletalMeshComponent> WeaponSkeletalMesh;
 	UPROPERTY()
 	float WeaponAttackPower;
-	UPROPERTY()
-	FActiveGameplayEffectHandle ActiveGEHandle;
+	
 private:
 
 	UFUNCTION(NetMulticast, Reliable)

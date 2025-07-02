@@ -48,6 +48,7 @@ FGameplayTag UStateComponent::GetCurrentState()
 		}
 		return CurrentStateTag;
 	}
+	return FGameplayTag();
 }
 
 void UStateComponent::ServerGetCurrentState_Implementation()

@@ -37,7 +37,7 @@ void AWeaponBase::SetWeaponParams(const FWeaponParams& Params)
 				HasAuthority() ? TEXT("Server") : TEXT("Client"),
 				*GetNameSafe(Params.WeaponSkeletalMesh));
 
-			/* Rarity¿¡ µû¸¥ µ¥¹ÌÁö³ª´©±â
+			/* Rarityï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			if(Rarity == common)
 			{
 				DamageEffectInfo.BaseDamage = ?.?f

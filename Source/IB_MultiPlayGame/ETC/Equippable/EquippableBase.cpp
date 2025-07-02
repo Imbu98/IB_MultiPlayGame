@@ -37,3 +37,17 @@ FMasterItemDefinition AEquippableBase::GetItemDefinition()
 	return ItemDefinition;
 }
 
+void AEquippableBase::UnEquipItem()
+{
+	if (AActor* OwnerCharacter = GetOwner())
+	{
+		if (UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerCharacter))
+		{
+			if (ActiveGEHandle.IsValid())
+			{
+				OwnerAsc->RemoveActiveGameplayEffect(ActiveGEHandle);
+			}
+		}
+	}
+}
+

@@ -25,13 +25,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | GamePlayEffect")
 	TSubclassOf<UGameplayEffect> ArmorDefenseEffect;
 	UPROPERTY()
-	FActiveGameplayEffectHandle ActiveDefenseGEHandle;
-	UPROPERTY()
 	float ArmorDefense;
 
 
 
 public:
+	UFUNCTION()
 	void SetCharacterDefense(const float& ItemDefense);
 	
 };

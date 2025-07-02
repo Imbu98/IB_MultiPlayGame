@@ -25,6 +25,10 @@ public:
 	void SetItemDefinition(const FMasterItemDefinition& InItemDefinition);
 	UFUNCTION()
 	FMasterItemDefinition GetItemDefinition();
+	UFUNCTION()
+	void UnEquipItem();
+	UPROPERTY()
+	FActiveGameplayEffectHandle ActiveGEHandle;
 
 
 protected:

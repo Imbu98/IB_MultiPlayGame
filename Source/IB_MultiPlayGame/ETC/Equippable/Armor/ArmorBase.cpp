@@ -37,8 +37,9 @@ void AArmorBase::SetCharacterDefense(const float& ItemDefense)
 			if (SpecHandle.IsValid())
 			{
 				SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Combat.Data.Defense")), ArmorDefense);
-				ActiveDefenseGEHandle = OwnerAsc->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				ActiveGEHandle = OwnerAsc->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 			}
 		}
 	}
 }
+

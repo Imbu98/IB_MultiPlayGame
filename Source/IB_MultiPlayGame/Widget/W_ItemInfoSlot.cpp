@@ -21,7 +21,7 @@ void UW_ItemInfoSlot::NativeConstruct()
 
 void UW_ItemInfoSlot::SetSlotRarityImg()
 {
-	FLinearColor BorderColor;
+	FLinearColor BorderColor=FLinearColor::Gray;
 
 	switch (Item.ItemRarity)
 	{

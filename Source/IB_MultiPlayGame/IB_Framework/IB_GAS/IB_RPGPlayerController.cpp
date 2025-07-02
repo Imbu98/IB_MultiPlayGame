@@ -146,7 +146,7 @@ void AIB_RPGPlayerController::BeginPlay()
 	{
 		if (!IB_GameInstance->SavedInventory.ItemTags.IsEmpty())
 		{
-			InventoryComponent->GetCachedInventory() = IB_GameInstance->SavedInventory;
+			//InventoryComponent->GetCachedInventory() = IB_GameInstance->SavedInventory;
 		}
 		InventoryComponent->bOwnerLocallyControlled = IsLocalController();
 	}
@@ -273,6 +273,7 @@ void AIB_RPGPlayerController::ToggleInventoryWidget()
 		{
 			CreateInventoryWidget();
 			InventoryWidget->AddToViewport();
+			UWidgetBlueprintLibrary::SetInputMode_GameAndUIEx(this,nullptr,EMouseLockMode::DoNotLock,false,false);
 			SetShowMouseCursor(true);
 		}
 		else
@@ -280,11 +281,13 @@ void AIB_RPGPlayerController::ToggleInventoryWidget()
 			if (InventoryWidget->IsInViewport())
 			{
 				InventoryWidget->RemoveFromParent();
+				UWidgetBlueprintLibrary::SetInputMode_GameOnly(this,false);
 				SetShowMouseCursor(false);
 			}
 			else
 			{
 				InventoryWidget->AddToViewport();
+				UWidgetBlueprintLibrary::SetInputMode_GameAndUIEx(this,nullptr,EMouseLockMode::DoNotLock,false,false);
 				SetShowMouseCursor(true);
 			}
 		}
@@ -307,6 +310,7 @@ void AIB_RPGPlayerController::TogglePlayerInfoWidget()
 				WBP_PlayerInfoWidget->CombatComponent = CombatComponent;
 				WBP_PlayerInfoWidget->SetEquippedItemWidget(CombatComponent->GetEquippedItemMap());
 				WBP_PlayerInfoWidget->AddToViewport();
+				UWidgetBlueprintLibrary::SetInputMode_GameAndUIEx(this,nullptr,EMouseLockMode::DoNotLock,false,false);
 				SetShowMouseCursor(true);
 			}
 		}
@@ -315,11 +319,13 @@ void AIB_RPGPlayerController::TogglePlayerInfoWidget()
 			if (WBP_PlayerInfoWidget->IsInViewport())
 			{
 				WBP_PlayerInfoWidget->RemoveFromParent();
+				UWidgetBlueprintLibrary::SetInputMode_GameOnly(this,false);
 				SetShowMouseCursor(false);
 			}
 			else
 			{
 				WBP_PlayerInfoWidget->AddToViewport();
+				UWidgetBlueprintLibrary::SetInputMode_GameAndUIEx(this,nullptr,EMouseLockMode::DoNotLock,false,false);
 				SetShowMouseCursor(true);
 			}
 		}

@@ -3,9 +3,8 @@
 #include "CoreMinimal.h"
 #include "Blueprint/DragDropOperation.h"
 #include "../../Inventory/ItemTypes.h"
+#include "../../Widget/W_InventorySlot.h"
 #include "IB_DragDropOperation.generated.h"
-
-class UW_InventorySlot;
 
 UCLASS()
 class IB_MULTIPLAYGAME_API UIB_DragDropOperation : public UDragDropOperation
@@ -19,5 +18,7 @@ public:
 	TObjectPtr<UW_InventorySlot> ItemSlot;
 	UPROPERTY()
 	int32 FromSlotIndex;
+	
+	ESlotTypes FromSlotType;
 	
 };

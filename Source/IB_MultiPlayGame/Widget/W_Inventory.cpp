@@ -15,6 +15,7 @@
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Components/ScrollBox.h"
 #include "Components/Button.h"
+#include "Components/WidgetSwitcher.h"
 #include "Components/WrapBox.h"
 
 
@@ -28,6 +29,21 @@ void UW_Inventory::NativeConstruct()
 	{
 		//UWidgetBlueprintLibrary::SetInputMode_UIOnlyEx(PlayerController);
 		PlayerController->SetShowMouseCursor(true);
+	}
+	if (Btn_EquippableInventory)
+	{
+		Btn_EquippableInventory->OnClicked.Clear();
+		Btn_EquippableInventory->OnClicked.AddDynamic(this,&ThisClass::OnEquippableButtonClicked);
+	}
+	if (Btn_ConsumableInventory)
+	{
+		Btn_ConsumableInventory->OnClicked.Clear();
+		Btn_ConsumableInventory->OnClicked.AddDynamic(this,&ThisClass::OnComsumbableButtonClicked);
+	}
+	if (Btn_ETCInventory)
+	{
+		Btn_ETCInventory->OnClicked.Clear();
+		Btn_ETCInventory->OnClicked.AddDynamic(this,&ThisClass::OnETCButtonClicked);
 	}
 }
 
@@ -46,7 +62,6 @@ void UW_Inventory::NativeDestruct()
 	{
 		InventoryWidgetController->InventoryItemDelegate.Clear();
 		InventoryWidgetController->InventoryBroadCastComplete.Clear();
-		InventoryWidgetController->ScrollBoxResetDelegate.Clear();
 	}
 }
 
@@ -59,96 +74,223 @@ void UW_Inventory::BindInventoryItemDelegate()
 		
 		InventoryWidgetController->InventoryBroadCastComplete.AddDynamic(this, &UW_Inventory::InventoryBroadcastComplete);
 		
-		InventoryWidgetController->ScrollBoxResetDelegate.AddDynamic(this, &UW_Inventory::OnScrollBoxReset);
-
 	}
 }
 void UW_Inventory::InventoryBroadcastComplete()
 {
-	for (UW_InventorySlot* Widgets : ActiveItemWidgets)
-	{
-		Widgets->OnClickedActionButtonDelegate.AddUObject(this, &UW_Inventory::OnActionButtonClicked);
-	}
-
+	//ResetActiveWidgets(EquippableSlots);
+	//ResetActiveWidgets(ConsumableSlots);
+	//ResetActiveWidgets(ETCSlots);
 }
 
-void UW_Inventory::InventoryItemRecieved(const FPackagedInventory& PackagedInventory)
+void UW_Inventory::BroadcastOnclickEvent(ESlotTypes SlotType)
+{
+	switch (SlotType)
+	{
+	case ESlotTypes::Slot_Equippable:
+		for (UW_InventorySlot* Widgets : EquippableSlots)
+		{
+			if (Widgets)
+			{
+				Widgets->OnClickedActionButtonDelegate.AddUObject(this, &UW_Inventory::OnActionButtonClicked);
+			}
+		}
+		break;
+	case ESlotTypes::Slot_Consumable:
+		for (UW_InventorySlot* Widgets : ConsumableSlots)
+		{
+			if (Widgets)
+			{
+				Widgets->OnClickedActionButtonDelegate.AddUObject(this, &UW_Inventory::OnActionButtonClicked);
+			}
+		}
+		break;
+	case ESlotTypes::Slot_ETC:
+		for (UW_InventorySlot* Widgets : ETCSlots)
+		{
+			if (Widgets)
+			{
+				Widgets->OnClickedActionButtonDelegate.AddUObject(this, &UW_Inventory::OnActionButtonClicked);
+			}
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void UW_Inventory::InventoryItemRecieved(const FUserInventory& PackagedInventory,const EItemTypes InventoryType)
 {
 	
-	HandleInventoryItemRecieved(PackagedInventory);
+	HandleInventoryItemRecieved(PackagedInventory,InventoryType);
 }
 
 
-void UW_Inventory::HandleInventoryItemRecieved(const FPackagedInventory& PackagedInventory)
+void UW_Inventory::HandleInventoryItemRecieved(const FUserInventory& PackagedInventory,const EItemTypes InventoryType)
 {
 
-	MakeItemRowWidget(PackagedInventory);
+	MakeItemRowWidget(PackagedInventory,InventoryType);
 }
 
 // On client
-void UW_Inventory::MakeItemRowWidget(const FPackagedInventory& PackagedInventory)
+void UW_Inventory::MakeItemRowWidget(const FUserInventory& PackagedInventory,const EItemTypes InventoryType)
 {
-	APlayerController* PC = GetOwningPlayer();
-	if (!IsValid(PC)) return;
+	//Item_None이면 먼 처음 위젯을 만들 때 라는 뜻
+	if (InventoryType==EItemTypes::Item_None)
+	{
+		InitializeSlots();
+	}
+	if (InventoryType==EItemTypes::Item_Equippable)
+	{
+		UpdateItemWidgets(PackagedInventory.EquippableInventory, ESlotTypes::Slot_Equippable,WB_EquippableInventoryContents);
+	}
+	if (InventoryType==EItemTypes::Item_Consumable)
+	{
+		UpdateItemWidgets(PackagedInventory.ConsumableInventory, ESlotTypes::Slot_Consumable,WB_ConsumableInventoryContents);
+	}
+	if (InventoryType==EItemTypes::Item_ETC)
+	{
+		UpdateItemWidgets(PackagedInventory.ETCInventory, ESlotTypes::Slot_ETC,WB_ETCInventoryContents);
+	}
+}
 
-	UCombatComponent* CombatComponent = PC->GetComponentByClass<UCombatComponent>();
-	if (!IsValid(CombatComponent)) return;
+void UW_Inventory::InitializeSlots()
+{
+	if (WB_EquippableInventoryContents)
+	{
+		CreateInventorySlot(WB_EquippableInventoryContents,ESlotTypes::Slot_Equippable);
+	}
+	if (WB_ConsumableInventoryContents)
+	{
+		CreateInventorySlot(WB_ConsumableInventoryContents,ESlotTypes::Slot_Consumable);
+	}
+	if (WB_ETCInventoryContents)
+	{
+		CreateInventorySlot(WB_ETCInventoryContents,ESlotTypes::Slot_ETC);
+	}
+}
 
-	if (!IsValid(InventoryWidgetController)) return;
-
-	if (!IsValid(InventoryComponent)) return;
-
+void UW_Inventory::UpdateItemWidgets(const FPackagedInventory& SubInventory, ESlotTypes SlotType,UWrapBox* InventoryContentsWrapBox)
+{
 	const int32 NumSlots = InventoryComponent->GetInventorySize();
+	if (!IsValid(InventoryContentsWrapBox)) return;
 
+	TArray<UW_InventorySlot*>* TargetSlots = nullptr;
+
+	switch (SlotType)
+	{
+	case ESlotTypes::Slot_Equippable:
+		TargetSlots = &EquippableSlots;
+		break;
+	case ESlotTypes::Slot_Consumable:
+		TargetSlots = &ConsumableSlots;
+		break;
+	case ESlotTypes::Slot_ETC:
+		TargetSlots = &ETCSlots;
+		break;
+	default:
+		return;
+	}
+
+	if (TargetSlots)
+	{
+		ResetActiveWidgets(*TargetSlots);
+	}
+	
+	InventoryContentsWrapBox->RemoveFromParent();
+	
 	for (int32 i = 0; i < NumSlots; i++)
 	{
 		UW_InventorySlot* SlotWidget = CreateWidget<UW_InventorySlot>(this, WBP_InventorySlotClass);
 		if (!SlotWidget) continue;
-		
 
-		// �±װ� ��ȿ�� �������� ���
-		if (PackagedInventory.ItemTags.IsValidIndex(i) &&
-			PackagedInventory.ItemQuantities.IsValidIndex(i) &&
-			PackagedInventory.ItemTags[i].IsValid()&&
-			PackagedInventory.ItemDefinitions[i].ItemTag.IsValid())
+		if (!SubInventory.ItemTags.IsValidIndex(i) ||
+			!SubInventory.ItemQuantities.IsValidIndex(i) ||
+			!SubInventory.ItemDefinitions.IsValidIndex(i))
 		{
-			// ������ ������ ������ ������ ��������
-			FMasterItemDefinition StaticItemData = InventoryComponent->GetItemDefinitionByTag(PackagedInventory.ItemTags[i]); // �� �Լ��� OwningInventory ��� ����
-
-			StaticItemData.ItemQuantity = PackagedInventory.ItemQuantities[i];
-			FMasterItemDefinition ItemData = PackagedInventory.ItemDefinitions[i];
-			
-			SlotWidget->SetItemImage(StaticItemData.Icon);
-			SlotWidget->SetQuiantityText(ItemData.ItemQuantity);
-			SlotWidget->UpdateSlot(ItemData);
+			SlotWidget->ClearSlot();
+			continue;
 		}
-		else
+		if (InventoryContentsWrapBox)
 		{
-			// �� ���� ó��
-			SlotWidget->ClearSlot(); // �� �Լ��� �⺻ ������, �ؽ�Ʈ ��� �� ����
-		}
-		SlotWidget->SlotIndex = i;
-
-		if (WB_InventoryContents)
-		{
-			WB_InventoryContents->AddChild(SlotWidget);
+			InventoryContentsWrapBox->AddChild(SlotWidget);
 		}
 
-		ActiveItemWidgets.Add(SlotWidget);
+		FMasterItemDefinition StaticItemData = InventoryComponent->GetItemDefinitionByTag(SubInventory.ItemTags[i]);
+		StaticItemData.ItemQuantity = SubInventory.ItemQuantities[i];
+		FMasterItemDefinition ItemData = SubInventory.ItemDefinitions[i];
+
+		SlotWidget->SetItemImage(StaticItemData.Icon);
+		SlotWidget->SetQuiantityText(ItemData.ItemQuantity);
+		SlotWidget->UpdateSlot(ItemData);
+		SlotWidget->SlotType = SlotType;
+		TargetSlots->Add(SlotWidget);
+
+		switch (SlotType)
+		{
+		case ESlotTypes::Slot_Equippable:
+			EquippableSlots.Add(SlotWidget);
+			break;
+		case ESlotTypes::Slot_Consumable:
+			ConsumableSlots.Add(SlotWidget);
+			break;
+		case ESlotTypes::Slot_ETC:
+			ETCSlots.Add(SlotWidget);
+			break;
+		default:
+			break;
+		}
 	}
-	//SetEquippedItemWidget(CombatComponent->EquippedItemsDefinition);
+	BroadcastOnclickEvent(SlotType);
 }
-void UW_Inventory::OnScrollBoxReset()
+
+void UW_Inventory::CreateInventorySlot(UWrapBox* InventoryContentsWrapBox, ESlotTypes SlotType)
 {
-	if (WB_InventoryContents)
+	if (!IsValid(InventoryComponent)) return;
+
+	const int32 NumSlots = InventoryComponent->GetInventorySize();
+	
+	for (int32 i = 0; i < NumSlots; i++)
 	{
-		WB_InventoryContents->ClearChildren();
-		for (UW_InventorySlot* Widgets : ActiveItemWidgets)
+		UW_InventorySlot* SlotWidget = CreateWidget<UW_InventorySlot>(this, WBP_InventorySlotClass);
+		if (!SlotWidget) continue;
+
+		SlotWidget->SlotIndex = i;
+		SlotWidget->ClearSlot(); // 초기엔 빈 슬롯
+		SlotWidget->SlotType = SlotType;
+
+		if (InventoryContentsWrapBox)
+		{
+			InventoryContentsWrapBox->AddChild(SlotWidget);
+		}
+		switch (SlotType)
+		{
+		case ESlotTypes::Slot_Equippable:
+			EquippableSlots.Add(SlotWidget);
+			break;
+		case ESlotTypes::Slot_Consumable:
+			ConsumableSlots.Add(SlotWidget);
+			break;
+		case ESlotTypes::Slot_ETC:
+			ETCSlots.Add(SlotWidget);
+			break;
+		default:
+			break;
+		}
+		
+	}
+}
+
+void UW_Inventory::ResetActiveWidgets(TArray<UW_InventorySlot*>& ActiveWidget)
+{
+	for (UW_InventorySlot* Widgets : ActiveWidget)
+	{
+		if (Widgets)
 		{
 			Widgets->OnClickedActionButtonDelegate.Clear();
 		}
-		ActiveItemWidgets.Empty();
 	}
+	ActiveWidget.Empty();
 }
 
 void UW_Inventory::OnActionButtonClicked(const FMasterItemDefinition& Item,const float& SlotIndex)
@@ -156,6 +298,33 @@ void UW_Inventory::OnActionButtonClicked(const FMasterItemDefinition& Item,const
 	if (IsValid(InventoryComponent))
 	{
 		InventoryComponent->UseItem(Item,SlotIndex,1);
+	}
+}
+
+void UW_Inventory::OnEquippableButtonClicked()
+{
+	
+	if (WidgetSwitcher_InventorySwitcher)
+	{
+		WidgetSwitcher_InventorySwitcher->SetActiveWidgetIndex(0);
+	}
+}
+
+void UW_Inventory::OnComsumbableButtonClicked()
+{
+	
+	if (WidgetSwitcher_InventorySwitcher)
+	{
+		WidgetSwitcher_InventorySwitcher->SetActiveWidgetIndex(1);
+	}
+}
+
+void UW_Inventory::OnETCButtonClicked()
+{
+	
+	if (WidgetSwitcher_InventorySwitcher)
+	{
+		WidgetSwitcher_InventorySwitcher->SetActiveWidgetIndex(2);
 	}
 }
 

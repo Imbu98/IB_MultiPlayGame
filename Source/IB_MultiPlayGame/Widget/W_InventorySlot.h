@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "../DefineDelegates.h"
+#include "../Inventory/ItemTypes.h"
 #include "W_InventorySlot.generated.h"
 
 class UButton;
@@ -14,22 +15,6 @@ class UW_DraggedImageItem;
 class UBorder;
 class UInventoryComponent;
 
-UENUM()
-enum ESlotTypes : int8
-{
-	Slot_None = 0,
-	Slot_Equippable = 1,
-	Slot_Consumable = 2,
-	Slot_ETC = 3,
-	Slot_PlayerInfo = 4,
-};
-
-UENUM()
-enum EItemTypes : int8
-{
-	Item_None = 0,
-	Item_Consumable = 1,
-};
 
 UCLASS()
 
@@ -61,6 +46,8 @@ public:
 	TObjectPtr<UTexture2D> SlotItemImage;
 	UPROPERTY()
 	TObjectPtr<UInventoryComponent> InventoryComponent;
+
+	ESlotTypes SlotType;
 
 	UPROPERTY(EditAnywhere,Category="CustomValues|Widget")
 	TSubclassOf<UW_DraggedImageItem> WBP_DraggedImageItemClass;

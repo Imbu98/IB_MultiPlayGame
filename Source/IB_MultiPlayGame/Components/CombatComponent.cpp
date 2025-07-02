@@ -130,6 +130,7 @@ void UCombatComponent::UnEquipItem(const FMasterItemDefinition& ItemInfo,const f
 		AEquippableBase* EquippedItem = *EquippedItemPtr;
 		if (IsValid(EquippedItem))
 		{
+			EquippedItem->UnEquipItem();
 			EquippedItem->Destroy();
 			EquippedInstancedItemMap[ItemInfo.ItemParts] = nullptr;
 		}

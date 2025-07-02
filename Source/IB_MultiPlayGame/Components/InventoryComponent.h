@@ -2,9 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "../Inventory/ItemTypes.h"
 #include "GameplayTags.h"
 #include "IB_MultiPlayGame/Inventory/ItemTypes.h"
 #include "InventoryComponent.generated.h"
+
 
 USTRUCT()
 struct FPackagedInventory
@@ -21,6 +23,8 @@ struct FPackagedInventory
 
 	UPROPERTY()
 	TArray<FMasterItemDefinition> ItemDefinitions;
+	
+	EItemTypes InventoryType;
 
 	virtual bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess);
 
@@ -48,10 +52,34 @@ struct TStructOpsTypeTraits<FPackagedInventory> : TStructOpsTypeTraitsBase2<FPac
 	};
 };
 
+USTRUCT()
+struct FUserInventory
+{
+	GENERATED_BODY()
 
+	virtual ~FUserInventory() = default;
 
+	// 필수 매크로
+	bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess);
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FInventoryPackagedSignature, const FPackagedInventory&);
+	UPROPERTY()
+	FPackagedInventory EquippableInventory;
+	UPROPERTY()
+	FPackagedInventory ConsumableInventory;
+	UPROPERTY()
+	FPackagedInventory ETCInventory;
+};
+
+template<>
+struct TStructOpsTypeTraits<FUserInventory> : public TStructOpsTypeTraitsBase2<FUserInventory>
+{
+	enum
+	{
+		WithNetSerializer = true
+	};
+};
+
+DECLARE_MULTICAST_DELEGATE_TwoParams(FInventoryPackagedSignature, const FUserInventory&,const EItemTypes);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class IB_MULTIPLAYGAME_API UInventoryComponent : public UActorComponent
@@ -61,7 +89,7 @@ class IB_MULTIPLAYGAME_API UInventoryComponent : public UActorComponent
 public:
 	UInventoryComponent();
 
-	FInventoryPackagedSignature InventoryPackageDelegate;
+	FInventoryPackagedSignature UserInventoryPackageDelegate;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -77,13 +105,7 @@ public:
 	UFUNCTION()
 	FMasterItemDefinition GetItemDefinitionByTag(const FGameplayTag& ItemTag)const;
 
-	void ReConstructInventoryMap(const FPackagedInventory& Inventory);
-
-	void PackageInventory(FPackagedInventory& OutInventory);
-
-	TMap<FGameplayTag, int32> GetInventoryTagMap();
-
-	FPackagedInventory& GetCachedInventory();
+	FUserInventory& GetCachedUserInventory();
 
 	int32 GetInventorySize();
 
@@ -103,10 +125,14 @@ protected:
 
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	TMap<FGameplayTag, int32> InventoryTagMap;
-
-	UPROPERTY(ReplicatedUsing = OnRep_CachedInventory)
-	FPackagedInventory CachedInventory;
+	TMap<FGameplayTag, int32> EquippableInventoryTagMap;
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	TMap<FGameplayTag, int32> ConsumableInventoryTagMap;
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	TMap<FGameplayTag, int32> ETCInventoryTagMap;
+	
+	UPROPERTY(ReplicatedUsing = OnRep_CachedUserInventory)
+	FUserInventory CachedUserInventory;
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<class UItemTypesToTables> InventoryDefinition;
@@ -122,15 +148,25 @@ private:
 	void ServerUseItem(const FMasterItemDefinition& DynamicItemData,const int32& SlotIndex,int32 NumItems=1);
 
 	UFUNCTION(Server, Reliable)
-	void ServerSwapItem(int32 IndexA, int32 IndexB);
-
+	void ServerSwapItem(FPackagedInventory CachedInventoryRef,int32 IndexA, int32 IndexB);
+	
 	UFUNCTION()
-	void OnRep_CachedInventory();
+	void OnRep_CachedUserInventory();
+
+	UFUNCTION(Client, Reliable)
+	void ClientUpdateUserInventory(const FUserInventory& UserInventory, const EItemTypes InventoryType);
 
 	UFUNCTION()
 	void DefinitionItemUse(const FMasterItemDefinition& DynamicItemData,const int32& SlotIndex,int32 NumItems=1);
 	UFUNCTION()
 	bool DefinitionItemAdd(const FMasterItemDefinition& ItemDefinition,int32 NumItems=1);
+
+	// 어떤 인벤토리인지 불러오기
+	UFUNCTION()
+	void DefinitionSetInventory(FPackagedInventory& Inventory);
+	// 인벤토리 종류에 따라 넣기
+	UFUNCTION()
+	FPackagedInventory DefinitionGetInventory(const FGameplayTag& ItemTag);
 
 
 };

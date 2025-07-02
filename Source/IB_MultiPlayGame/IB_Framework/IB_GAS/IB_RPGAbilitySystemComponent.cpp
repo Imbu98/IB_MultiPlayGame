@@ -1,4 +1,5 @@
 #include "IB_RPGAbilitySystemComponent.h"
+#include "Abilities/GameplayAbility.h"
 #include "../IB_GAS/AbilitySystem/RPGGameplayAbility.h"
 #include "../IB_GAS/AbilitySystem/ProjectileAbility.h"
 #include "../IB_GAS/AbilitySystem/WeaponAttackAbility.h"
@@ -11,7 +12,7 @@ void UIB_RPGAbilitySystemComponent::AddCharacterAbilities(const TArray<TSubclass
 		FGameplayAbilitySpec AbilitySpec = FGameplayAbilitySpec(Ability,1.f);
 		if (const URPGGameplayAbility* RPGAbility = Cast<URPGGameplayAbility>(AbilitySpec.Ability))
 		{
-			AbilitySpec.DynamicAbilityTags.AddTag(RPGAbility->InputTag);
+			AbilitySpec.GetDynamicSpecSourceTags().AddTag(RPGAbility->InputTag);
 			GiveAbility(AbilitySpec);
 		}
 	}
@@ -46,7 +47,7 @@ void UIB_RPGAbilitySystemComponent::AbilityInputPressed(const FGameplayTag& Inpu
 	ABILITYLIST_SCOPE_LOCK();
 	for (const FGameplayAbilitySpec& Spec : GetActivatableAbilities())
 	{
-		if (Spec.DynamicAbilityTags.HasTagExact(InputTag))
+		if (Spec.GetDynamicSpecSourceTags().HasTagExact(InputTag))
 		{
 			if (!Spec.IsActive())
 			{
@@ -54,8 +55,9 @@ void UIB_RPGAbilitySystemComponent::AbilityInputPressed(const FGameplayTag& Inpu
 			}
 			else
 			{
+				FPredictionKey PredictionKey = GetPredictionKeyForNewAction();
 				InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputPressed, Spec.Handle,
-					Spec.ActivationInfo.GetActivationPredictionKey());
+					PredictionKey);
 			}
 		}
 	}
@@ -72,7 +74,7 @@ void UIB_RPGAbilitySystemComponent::AbilityInputReleased(const FGameplayTag& Inp
 	ABILITYLIST_SCOPE_LOCK();
 	for (const FGameplayAbilitySpec& Spec : GetActivatableAbilities())
 	{
-		if (Spec.DynamicAbilityTags.HasTagExact(InputTag))
+		if (Spec.GetDynamicSpecSourceTags().HasTagExact(InputTag))
 		{
 			if (!Spec.IsActive())
 			{
@@ -80,8 +82,9 @@ void UIB_RPGAbilitySystemComponent::AbilityInputReleased(const FGameplayTag& Inp
 			}
 			else
 			{
+				FPredictionKey PredictionKey = GetPredictionKeyForNewAction();
 				InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputReleased, Spec.Handle,
-					Spec.ActivationInfo.GetActivationPredictionKey());
+					PredictionKey);
 			}
 		}
 	}
@@ -110,7 +113,7 @@ void UIB_RPGAbilitySystemComponent::SetDynamicProjectile(const FGameplayTag& Pro
 		if (UProjectileAbility* ProjectileAbility = Cast<UProjectileAbility>(Spec.Ability))
 		{
 			ProjectileAbility->ProjectileToSpawnTag = ProjectileTag;
-			Spec.DynamicAbilityTags.AddTag(ProjectileAbility->InputTag);
+			Spec.GetDynamicSpecSourceTags().AddTag(ProjectileAbility->InputTag);
 
 			// 
 			ActiveProjectileAbilty = GiveAbility(Spec);
@@ -147,11 +150,11 @@ void UIB_RPGAbilitySystemComponent::SetDynamicWeapon_Implementation(const FGamep
 		FGameplayAbilitySpec Spec = FGameplayAbilitySpec(DynamicWeaponAttackAbility, AbilityLevel);
 		if (UWeaponAttackAbility* WeaponAttackAbility = Cast<UWeaponAttackAbility>(Spec.Ability))
 		{
-			// equipment component ¸¸µé°í, item½ºÆù ÈÄ WeaponAttackAbility->CurrentWeaponParams¸¦ ±× item¿¡ ´ëÀÔ
+			// equipment component ï¿½ï¿½ï¿½ï¿½ï¿½, itemï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ WeaponAttackAbility->CurrentWeaponParamsï¿½ï¿½ ï¿½ï¿½ itemï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 			
 			WeaponAttackAbility->WeaponToSpawnTag = WeaponTag;
 
-			Spec.DynamicAbilityTags.AddTag(WeaponAttackAbility->InputTag);
+			Spec.GetDynamicSpecSourceTags().AddTag(WeaponAttackAbility->InputTag);
 
 			ActiveWeaponAttackAbilty = GiveAbility(Spec);
 		}

@@ -33,12 +33,8 @@ void UW_InventorySlot::NativeConstruct()
 		InventoryComponent = IInventoryInterface::Execute_GetInventoryComponent(IB_RPGPC);
 		if (InventoryComponent)
 		{
-			FPackagedInventory PackagedInventory= InventoryComponent->GetCachedInventory();
-			FMasterItemDefinition ItemDeDefinition =  PackagedInventory.ItemDefinitions[SlotIndex];
+			
 		}
-		
-		
-		
 	}
 }
 
@@ -74,6 +70,7 @@ void UW_InventorySlot::NativeOnDragDetected(const FGeometry& InGeometry, const F
 					DragOp->DraggedItem = Item;
 					DragOp->FromSlotIndex = SlotIndex;
 					WBP_DraggedImageItem->ItemImage = Item.Icon;
+					DragOp->FromSlotType = SlotType;
 
 					OutOperation = DragOp;
 				}
@@ -90,31 +87,43 @@ bool UW_InventorySlot::NativeOnDrop(const FGeometry& InGeometry, const FDragDrop
 	UW_InventorySlot* FromSlot = DragOp->ItemSlot;
 	UW_InventorySlot* ToSlot = this;
 
+	if (!IsValid(FromSlot)&& !IsValid(ToSlot)) return false;
 	if (FromSlot == ToSlot) return false;
-
+	
+	if (FromSlot->SlotType==ToSlot->SlotType)
+	{
 		if (InventoryComponent)
 		{
 			int32 SourceIndex = FromSlot->SlotIndex; 
 			int32 TargetIndex = ToSlot->SlotIndex;
 
-			FPackagedInventory& CachedInventory = InventoryComponent->GetCachedInventory(); 
-			InventoryComponent->SwapItemsInPackagedInventory(CachedInventory, SourceIndex, TargetIndex);
-
-			// FMasterItemDefinition TempItem = ToSlot->Item;
-			// ToSlot->SetItem(FromSlot->Item);
-			// FromSlot->SetItem(TempItem);
+			FUserInventory& CachedInventory = InventoryComponent->GetCachedUserInventory();
 			
-			FMasterItemDefinition SourceItem = CachedInventory.ItemDefinitions[SourceIndex];
-			FMasterItemDefinition TargetItem = CachedInventory.ItemDefinitions[TargetIndex];
+			FPackagedInventory Inventory = FPackagedInventory();
 			
-			this->UpdateSlot(SourceItem);
-			FromSlot->UpdateSlot(TargetItem);
-
+			if (SlotType==ESlotTypes::Slot_Equippable)
+			{
+				Inventory = CachedInventory.EquippableInventory;
+			}
+			else if (SlotType==ESlotTypes::Slot_Consumable)
+			{
+				Inventory = CachedInventory.ConsumableInventory;
+			}
+			else if (SlotType==ESlotTypes::Slot_ETC)
+			{
+				Inventory = CachedInventory.ETCInventory;
+			}
+				InventoryComponent->SwapItemsInPackagedInventory(Inventory, SourceIndex, TargetIndex);
 			
-
+				FMasterItemDefinition SourceItem = Inventory.ItemDefinitions[SourceIndex];
+				FMasterItemDefinition TargetItem = Inventory.ItemDefinitions[TargetIndex];
+			
+				this->UpdateSlot(SourceItem);
+				FromSlot->UpdateSlot(TargetItem);
+				return true;
 		}
-	return true;
-
+	}
+return false;
 }
 
 void UW_InventorySlot::SetItemImage(UTexture2D* ItemImage)
@@ -147,8 +156,25 @@ void UW_InventorySlot::SetQuiantityText(int32 Quantity)
 void UW_InventorySlot::OnclickedActionButton()
 {
 	// 여기서 인벤토리 아이템 정보를 브로드캐스트해준다
-	FPackagedInventory& CachedInventory = InventoryComponent->GetCachedInventory();
-	FMasterItemDefinition ItemInfo = CachedInventory.ItemDefinitions[SlotIndex];
+	FUserInventory& CachedUserInventory = InventoryComponent->GetCachedUserInventory();
+	FMasterItemDefinition ItemInfo = FMasterItemDefinition();
+
+	if (SlotType==ESlotTypes::Slot_Equippable)
+	{
+		ItemInfo= CachedUserInventory.EquippableInventory.ItemDefinitions[SlotIndex];
+	}
+	if (SlotType==ESlotTypes::Slot_Consumable)
+	{
+		ItemInfo= CachedUserInventory.ConsumableInventory.ItemDefinitions[SlotIndex];
+	}
+	if (SlotType==ESlotTypes::Slot_ETC)
+	{
+		ItemInfo= CachedUserInventory.ETCInventory.ItemDefinitions[SlotIndex];
+	}
+	if (SlotType==ESlotTypes::Slot_PlayerInfo)
+	{
+		// 빈 ItemInfo를 보내줘도됨
+	}
 	
 	OnClickedActionButtonDelegate.Broadcast(ItemInfo,SlotIndex);
 }
@@ -192,7 +218,7 @@ void UW_InventorySlot::ClearSlot()
 
 void UW_InventorySlot::SetSlotRarityImg(const FMasterItemDefinition& ItemInfo)
 {
-	FLinearColor BorderColor;
+	FLinearColor BorderColor=FLinearColor::White;
 
 	switch (ItemInfo.ItemRarity)
 	{

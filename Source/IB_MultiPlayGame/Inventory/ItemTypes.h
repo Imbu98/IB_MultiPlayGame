@@ -6,6 +6,25 @@
 #include "ItemTypes.generated.h"
 
 UENUM(BlueprintType)
+enum class ESlotTypes : uint8
+{
+	Slot_None = 0,
+	Slot_Equippable = 1,
+	Slot_Consumable = 2,
+	Slot_ETC = 3,
+	Slot_PlayerInfo = 4,
+};
+
+UENUM(BlueprintType)
+enum class EItemTypes : uint8
+{
+	Item_None=0,
+	Item_Equippable = 1,
+	Item_Consumable = 2,
+	Item_ETC=3,
+};
+
+UENUM(BlueprintType)
 enum class EItemParts : uint8
 {
 	None,

@@ -6,9 +6,9 @@
 #include "InventoryWidgetController.generated.h"
 
 class UInventoryComponent;
-struct FPackagedInventory;
+struct FUserInventory;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FInventoryItemSignature, const FPackagedInventory&, PackagedInventory);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FInventoryItemSignature, const FUserInventory&, PackagedInventory,const EItemTypes ,InventoryType);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInventoryBroadCastComplete);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FScrollBoxResetSignature);
 
@@ -33,13 +33,13 @@ public:
 	void BindCallBacksToDependencies();
 	void BroadcastInitialValues();
 
-	void UpdateInventory(const FPackagedInventory& InventoryContents);
+	void UpdateInventory(const FUserInventory& InventoryContents,const EItemTypes InventoryType);
 
 private:
 
 	
 
-	void BroadcastInventoryContents(const FPackagedInventory& InventoryContents);
+	void BroadcastInventoryContents(const FUserInventory& InventoryContents,const EItemTypes InventoryType);
 
 	UPROPERTY()
 	TObjectPtr<AActor> OwningActor;

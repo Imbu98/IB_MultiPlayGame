@@ -16,6 +16,7 @@ void UW_PlayerInfo::NativeConstruct()
 		EquippedWeaponSlot->OnClickedActionButtonDelegate.AddUObject(this,&ThisClass::OnclickedEquippedButton);
 		uint8 WeaponIndex =static_cast<uint8>(EItemParts::Weapon);
 		EquippedWeaponSlot->SlotIndex=WeaponIndex;
+		EquippedWeaponSlot->SlotType = ESlotTypes::Slot_PlayerInfo;
 		
 	}
 	if (EquippedChestSlot)
@@ -24,7 +25,7 @@ void UW_PlayerInfo::NativeConstruct()
 		EquippedChestSlot->OnClickedActionButtonDelegate.AddUObject(this,&ThisClass::OnclickedEquippedButton);
 		uint8 ChestIndex =static_cast<uint8>(EItemParts::Chest);
 		EquippedChestSlot->SlotIndex=ChestIndex;
-		
+		EquippedChestSlot->SlotType = ESlotTypes::Slot_PlayerInfo;
 	}
 }
 
