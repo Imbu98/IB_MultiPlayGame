@@ -24,14 +24,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Components")
 	TObjectPtr<UBoxComponent> BoardingTriggerBox;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Dungeon Name")
-	FString DungeonName;
+	FString DungeonID;
+	
 
 
 public:
 	UFUNCTION()
 	void OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	UFUNCTION(Server,Reliable)
-	void Server_TravelToDungeon(APlayerController* PlayerController);
 	
 };
