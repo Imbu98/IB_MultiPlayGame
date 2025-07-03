@@ -2,6 +2,7 @@
 #include "../../IB_Framework/IB_GameInstanceSubSystem.h"
 
 #include "Components/BoxComponent.h"
+#include "IB_MultiPlayGame/IB_Framework/IB_GameInstance.h"
 
 
 APortalTrigger::APortalTrigger()
@@ -20,8 +21,7 @@ APortalTrigger::APortalTrigger()
 
 	BoardingTriggerBox->OnComponentBeginOverlap.AddDynamic(this, &APortalTrigger::OnComponentBeginOverlap);
 
-
-
+	
 }
 
 void APortalTrigger::BeginPlay()
@@ -32,28 +32,18 @@ void APortalTrigger::BeginPlay()
 
 void APortalTrigger::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (!HasAuthority()) return; // ¼­¹ö¸¸ Ã³¸®
+	if (!HasAuthority()) return; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
 
 	if (OtherActor && OtherActor->IsA(APawn::StaticClass()))
 	{
 		APawn* Pawn = Cast<APawn>(OtherActor);
 		APlayerController* PC = Cast<APlayerController>(Pawn->GetController());
 
-		if (PC)
+		UIB_GameInstance* GI = Cast<UIB_GameInstance>(GetGameInstance());
+		if (GI)
 		{
-			Server_TravelToDungeon(PC);
+			GI->FindOrCreateDungeonSession(DungeonID, PC);
 		}
 	}
 }
 
-void APortalTrigger::Server_TravelToDungeon_Implementation(APlayerController* PlayerController)
-{
-	if (!PlayerController) return;
-
-	UIB_GameInstanceSubSystem* Manager = GetGameInstance()->GetSubsystem<UIB_GameInstanceSubSystem>();
-	if (!Manager) return;
-
-	FString TravelURL = Manager->RequestDungeonURL(DungeonName);
-	PlayerController->ClientTravel(TravelURL, ETravelType::TRAVEL_Absolute,true);
-	
-}
