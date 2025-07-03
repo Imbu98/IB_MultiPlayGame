@@ -18,25 +18,15 @@ void UInventoryWidgetController::BindCallBacksToDependencies()
 		//OwningInventory->InventoryPackageDelegate.AddUObject(this, &ThisClass::UpdateInventory);
 
 		OwningInventory->UserInventoryPackageDelegate.AddLambda(
-			[this](const FUserInventory& InventoryContents,const EItemTypes InventoryType)
+			[this](const FPackagedInventory& InventoryContents)
 			{
-				UpdateInventory(InventoryContents,InventoryType);
-	
+				UpdateInventory(InventoryContents);
 			});
 	}
 
 }
 
-void UInventoryWidgetController::BroadcastInitialValues()
-{
-	if (IsValid(OwningInventory))
-	{
-		BroadcastInventoryContents(OwningInventory->GetCachedUserInventory(),EItemTypes::Item_None);
-
-	}
-}
-
-void UInventoryWidgetController::UpdateInventory(const FUserInventory& InventoryContents,const EItemTypes InventoryType)
+void UInventoryWidgetController::UpdateInventory(const FPackagedInventory& InventoryContents)
 {
 	if (IsValid(OwningInventory))
 	{
@@ -45,18 +35,18 @@ void UInventoryWidgetController::UpdateInventory(const FUserInventory& Inventory
 			IB_GameInstance->SavePlayerInventory(OwningInventory);
 		}
 		//OwningInventory->ReConstructInventoryMap(InventoryContents);
-		BroadcastInventoryContents(InventoryContents,InventoryType);
+		BroadcastInventoryContents(InventoryContents);
 	}
 }
 
 // on client
-void UInventoryWidgetController::BroadcastInventoryContents(const FUserInventory& InventoryContents,const EItemTypes InventoryType)
+void UInventoryWidgetController::BroadcastInventoryContents(const FPackagedInventory& InventoryContents)
 {
 	if (IsValid(OwningInventory))
 	{
 		//ScrollBoxResetDelegate.Broadcast();
 
-		InventoryItemDelegate.Broadcast(InventoryContents,InventoryType);
+		InventoryItemDelegate.Broadcast(InventoryContents);
 
 		InventoryBroadCastComplete.Broadcast();
 	}

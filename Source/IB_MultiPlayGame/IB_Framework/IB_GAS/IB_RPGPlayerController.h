@@ -27,6 +27,7 @@ class UW_QuestLog;
 class UW_LocationNotify;
 class UW_QuestRewards;
 class UW_QuestNotification;
+class UW_LogInWidget;
 class ACannonPawn;
 class AIB_MainChar;
 class UW_CannonWidget;
@@ -166,6 +167,11 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "CustomValues|Widgets")
 	TSubclassOf<UW_PlayerInfo> WBP_PlayerInfoWidgetClass;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<UW_LogInWidget> WBP_LogInWidgetClass;
+	UPROPERTY()
+	TObjectPtr<UW_LogInWidget> WBP_LogInWidget;
 
 	
 	
@@ -193,6 +199,9 @@ public:
 
 	UFUNCTION(Client,Reliable)
 	void ClientDisplayLocationNotification(const FText& LocationName);
+
+	UFUNCTION(Client,Reliable)
+	void ClientCreateLoginWidget();
 
 public:
 	// relevance On Cannon

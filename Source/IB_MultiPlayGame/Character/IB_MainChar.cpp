@@ -367,13 +367,6 @@ void AIB_MainChar::ServerSetCharacterState_Implementation(EIB_CharCycle NewState
 
 void AIB_MainChar::Move(const FInputActionValue& Value)
 {
-	if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(Controller))
-	{
-		UStateComponent* StateComponent = IB_RPGPlayerController->GetStateComponent();
-		if (!IsValid(StateComponent)) return;
-
-		if (StateComponent->GetCurrentState().MatchesTag(FGameplayTag::RequestGameplayTag("Player.Action"))) return;
-	
 		FVector2D MovementVector = Value.Get<FVector2D>();
 
 		if (Controller != nullptr)
@@ -398,8 +391,6 @@ void AIB_MainChar::Move(const FInputActionValue& Value)
 		
 			ServerSetCharacterState(EIB_CharCycle::Walk);
 		}
-	}
-	
 }
 
 void AIB_MainChar::Look(const FInputActionValue& Value)

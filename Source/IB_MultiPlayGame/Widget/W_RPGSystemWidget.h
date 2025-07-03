@@ -27,11 +27,6 @@ public:
 
 	UPROPERTY()
 	UInventoryComponent* InventoryComponent;
-
-	
-
-	
-
 	
 	
 	

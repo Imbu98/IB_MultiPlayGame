@@ -10,23 +10,7 @@
 
 void UW_PlayerInfo::NativeConstruct()
 {
-	if (EquippedWeaponSlot)
-	{
-		EquippedWeaponSlot->OnClickedEquippedActionButtonDelegate.Clear();
-		EquippedWeaponSlot->OnClickedActionButtonDelegate.AddUObject(this,&ThisClass::OnclickedEquippedButton);
-		uint8 WeaponIndex =static_cast<uint8>(EItemParts::Weapon);
-		EquippedWeaponSlot->SlotIndex=WeaponIndex;
-		EquippedWeaponSlot->SlotType = ESlotTypes::Slot_PlayerInfo;
-		
-	}
-	if (EquippedChestSlot)
-	{
-		EquippedChestSlot->OnClickedEquippedActionButtonDelegate.Clear();
-		EquippedChestSlot->OnClickedActionButtonDelegate.AddUObject(this,&ThisClass::OnclickedEquippedButton);
-		uint8 ChestIndex =static_cast<uint8>(EItemParts::Chest);
-		EquippedChestSlot->SlotIndex=ChestIndex;
-		EquippedChestSlot->SlotType = ESlotTypes::Slot_PlayerInfo;
-	}
+	
 }
 
 void UW_PlayerInfo::OnclickedEquippedButton(const FMasterItemDefinition& ItemInfo,const float& SlotIndex)
@@ -109,5 +93,68 @@ void UW_PlayerInfo::UpdateEquippedSlot(const FMasterItemDefinition& EquippedItem
 	default:
 		break;
 	}
-
 }
+
+void UW_PlayerInfo::InitPlayerInfoSlots()
+{
+	if (!IsValid(CombatComponent)) return;
+	
+	if (EquippedWeaponSlot)
+	{
+		EquippedWeaponSlot->OnClickedActionButtonDelegate.Clear();
+		EquippedWeaponSlot->OnClickedActionButtonDelegate.AddUObject(this,&ThisClass::OnclickedEquippedButton);
+		uint8 WeaponIndex =static_cast<uint8>(EItemParts::Weapon);
+		EquippedWeaponSlot->SlotIndex=WeaponIndex;
+		EquippedWeaponSlot->SlotType = ESlotTypes::Slot_PlayerInfo;
+		EquippedWeaponSlot->ClearSlot();
+		
+		
+	}
+	if (EquippedHelmetSlot)
+	{
+		EquippedHelmetSlot->OnClickedActionButtonDelegate.Clear();
+		EquippedHelmetSlot->OnClickedActionButtonDelegate.AddUObject(this,&ThisClass::OnclickedEquippedButton);
+		uint8 HelmetIndex =static_cast<uint8>(EItemParts::Helmet);
+		EquippedHelmetSlot->SlotIndex=HelmetIndex;
+		EquippedHelmetSlot->SlotType = ESlotTypes::Slot_PlayerInfo;
+		EquippedHelmetSlot->ClearSlot();
+		
+	}
+	if (EquippedChestSlot)
+	{
+		EquippedChestSlot->OnClickedActionButtonDelegate.Clear();
+		EquippedChestSlot->OnClickedActionButtonDelegate.AddUObject(this,&ThisClass::OnclickedEquippedButton);
+		uint8 ChestIndex =static_cast<uint8>(EItemParts::Chest);
+		EquippedChestSlot->SlotIndex=ChestIndex;
+		EquippedChestSlot->SlotType = ESlotTypes::Slot_PlayerInfo;
+		EquippedChestSlot->ClearSlot();
+	}
+	if (EquippedPantsSlot)
+	{
+		EquippedPantsSlot->OnClickedActionButtonDelegate.Clear();
+		EquippedPantsSlot->OnClickedActionButtonDelegate.AddUObject(this,&ThisClass::OnclickedEquippedButton);
+		uint8 PantsIndex =static_cast<uint8>(EItemParts::Pants);
+		EquippedPantsSlot->SlotIndex=PantsIndex;
+		EquippedPantsSlot->SlotType = ESlotTypes::Slot_PlayerInfo;
+		EquippedPantsSlot->ClearSlot();
+	}
+	if (EquippedGlovesSlot)
+	{
+		EquippedGlovesSlot->OnClickedActionButtonDelegate.Clear();
+		EquippedGlovesSlot->OnClickedActionButtonDelegate.AddUObject(this,&ThisClass::OnclickedEquippedButton);
+		uint8 GlovesIndex =static_cast<uint8>(EItemParts::Gloves);
+		EquippedGlovesSlot->SlotIndex=GlovesIndex;
+		EquippedGlovesSlot->SlotType = ESlotTypes::Slot_PlayerInfo;
+		EquippedGlovesSlot->ClearSlot();
+	}
+	if (EquippedBootsSlot)
+	{
+		EquippedBootsSlot->OnClickedActionButtonDelegate.Clear();
+		EquippedBootsSlot->OnClickedActionButtonDelegate.AddUObject(this,&ThisClass::OnclickedEquippedButton);
+		uint8 BootsIndex =static_cast<uint8>(EItemParts::Boots);
+		EquippedBootsSlot->SlotIndex=BootsIndex;
+		EquippedBootsSlot->SlotType = ESlotTypes::Slot_PlayerInfo;
+		EquippedBootsSlot->ClearSlot();
+	}
+}
+

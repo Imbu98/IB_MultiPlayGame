@@ -19,6 +19,7 @@
 #include "../../Widget/W_Overlay.h"
 #include "../../Input/RPGSystemsInputComponents.h"
 #include "../../Widget/W_PlayerInfo.h"
+#include "../../WIdget/W_LogInWidget.h"
 #include "IB_RPGPlayerState.h"
 #include "IB_RPGAbilitySystemComponent.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
@@ -259,8 +260,6 @@ void AIB_RPGPlayerController::CreateInventoryWidget()
 		{
 			InventoryWidget = Cast<UW_RPGSystemWidget>(Widget);
 			InventoryWidget->SetWidgetController(GetInventoryWidgetController());
-			InventoryWidgetController->BroadcastInitialValues();
-			
 		}
 	}
 }
@@ -308,6 +307,7 @@ void AIB_RPGPlayerController::TogglePlayerInfoWidget()
 			{
 				WBP_PlayerInfoWidget->InventoryComponent = InventoryComponent;
 				WBP_PlayerInfoWidget->CombatComponent = CombatComponent;
+				WBP_PlayerInfoWidget->InitPlayerInfoSlots();
 				WBP_PlayerInfoWidget->SetEquippedItemWidget(CombatComponent->GetEquippedItemMap());
 				WBP_PlayerInfoWidget->AddToViewport();
 				UWidgetBlueprintLibrary::SetInputMode_GameAndUIEx(this,nullptr,EMouseLockMode::DoNotLock,false,false);
@@ -427,6 +427,22 @@ void AIB_RPGPlayerController::ServerSpawnCannonRequest_Implementation()
 	
 }
 
+
+void AIB_RPGPlayerController::ClientCreateLoginWidget_Implementation()
+{
+	if (IsLocalController())
+	{
+		if (WBP_LogInWidgetClass)
+		{
+			if (WBP_LogInWidget=CreateWidget<UW_LogInWidget>(this,WBP_LogInWidgetClass))
+			{
+				WBP_LogInWidget->AddToViewport();
+				
+				SetShowMouseCursor(true);
+			}
+		}
+	}
+}
 
 void AIB_RPGPlayerController::SwitchController()
 {

@@ -45,6 +45,7 @@ void UW_Inventory::NativeConstruct()
 		Btn_ETCInventory->OnClicked.Clear();
 		Btn_ETCInventory->OnClicked.AddDynamic(this,&ThisClass::OnETCButtonClicked);
 	}
+	BindInventoryItemDelegate();
 }
 
 void UW_Inventory::NativeDestruct()
@@ -70,17 +71,15 @@ void UW_Inventory::BindInventoryItemDelegate()
 	if (InventoryWidgetController)
 	{
 		// Tab�� ���� Invetory������ ����� �������� ItemRecieve��������Ʈ�� ������� �ʴ´� ���߿� ��� ���� �����غ���
+		InventoryWidgetController->InventoryItemDelegate.Clear();
 		InventoryWidgetController->InventoryItemDelegate.AddDynamic(this, &UW_Inventory::InventoryItemRecieved);
-		
-		InventoryWidgetController->InventoryBroadCastComplete.AddDynamic(this, &UW_Inventory::InventoryBroadcastComplete);
+
+		if (EquippableSlots.IsEmpty()||ConsumableSlots.IsEmpty()||ETCSlots.IsEmpty())
+		{
+			InitializeSlots();
+		}
 		
 	}
-}
-void UW_Inventory::InventoryBroadcastComplete()
-{
-	//ResetActiveWidgets(EquippableSlots);
-	//ResetActiveWidgets(ConsumableSlots);
-	//ResetActiveWidgets(ETCSlots);
 }
 
 void UW_Inventory::BroadcastOnclickEvent(ESlotTypes SlotType)
@@ -119,38 +118,34 @@ void UW_Inventory::BroadcastOnclickEvent(ESlotTypes SlotType)
 	}
 }
 
-void UW_Inventory::InventoryItemRecieved(const FUserInventory& PackagedInventory,const EItemTypes InventoryType)
+void UW_Inventory::InventoryItemRecieved(const FPackagedInventory& Inventory)
 {
 	
-	HandleInventoryItemRecieved(PackagedInventory,InventoryType);
+	HandleInventoryItemRecieved(Inventory);
 }
 
 
-void UW_Inventory::HandleInventoryItemRecieved(const FUserInventory& PackagedInventory,const EItemTypes InventoryType)
+void UW_Inventory::HandleInventoryItemRecieved(const FPackagedInventory& Inventory)
 {
 
-	MakeItemRowWidget(PackagedInventory,InventoryType);
+	MakeItemRowWidget(Inventory);
 }
 
 // On client
-void UW_Inventory::MakeItemRowWidget(const FUserInventory& PackagedInventory,const EItemTypes InventoryType)
+void UW_Inventory::MakeItemRowWidget(const FPackagedInventory& Inventory)
 {
 	//Item_None이면 먼 처음 위젯을 만들 때 라는 뜻
-	if (InventoryType==EItemTypes::Item_None)
+	if (Inventory.InventoryType==EItemTypes::Item_Equippable)
 	{
-		InitializeSlots();
+		UpdateItemWidgets(Inventory, ESlotTypes::Slot_Equippable,WB_EquippableInventoryContents);
 	}
-	if (InventoryType==EItemTypes::Item_Equippable)
+	if (Inventory.InventoryType==EItemTypes::Item_Consumable)
 	{
-		UpdateItemWidgets(PackagedInventory.EquippableInventory, ESlotTypes::Slot_Equippable,WB_EquippableInventoryContents);
+		UpdateItemWidgets(Inventory, ESlotTypes::Slot_Consumable,WB_ConsumableInventoryContents);
 	}
-	if (InventoryType==EItemTypes::Item_Consumable)
+	if (Inventory.InventoryType==EItemTypes::Item_ETC)
 	{
-		UpdateItemWidgets(PackagedInventory.ConsumableInventory, ESlotTypes::Slot_Consumable,WB_ConsumableInventoryContents);
-	}
-	if (InventoryType==EItemTypes::Item_ETC)
-	{
-		UpdateItemWidgets(PackagedInventory.ETCInventory, ESlotTypes::Slot_ETC,WB_ETCInventoryContents);
+		UpdateItemWidgets(Inventory, ESlotTypes::Slot_ETC,WB_ETCInventoryContents);
 	}
 }
 
@@ -191,19 +186,17 @@ void UW_Inventory::UpdateItemWidgets(const FPackagedInventory& SubInventory, ESl
 	default:
 		return;
 	}
-
-	if (TargetSlots)
-	{
-		ResetActiveWidgets(*TargetSlots);
-	}
 	
-	InventoryContentsWrapBox->RemoveFromParent();
+	if (!TargetSlots) return;
 	
-	for (int32 i = 0; i < NumSlots; i++)
+	if (TargetSlots->IsEmpty()) InitializeSlots();
+	
+	for (int32 i = 0; i < NumSlots; ++i)
 	{
-		UW_InventorySlot* SlotWidget = CreateWidget<UW_InventorySlot>(this, WBP_InventorySlotClass);
-		if (!SlotWidget) continue;
+		UW_InventorySlot* SlotWidget = (*TargetSlots)[i];
+		if (!IsValid(SlotWidget)) continue;
 
+		// 인벤토리 유효성 검사
 		if (!SubInventory.ItemTags.IsValidIndex(i) ||
 			!SubInventory.ItemQuantities.IsValidIndex(i) ||
 			!SubInventory.ItemDefinitions.IsValidIndex(i))
@@ -211,41 +204,22 @@ void UW_Inventory::UpdateItemWidgets(const FPackagedInventory& SubInventory, ESl
 			SlotWidget->ClearSlot();
 			continue;
 		}
-		if (InventoryContentsWrapBox)
-		{
-			InventoryContentsWrapBox->AddChild(SlotWidget);
-		}
 
+		// 아이템 데이터 가져오기
 		FMasterItemDefinition StaticItemData = InventoryComponent->GetItemDefinitionByTag(SubInventory.ItemTags[i]);
-		StaticItemData.ItemQuantity = SubInventory.ItemQuantities[i];
+		int32 ItemQuantity = SubInventory.ItemQuantities[i];
 		FMasterItemDefinition ItemData = SubInventory.ItemDefinitions[i];
 
+		// 슬롯에 데이터 반영
 		SlotWidget->SetItemImage(StaticItemData.Icon);
-		SlotWidget->SetQuiantityText(ItemData.ItemQuantity);
+		SlotWidget->SetQuiantityText(ItemQuantity);
 		SlotWidget->UpdateSlot(ItemData);
-		SlotWidget->SlotType = SlotType;
-		TargetSlots->Add(SlotWidget);
-
-		switch (SlotType)
-		{
-		case ESlotTypes::Slot_Equippable:
-			EquippableSlots.Add(SlotWidget);
-			break;
-		case ESlotTypes::Slot_Consumable:
-			ConsumableSlots.Add(SlotWidget);
-			break;
-		case ESlotTypes::Slot_ETC:
-			ETCSlots.Add(SlotWidget);
-			break;
-		default:
-			break;
-		}
 	}
-	BroadcastOnclickEvent(SlotType);
 }
 
 void UW_Inventory::CreateInventorySlot(UWrapBox* InventoryContentsWrapBox, ESlotTypes SlotType)
 {
+	
 	if (!IsValid(InventoryComponent)) return;
 
 	const int32 NumSlots = InventoryComponent->GetInventorySize();
@@ -277,20 +251,48 @@ void UW_Inventory::CreateInventorySlot(UWrapBox* InventoryContentsWrapBox, ESlot
 		default:
 			break;
 		}
-		
 	}
+	BroadcastOnclickEvent(SlotType);
 }
 
-void UW_Inventory::ResetActiveWidgets(TArray<UW_InventorySlot*>& ActiveWidget)
+void UW_Inventory::ResetActiveWidgets(const ESlotTypes SlotType)
 {
-	for (UW_InventorySlot* Widgets : ActiveWidget)
+	
+	switch (SlotType)
 	{
-		if (Widgets)
+	case ESlotTypes::Slot_Equippable:
+		for (UW_InventorySlot* Widgets : EquippableSlots)
 		{
-			Widgets->OnClickedActionButtonDelegate.Clear();
+			if (Widgets)
+			{
+				Widgets->OnClickedActionButtonDelegate.Clear();
+			}
 		}
+		EquippableSlots.Empty();
+		break;
+	case ESlotTypes::Slot_Consumable:
+		for (UW_InventorySlot* Widgets : ConsumableSlots)
+		{
+			if (Widgets)
+			{
+				Widgets->OnClickedActionButtonDelegate.Clear();
+			}
+		}
+		ConsumableSlots.Empty();
+		break;
+	case ESlotTypes::Slot_ETC:
+		for (UW_InventorySlot* Widgets : ETCSlots)
+		{
+			if (Widgets)
+			{
+				Widgets->OnClickedActionButtonDelegate.Clear();
+			}
+		}
+		ETCSlots.Empty();
+		break;
+	default:
+		return;
 	}
-	ActiveWidget.Empty();
 }
 
 void UW_Inventory::OnActionButtonClicked(const FMasterItemDefinition& Item,const float& SlotIndex)
@@ -321,7 +323,6 @@ void UW_Inventory::OnComsumbableButtonClicked()
 
 void UW_Inventory::OnETCButtonClicked()
 {
-	
 	if (WidgetSwitcher_InventorySwitcher)
 	{
 		WidgetSwitcher_InventorySwitcher->SetActiveWidgetIndex(2);

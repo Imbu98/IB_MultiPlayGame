@@ -44,6 +44,8 @@ public:
 	void UpdateEquippedSlot(const FMasterItemDefinition& EquippedItems);
 	UFUNCTION()
 	void SetEquippedItemWidget(TMap<EItemParts,FMasterItemDefinition> EquippedItemsMap);
+	UFUNCTION()
+	void InitPlayerInfoSlots();
 	
 	
 };

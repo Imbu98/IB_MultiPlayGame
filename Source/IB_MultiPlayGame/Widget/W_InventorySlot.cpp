@@ -52,6 +52,7 @@ void UW_InventorySlot::NativeOnDragDetected(const FGeometry& InGeometry, const F
 {
 	if (WBP_DraggedImageItemClass)
 	{
+		if (!IsValid(InventoryComponent)) return;
 		WBP_DraggedImageItem = CreateWidget<UW_DraggedImageItem>(this, WBP_DraggedImageItemClass);
 		if (WBP_DraggedImageItem)
 		{
@@ -64,12 +65,24 @@ void UW_InventorySlot::NativeOnDragDetected(const FGeometry& InGeometry, const F
 					DragOp->Pivot = EDragPivot::CenterCenter;
 					DragOp->ItemSlot = this;
 
-					if (Item.ItemQuantity == 0) return;  //�������� ������ �ƹ��͵� �ȵǰ�
+					int32 ItemQuantity=0;
+					FMasterItemDefinition StaticItemInfo=FMasterItemDefinition();
+					
+					FPackagedInventory Inventory = GetInventory(SlotType);
 
+					if (Inventory.ItemQuantities.IsValidIndex(SlotIndex))
+					{
+						ItemQuantity = Inventory.ItemQuantities[SlotIndex];
+					}
+					if (Inventory.ItemDefinitions.IsValidIndex(SlotIndex))
+					{
+						StaticItemInfo = InventoryComponent->GetItemDefinitionByTag(Inventory.ItemDefinitions[SlotIndex].ItemTag);
+					}
 
-					DragOp->DraggedItem = Item;
+					if (ItemQuantity == 0) return;  //�������� ������ �ƹ��͵� �ȵǰ�
+					
 					DragOp->FromSlotIndex = SlotIndex;
-					WBP_DraggedImageItem->ItemImage = Item.Icon;
+					WBP_DraggedImageItem->ItemImage = StaticItemInfo.Icon;
 					DragOp->FromSlotType = SlotType;
 
 					OutOperation = DragOp;
@@ -155,25 +168,12 @@ void UW_InventorySlot::SetQuiantityText(int32 Quantity)
 
 void UW_InventorySlot::OnclickedActionButton()
 {
-	// 여기서 인벤토리 아이템 정보를 브로드캐스트해준다
-	FUserInventory& CachedUserInventory = InventoryComponent->GetCachedUserInventory();
 	FMasterItemDefinition ItemInfo = FMasterItemDefinition();
-
-	if (SlotType==ESlotTypes::Slot_Equippable)
+	FPackagedInventory Inventory = GetInventory(SlotType);
+	
+	if (Inventory.ItemDefinitions.IsValidIndex(SlotIndex))
 	{
-		ItemInfo= CachedUserInventory.EquippableInventory.ItemDefinitions[SlotIndex];
-	}
-	if (SlotType==ESlotTypes::Slot_Consumable)
-	{
-		ItemInfo= CachedUserInventory.ConsumableInventory.ItemDefinitions[SlotIndex];
-	}
-	if (SlotType==ESlotTypes::Slot_ETC)
-	{
-		ItemInfo= CachedUserInventory.ETCInventory.ItemDefinitions[SlotIndex];
-	}
-	if (SlotType==ESlotTypes::Slot_PlayerInfo)
-	{
-		// 빈 ItemInfo를 보내줘도됨
+		ItemInfo = Inventory.ItemDefinitions[SlotIndex];
 	}
 	
 	OnClickedActionButtonDelegate.Broadcast(ItemInfo,SlotIndex);
@@ -184,15 +184,6 @@ void UW_InventorySlot::UpdateSlot(const FMasterItemDefinition& ItemInfo)
 		if (IMG_SlotImage)
 		{
 			IMG_SlotImage->SetBrushFromTexture(SlotItemImage);
-		}
-
-		if (Text_ItemQuantity && ItemInfo.ItemQuantity > 0)
-		{
-			Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT("x %d"), ItemInfo.ItemQuantity)));
-		}
-		else
-		{
-			Text_ItemQuantity->SetText(FText::FromString(FString::Printf(TEXT(""))));
 		}
 		SetSlotRarityImg(ItemInfo);
 }
@@ -211,7 +202,6 @@ void UW_InventorySlot::ClearSlot()
 	{
 		Border_Frame->SetBrushColor(FLinearColor::White);
 	}
-	Item = FMasterItemDefinition();
     // tag�ʱ�ȭ �߰�
 	//Item.ItemTag = FGameplayTag::RequestGameplayTag(FName("Item.None"));
 }
@@ -222,7 +212,7 @@ void UW_InventorySlot::SetSlotRarityImg(const FMasterItemDefinition& ItemInfo)
 
 	switch (ItemInfo.ItemRarity)
 	{
-	case EItemRarity::None:
+	case EItemRarity::Common:
 		{
 			BorderColor = FLinearColor::Gray;
 			break;
@@ -261,4 +251,38 @@ EItemTypes UW_InventorySlot::FilterCategoryTag(const FGameplayTag& Tag)
 		return EItemTypes::Item_Consumable;
 	}
 	return EItemTypes::Item_Consumable;
+}
+
+FPackagedInventory UW_InventorySlot::GetInventory(const ESlotTypes InventoryType)
+{
+	// 여기서 인벤토리 아이템 정보를 브로드캐스트해준다
+	FUserInventory& CachedUserInventory = InventoryComponent->GetCachedUserInventory();
+	FPackagedInventory Inventory = FPackagedInventory();
+
+	if (InventoryType==ESlotTypes::Slot_Equippable)
+	{
+		if (CachedUserInventory.EquippableInventory.ItemDefinitions.IsValidIndex(SlotIndex))
+		{
+			Inventory= CachedUserInventory.EquippableInventory;
+		}
+	}
+	else if (InventoryType==ESlotTypes::Slot_Consumable)
+	{
+		if (CachedUserInventory.ConsumableInventory.ItemDefinitions.IsValidIndex(SlotIndex))
+		{
+			Inventory= CachedUserInventory.ConsumableInventory;
+		}
+	}
+	else if (InventoryType==ESlotTypes::Slot_ETC)
+	{
+		if (CachedUserInventory.ETCInventory.ItemDefinitions.IsValidIndex(SlotIndex))
+		{
+			Inventory= CachedUserInventory.ETCInventory;
+		}
+	}
+	else if (InventoryType==ESlotTypes::Slot_PlayerInfo)
+	{
+		// 빈 ItemInfo를 보내줘도됨
+	}
+	return Inventory;
 }

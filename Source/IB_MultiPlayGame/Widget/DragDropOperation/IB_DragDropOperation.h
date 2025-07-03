@@ -13,8 +13,6 @@ class IB_MULTIPLAYGAME_API UIB_DragDropOperation : public UDragDropOperation
 	
 public:
 	UPROPERTY()
-	FMasterItemDefinition DraggedItem;
-	UPROPERTY()
 	TObjectPtr<UW_InventorySlot> ItemSlot;
 	UPROPERTY()
 	int32 FromSlotIndex;

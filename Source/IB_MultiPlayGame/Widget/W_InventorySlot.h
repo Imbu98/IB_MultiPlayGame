@@ -4,6 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "../DefineDelegates.h"
 #include "../Inventory/ItemTypes.h"
+#include "IB_MultiPlayGame/Components/InventoryComponent.h"
 #include "W_InventorySlot.generated.h"
 
 class UButton;
@@ -59,8 +60,6 @@ public:
 	
 	FOnClickedEquippedActionButton OnClickedEquippedActionButtonDelegate;
 
-	FMasterItemDefinition Item;
-
 	UFUNCTION()
 	void SetItemImage(UTexture2D* ItemImage);
 	UFUNCTION()
@@ -75,6 +74,8 @@ public:
 	void UpdateSlot(const FMasterItemDefinition& ItemInfo);
 	UFUNCTION()
 	void ClearSlot();
+	UFUNCTION()
+	FPackagedInventory GetInventory(const ESlotTypes InventoryType);
 
 	EItemTypes FilterCategoryTag(const FGameplayTag& Tag);
 	

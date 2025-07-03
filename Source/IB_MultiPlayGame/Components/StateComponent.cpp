@@ -42,9 +42,10 @@ FGameplayTag UStateComponent::GetCurrentState()
 {
 	if (GetOwner())
 	{
-		if (GetOwner()->HasAuthority())
+		if (!GetOwner()->HasAuthority())
 		{
 			ServerGetCurrentState();
+			return FGameplayTag();
 		}
 		return CurrentStateTag;
 	}
@@ -69,6 +70,7 @@ void UStateComponent::ResetCurrentState()
 		if (!GetOwner()->HasAuthority())
 		{
 			ServerResetCurrentState();
+			return;
 		}
 		CurrentStateTag = FGameplayTag::RequestGameplayTag("Player.Idle"); 
 	}

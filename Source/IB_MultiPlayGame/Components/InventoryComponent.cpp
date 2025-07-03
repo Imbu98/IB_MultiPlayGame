@@ -30,6 +30,13 @@ bool FPackagedInventory::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOut
 	SafeNetSerializeTArray_Default<100>(Ar, ItemQuantities);
 	SafeNetSerializeTArray_WithNetSerialize<100>(Ar, ItemDefinitions,Map);
 
+	uint8 EnumValue = static_cast<uint8>(InventoryType);
+	Ar << EnumValue;
+	if (Ar.IsLoading())
+	{
+		InventoryType = static_cast<EItemTypes>(EnumValue);
+	}
+	
 	bOutSuccess = true;
 	return true;
 }
@@ -55,13 +62,10 @@ void UInventoryComponent::BeginPlay()
 	{
 		FGameplayTag NoneTag = FGameplayTag::RequestGameplayTag(TEXT("Item.None"));
 		CachedUserInventory.ConsumableInventory.Initialize(Inventorysize, NoneTag, 0);
-		CachedUserInventory.EquippableInventory.InventoryType = EItemTypes::Item_Equippable;
-		
 		CachedUserInventory.EquippableInventory.Initialize(Inventorysize, NoneTag, 0);
-		CachedUserInventory.ConsumableInventory.InventoryType = EItemTypes::Item_Consumable;
-		
 		CachedUserInventory.ETCInventory.Initialize(Inventorysize, NoneTag, 0);
-		CachedUserInventory.ETCInventory.InventoryType = EItemTypes::Item_ETC;
+		CachedUserInventory.Initialize();
+		
 		IsFirstStart = false;
 	}
 
@@ -123,9 +127,11 @@ void UInventoryComponent::SwapItemsInPackagedInventory(FPackagedInventory& Cache
 	
 	CachedInventoryRef.ItemQuantities.Swap(IndexA, IndexB);
 
+	CachedInventoryRef.ItemDefinitions.Swap(IndexA, IndexB);
+
 	DefinitionSetInventory(CachedInventoryRef);
 	
-	ClientUpdateUserInventory(CachedUserInventory,CachedInventoryRef.InventoryType);
+	ClientUpdateUserInventory(CachedInventoryRef);
 
 	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Swapping %d <--> %d"), IndexA, IndexB));
 }
@@ -154,16 +160,15 @@ void UInventoryComponent::OnRep_CachedUserInventory()
 	}
 }
 
-void UInventoryComponent::ClientUpdateUserInventory_Implementation(const FUserInventory& UserInventory,
-	const EItemTypes InventoryType)
+void UInventoryComponent::ClientUpdateUserInventory_Implementation(const FPackagedInventory& Inventory)
 {
 	if (bOwnerLocallyControlled)
 	{
 		FTimerHandle TimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle,[this,InventoryType]()
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle,[this,Inventory]()
 		{
-			UserInventoryPackageDelegate.Broadcast(CachedUserInventory,InventoryType);
-		},0.05f,false);
+			UserInventoryPackageDelegate.Broadcast(Inventory);
+		},0.1f,false);
 		
 	}
 }
@@ -252,7 +257,7 @@ void UInventoryComponent::RemoveItem(const FMasterItemDefinition& DynamicItemDat
 
 		DefinitionSetInventory(Inventory);
 		// 위젯 갱신 등 브로드캐스트
-		ClientUpdateUserInventory(CachedUserInventory,Inventory.InventoryType);
+		ClientUpdateUserInventory(Inventory);
 	}
 }
 
@@ -386,7 +391,7 @@ bool UInventoryComponent::DefinitionItemAdd(const FMasterItemDefinition& ItemDef
 
 					DefinitionSetInventory(Inventory);
 
-					ClientUpdateUserInventory(CachedUserInventory,Inventory.InventoryType);
+					ClientUpdateUserInventory(Inventory);
 					return true;
 				}
 			}
@@ -398,6 +403,7 @@ bool UInventoryComponent::DefinitionItemAdd(const FMasterItemDefinition& ItemDef
 			if (FoundIndex != INDEX_NONE && Inventory.ItemQuantities.IsValidIndex(FoundIndex))
 			{
 				Inventory.ItemQuantities[FoundIndex] += NumItems;
+				
 				if (Inventory.ItemQuantities[FoundIndex] <= 0)
 				{
 					Inventory.ItemTags[FoundIndex] = NoneTag;
@@ -406,12 +412,19 @@ bool UInventoryComponent::DefinitionItemAdd(const FMasterItemDefinition& ItemDef
 
 					DefinitionSetInventory(Inventory);
 					
-					ClientUpdateUserInventory(CachedUserInventory,Inventory.InventoryType);
+					ClientUpdateUserInventory(Inventory);
+					return true;
+				}
+				else
+				{
+					DefinitionSetInventory(Inventory);
+					
+					ClientUpdateUserInventory(Inventory);
+
 					return true;
 				}
 			}
 		}
-		
 	}
 	else
 	{
@@ -425,7 +438,7 @@ bool UInventoryComponent::DefinitionItemAdd(const FMasterItemDefinition& ItemDef
 			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Sever Item Added To Inventory %s, qty:%d"), *ItemDefinition.ItemTag.ToString(), NumItems));
 			DefinitionSetInventory(Inventory);
 			
-			ClientUpdateUserInventory(CachedUserInventory,Inventory.InventoryType);
+			ClientUpdateUserInventory(Inventory);
 
 			return true;
 		}

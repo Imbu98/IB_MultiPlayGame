@@ -82,18 +82,15 @@ public:
 
 
 public:
-
 	UFUNCTION()
 	void BindInventoryItemDelegate();
 
 	UFUNCTION()
-	void InventoryItemRecieved(const FUserInventory& PackagedInventory,const EItemTypes InventoryType);
-	UFUNCTION()
-	void InventoryBroadcastComplete();
+	void InventoryItemRecieved(const FPackagedInventory& InventoryContents);
 	UFUNCTION()
 	void BroadcastOnclickEvent(ESlotTypes SlotType);
 	UFUNCTION()
-	void ResetActiveWidgets(TArray<UW_InventorySlot*>& ActiveWidget);
+	void ResetActiveWidgets(const ESlotTypes InventoryType);
 	UFUNCTION()
 	void OnActionButtonClicked(const FMasterItemDefinition& Item,const float& SlotIndex);
 
@@ -105,11 +102,10 @@ public:
 	void OnETCButtonClicked();
 
 	UFUNCTION()
-	void HandleInventoryItemRecieved(const FUserInventory& PackagedInventory,const EItemTypes InventoryType);
+	void HandleInventoryItemRecieved(const FPackagedInventory& InventoryContents);
 	
 	UFUNCTION()
-	void MakeItemRowWidget(const FUserInventory& PackagedInventory,const EItemTypes InventoryType);
-	UFUNCTION()
+	void MakeItemRowWidget(const FPackagedInventory& InventoryContents);UFUNCTION()
 	void InitializeSlots();
 	UFUNCTION()
 	void UpdateItemWidgets(const FPackagedInventory& SubInventory, ESlotTypes SlotType,UWrapBox* InventoryContentsWrapBox);

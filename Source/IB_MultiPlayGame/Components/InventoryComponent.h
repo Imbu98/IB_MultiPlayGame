@@ -68,6 +68,13 @@ struct FUserInventory
 	FPackagedInventory ConsumableInventory;
 	UPROPERTY()
 	FPackagedInventory ETCInventory;
+
+	void Initialize()
+	{
+		EquippableInventory.InventoryType=EItemTypes::Item_Equippable;
+		ConsumableInventory.InventoryType=EItemTypes::Item_Consumable;
+		ETCInventory.InventoryType=EItemTypes::Item_ETC;
+	}
 };
 
 template<>
@@ -79,7 +86,7 @@ struct TStructOpsTypeTraits<FUserInventory> : public TStructOpsTypeTraitsBase2<F
 	};
 };
 
-DECLARE_MULTICAST_DELEGATE_TwoParams(FInventoryPackagedSignature, const FUserInventory&,const EItemTypes);
+DECLARE_MULTICAST_DELEGATE_OneParam(FInventoryPackagedSignature, const FPackagedInventory&);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class IB_MULTIPLAYGAME_API UInventoryComponent : public UActorComponent
@@ -154,7 +161,7 @@ private:
 	void OnRep_CachedUserInventory();
 
 	UFUNCTION(Client, Reliable)
-	void ClientUpdateUserInventory(const FUserInventory& UserInventory, const EItemTypes InventoryType);
+	void ClientUpdateUserInventory(const FPackagedInventory& Inventory);
 
 	UFUNCTION()
 	void DefinitionItemUse(const FMasterItemDefinition& DynamicItemData,const int32& SlotIndex,int32 NumItems=1);
