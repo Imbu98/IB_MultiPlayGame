@@ -8,16 +8,14 @@ public class IB_MultiPlayGame : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput","GameplayAbilities","GameplayTasks","GameplayTags","UMG", "AIModule", "Niagara", "OnlineSubsystem", "Networking", "Sockets","OnlineSubsystemUtils" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput","GameplayAbilities","GameplayTasks","GameplayTags","UMG", "AIModule", "Niagara", "Networking", "Sockets","OnlineSubsystemUtils"});
+		
+		PrivateDependencyModuleNames.AddRange(new string[] { "OnlineSubsystem", "OnlineSubsystemUtils" });
 
         PublicDefinitions.Add("ALLOW_UDP_MESSAGING_SHIPPING=1");
         
-        PrivateDependencyModuleNames.Add("OnlineSubsystemSteam");
+		DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
         
-        if (Target.Platform == UnrealTargetPlatform.Win64)
-        {
-	        DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
-        }
 		
     }
 }

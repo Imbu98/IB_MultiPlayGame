@@ -145,10 +145,6 @@ void AIB_RPGPlayerController::BeginPlay()
 
 	if (IsValid(InventoryComponent))
 	{
-		if (!IB_GameInstance->SavedInventory.ItemTags.IsEmpty())
-		{
-			//InventoryComponent->GetCachedInventory() = IB_GameInstance->SavedInventory;
-		}
 		InventoryComponent->bOwnerLocallyControlled = IsLocalController();
 	}
 	
@@ -683,9 +679,25 @@ void AIB_RPGPlayerController::ClientSwitchInputMapping_Implementation(bool OnCan
 				//IBPlayerController->OpenPlayerWidget();
 			}
 		}
-
 }
 
+void AIB_RPGPlayerController::Server_RequestDungeonInstance_Implementation(const FString& DungeonID)
+{
+	// 이 함수는 데디케이티드 서버에서 실행됩니다.
+	// **중요**: 요청자(PlayerController)는 'this'를 통해 전달해야 합니다.
+	UIB_GameInstance* GameInstance = Cast<UIB_GameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+	if (GameInstance)
+	{
+		GameInstance->Server_FindOrCreateDungeonInstance(DungeonID, this); // 'this'는 요청한 PlayerController
+	}
+}
+
+void AIB_RPGPlayerController::Client_TravelToDungeonInstance_Implementation(const FString& ConnectString)
+{
+	// 이 함수는 클라이언트에서 실행됩니다.
+	ClientTravel(ConnectString, TRAVEL_Absolute);
+	UE_LOG(LogTemp, Warning, TEXT("Client: Traveling to dungeon instance via '%s'."), *ConnectString);
+}
 
 
 

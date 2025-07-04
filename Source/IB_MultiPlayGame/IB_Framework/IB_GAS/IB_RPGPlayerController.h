@@ -228,6 +228,16 @@ public:
 		UFUNCTION(Server,Reliable)
 		void ServerUnEquipItem(const FMasterItemDefinition& ItemDefinition,const float& SlotIndex);
 
+public:
+	// relevance On Dungeon
+	// 클라이언트 -> 서버: 던전 인스턴스 요청
+	UFUNCTION(Server, Reliable)
+	void Server_RequestDungeonInstance(const FString& DungeonID);
+
+	// 서버 -> 클라이언트: 던전 인스턴스 연결 정보 전달
+	UFUNCTION(Client, Reliable)
+	void Client_TravelToDungeonInstance(const FString& ConnectString);
+
 	
 
 };

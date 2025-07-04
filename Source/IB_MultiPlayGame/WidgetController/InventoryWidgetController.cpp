@@ -30,10 +30,6 @@ void UInventoryWidgetController::UpdateInventory(const FPackagedInventory& Inven
 {
 	if (IsValid(OwningInventory))
 	{
-		if (UIB_GameInstance* IB_GameInstance = Cast<UIB_GameInstance>(UGameplayStatics::GetGameInstance(GetWorld())))
-		{
-			IB_GameInstance->SavePlayerInventory(OwningInventory);
-		}
 		//OwningInventory->ReConstructInventoryMap(InventoryContents);
 		BroadcastInventoryContents(InventoryContents);
 	}

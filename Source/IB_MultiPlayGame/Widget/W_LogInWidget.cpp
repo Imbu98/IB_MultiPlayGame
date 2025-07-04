@@ -78,7 +78,7 @@ void UW_LogInWidget::OnClickedExitGameButton()
 
 void UW_LogInWidget::OnClickedSignUpCompleteButton()
 {
-	//데이터베이스에 정보들 올리기
+	//데이터베이스에 정보들 올리기 (회원가입)
 	if (EditableTextBox_SignUpId)
 	{
 		

@@ -11,13 +11,7 @@
 void UIB_GameInstanceSubSystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-
-	int32 LocalPort = GetWorld()->URL.Port;
-
-	if (LocalPort == 7777)
-	{
-		StartListeningForDungeonShutdown();
-	}
+	
 	
 }
 

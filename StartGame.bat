@@ -7,4 +7,4 @@ SET MAP_NAME=/Game/Maps/ThirdPersonMap
 
 REM 에디터에서 Game 실행 모드 실행
 "%ENGINE_PATH%\UnrealEditor-Cmd.exe" "%PROJECT_PATH%" "%MAP_NAME%" -game -log -nosteam
-pause
+pause 

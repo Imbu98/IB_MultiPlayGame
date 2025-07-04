@@ -2,7 +2,9 @@
 #include "../../IB_Framework/IB_GameInstanceSubSystem.h"
 
 #include "Components/BoxComponent.h"
+#include "GameFramework/Character.h"
 #include "IB_MultiPlayGame/IB_Framework/IB_GameInstance.h"
+#include "IB_MultiPlayGame/IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 
 
 APortalTrigger::APortalTrigger()
@@ -32,17 +34,19 @@ void APortalTrigger::BeginPlay()
 
 void APortalTrigger::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (!HasAuthority()) return; // ������ ó��
-
-	if (OtherActor && OtherActor->IsA(APawn::StaticClass()))
+	if (OtherActor && OtherActor != this)
 	{
-		APawn* Pawn = Cast<APawn>(OtherActor);
-		APlayerController* PC = Cast<APlayerController>(Pawn->GetController());
-
-		UIB_GameInstance* GI = Cast<UIB_GameInstance>(GetGameInstance());
-		if (GI)
+		// 트리거한 액터가 플레이어 캐릭터인지 확인
+		ACharacter* PlayerCharacter = Cast<ACharacter>(OtherActor);
+		if (PlayerCharacter)
 		{
-			GI->FindOrCreateDungeonSession(DungeonID, PC);
+			AIB_RPGPlayerController* PlayerController = Cast<AIB_RPGPlayerController>(PlayerCharacter->GetController());
+			if (PlayerController)
+			{
+				// 클라이언트에서 서버 RPC 호출
+				UE_LOG(LogTemp, Warning, TEXT("Portal triggered by %s. Requesting dungeon entry for ID: %s"), *PlayerCharacter->GetName(), *TargetDungeonID);
+				PlayerController->Server_RequestDungeonInstance(TargetDungeonID);
+			}
 		}
 	}
 }
