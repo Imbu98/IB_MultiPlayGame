@@ -59,9 +59,12 @@ class IB_MULTIPLAYGAME_API UIB_GameInstance : public UGameInstance
 public:
 	virtual void Init() override;
 	virtual void Shutdown() override;
-	
-	void TryAutoConnect();
 
+	void CreateLobbySession();
+	void Client_FindLobbySession();
+
+	FName LobbySessionName = FName("LobbySession");
+	
 	UFUNCTION(BlueprintCallable, Category = "Dungeon")
 	void RequestDungeonEntry(const FString& InDungeonID, APlayerController* RequestingPC);
 
@@ -98,6 +101,7 @@ protected:
 
 private:
 	IOnlineSessionPtr SessionInterface;
+	
 
 	// 클라이언트 측에서 요청할 때 사용되는 임시 변수
 	FString ClientRequest_DungeonID;
@@ -107,6 +111,7 @@ private:
 	// Key: SessionName (고유 ID), Value: FDungeonInstanceInfo
 	TMap<FName, FDungeonInstanceInfo> ActiveDungeonInstances;
 
+	
 	// 서버 측: 세션 검색 결과 저장 (서버가 세션 검색할 때 사용)
-	TSharedPtr<FOnlineSessionSearch> ServerSessionSearch;
+	TSharedPtr<FOnlineSessionSearch> SessionSearch;
 };

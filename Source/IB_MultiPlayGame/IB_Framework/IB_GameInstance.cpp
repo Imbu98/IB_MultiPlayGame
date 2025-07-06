@@ -15,16 +15,12 @@
 void UIB_GameInstance::Init()
 {
 	Super::Init();
-
-	// 0.5~1초 지연 후 호출하는 게 안정적 (월드 로딩 대기용)
-	FTimerHandle ConnectHandle;
-	GetWorld()->GetTimerManager().SetTimer(ConnectHandle, this, &UIB_GameInstance::TryAutoConnect, 1.0f, false);
-
+	
 	IOnlineSubsystem* OSS = IOnlineSubsystem::Get();
 	if (OSS)
 	{
 		SessionInterface = OSS->GetSessionInterface();
-
+		
 		if (SessionInterface.IsValid())
 		{
 			// 모든 콜백은 클라이언트/서버 모두에서 바인딩됩니다.
@@ -37,6 +33,10 @@ void UIB_GameInstance::Init()
 			if (GEngine)
 			{
 				GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Red,FString::Printf(TEXT("%s"),*OSS->GetSubsystemName().ToString()));
+			}
+			if (IsRunningDedicatedServer())
+			{
+				CreateLobbySession();
 			}
 		}
 		else
@@ -54,48 +54,64 @@ void UIB_GameInstance::Shutdown()
 	// 데디케이티드 서버인 경우, 종료 시 모든 활성 세션 정리
 	if (IsRunningDedicatedServer())
 	{
-		for (auto& Pair : ActiveDungeonInstances)
+		if (SessionInterface.IsValid())
 		{
-			FDungeonInstanceInfo& InstanceInfo = Pair.Value;
-			GetWorld()->GetTimerManager().ClearTimer(InstanceInfo.SessionTimeoutTimerHandle);
-			if (SessionInterface.IsValid() && InstanceInfo.bIsAdvertised)
+			// 로비 서버 종료 시 로비 세션 파괴
+			SessionInterface->DestroySession(LobbySessionName);
+			//활성던전 인스턴스 세션들도 모두 파괴
+			for (auto& Pair : ActiveDungeonInstances)
 			{
-				SessionInterface->DestroySession(InstanceInfo.SessionName); // 세션 파괴
+				FDungeonInstanceInfo& InstanceInfo = Pair.Value;
+				if (SessionInterface.IsValid() && InstanceInfo.bIsAdvertised)
+				{
+					SessionInterface->DestroySession(InstanceInfo.SessionName); // 세션 파괴
+				}
 			}
+			ActiveDungeonInstances.Empty();
 		}
-		ActiveDungeonInstances.Empty();
 	}
 }
 
-void UIB_GameInstance::TryAutoConnect()
+	void UIB_GameInstance::CreateLobbySession()
+	{
+		UE_LOG(LogTemp, Error, TEXT("UIB_GameInstance: Try to createLobbySession"));
+		
+		TSharedPtr<FOnlineSessionSettings> LobbySessionSettings = MakeShareable(new FOnlineSessionSettings());
+	if (LobbySessionSettings)
+	{
+		LobbySessionSettings->bIsLANMatch = false;
+		LobbySessionSettings->NumPublicConnections = 100;
+		LobbySessionSettings->bShouldAdvertise = true;
+		LobbySessionSettings->bAllowJoinInProgress = true;
+		LobbySessionSettings->bUseLobbiesIfAvailable = false;
+		LobbySessionSettings->bUsesPresence = false;
+		LobbySessionSettings->bIsDedicated=IsRunningDedicatedServer();
+		
+		LobbySessionSettings->Set(TEXT("SESSION_TYPE"), FString("LobbySession"), EOnlineDataAdvertisementType::ViaOnlineService);
+
+		SessionInterface->CreateSession(0, LobbySessionName , *LobbySessionSettings);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("UIB_GameInstance:LobbySessionSettings is not valid"));
+	}
+		
+	}
+
+void UIB_GameInstance::Client_FindLobbySession()
 {
-	UE_LOG(LogTemp, Warning, TEXT("TryAutoconect"));
-	
-	UWorld* World = GetWorld();
-	
-	if (!World) return;
-	UE_LOG(LogTemp, Warning, TEXT("HaveWorld"));
-	
-	
+	SessionSearch = MakeShareable(new FOnlineSessionSearch());
+	SessionSearch->bIsLanQuery = false;
+	SessionSearch->MaxSearchResults = 10;
+	SessionSearch->QuerySettings.Set(TEXT("SESSION_TYPE"), FString("LobbySession"), EOnlineComparisonOp::Equals);
 
-	APlayerController* PC = World->GetFirstPlayerController();
-	if (!PC) return;
-	UE_LOG(LogTemp, Warning, TEXT("HavePC"));
-	// 서버 주소: 로컬 테스트는 127.0.0.1
-	FString ServerAddress = TEXT("127.0.0.1/Game/Maps/L_ThirdPersonMap");
+	UE_LOG(LogTemp, Warning, TEXT("Client: Searching for LobbySession..."));
 
-	// 접속 시도
-	PC->ClientTravel(ServerAddress, ETravelType::TRAVEL_Absolute);
+	SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
 }
 
 void UIB_GameInstance::RequestDungeonEntry(const FString& InDungeonID, APlayerController* RequestingPC)
 {
-	// 데디케이티드 서버인 경우, 종료 시 모든 활성 세션 정리
-	// if (IsRunningDedicatedServer())
-	// {
-	// 	
-	// }
-
 	
 }
 
@@ -165,23 +181,23 @@ void UIB_GameInstance::Server_CreateDungeonSession(const FString& InDungeonID, A
     // if (IsRunningDedicatedServer())
     // {
     // }
-        FOnlineSessionSettings Settings;
-        Settings.bIsLANMatch = false;
-        Settings.bUsesPresence = true;
-        Settings.NumPublicConnections = 4;
-        Settings.bShouldAdvertise = true; 
-        Settings.bAllowJoinInProgress = true; 
-        Settings.bUsesStats = false; 
+	const TSharedPtr<FOnlineSessionSettings> DungeonSessionSettings = MakeShareable(new FOnlineSessionSettings());
+        DungeonSessionSettings->bIsLANMatch = false;
+        DungeonSessionSettings->bUsesPresence = true;
+        DungeonSessionSettings->NumPublicConnections = 4;
+        DungeonSessionSettings->bShouldAdvertise = true; 
+        DungeonSessionSettings->bAllowJoinInProgress = true; 
+        DungeonSessionSettings->bUsesStats = false; 
 
-        Settings.Set(FName("DungeonID"), InDungeonID, EOnlineDataAdvertisementType::ViaOnlineService);
-        Settings.Set(FName("bIsEntryClosed"), false, EOnlineDataAdvertisementType::ViaOnlineService);
+        DungeonSessionSettings->Set(FName("DungeonID"), InDungeonID, EOnlineDataAdvertisementType::ViaOnlineService);
+	DungeonSessionSettings->Set(FName("bIsEntryClosed"), false, EOnlineDataAdvertisementType::ViaOnlineService);
 
         FName NewSessionName = FName(*GenerateSessionName(InDungeonID));
 
         FDungeonInstanceInfo NewInstance;
         NewInstance.SessionName = NewSessionName;
         NewInstance.DungeonID = InDungeonID;
-        NewInstance.MaxPlayers = Settings.NumPublicConnections;
+        NewInstance.MaxPlayers = DungeonSessionSettings->NumPublicConnections;
         NewInstance.CurrentPlayers = 1; // 세션 생성 요청한 첫 플레이어 포함
         NewInstance.bIsAdvertised = true; 
         NewInstance.bIsEntryClosed = false;
@@ -219,7 +235,7 @@ void UIB_GameInstance::Server_CreateDungeonSession(const FString& InDungeonID, A
 	ActiveDungeonInstances.Add(NewInstance.SessionName, NewInstance);
 
 	UE_LOG(LogTemp, Warning, TEXT("Server: Attempting to create session '%s' for DungeonID '%s'."), *NewSessionName.ToString(), *InDungeonID);
-	SessionInterface->CreateSession(0, NewSessionName, Settings);
+	SessionInterface->CreateSession(0, NewSessionName, *DungeonSessionSettings);
 }
 
 void UIB_GameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
@@ -227,51 +243,89 @@ void UIB_GameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucce
 	// if (IsRunningDedicatedServer())
 	// {
 	// }
-        if (bWasSuccessful)
-        {
-            UE_LOG(LogTemp, Warning, TEXT("Server: Session '%s' created successfully and advertised."), *SessionName.ToString());
-            FDungeonInstanceInfo* InstanceInfo = ActiveDungeonInstances.Find(SessionName);
-            if (InstanceInfo)
-            {
-                InstanceInfo->bIsAdvertised = true;
+	if (!bWasSuccessful)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Server: Failed to create session '%s'."), *SessionName.ToString());
+		ActiveDungeonInstances.Remove(SessionName);
+		return;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("Server: Session '%s' created successfully."), *SessionName.ToString());
+
+	if (SessionName == FName("LobbySession"))
+	{
+		// ✅ 로비 세션 생성 완료 - 아무 작업도 안 함
+		UE_LOG(LogTemp, Warning, TEXT("Server: Lobby session created."));
+		return;
+	}
+	
+	FDungeonInstanceInfo* InstanceInfo = ActiveDungeonInstances.Find(SessionName);
+	if (InstanceInfo)
+	{
+		InstanceInfo->bIsAdvertised = true;
                 
-                // 10초 타이머 시작
-                Server_StartSessionCloseTimer(SessionName);
+		// 10초 타이머 시작
+		Server_StartSessionCloseTimer(SessionName);
 
-                // ** 중요 변경: 서버는 ServerTravel 하지 않습니다. **
-                // 서버는 해당 던전 맵을 이미 호스팅 중이거나,
-                // 플레이어가 ClientTravel로 접속할 때 자동으로 맵이 로드되도록 설정되어 있을 수 있습니다.
-                // 만약 서버가 현재 메인 로비 맵에 있다면, 던전 맵을 **동적으로 로드**하는 로직이 필요할 수 있습니다.
-                // UGameplayStatics::LoadStreamLevel(this, FName(*InstanceInfo->MapName), true, false, LatentActionInfo); (Sublevel)
-                // 또는 서버 시작 시 모든 던전 맵이 이미 로드되어 있는 복잡한 월드 구조일 수 있습니다.
-                // 여기서는 서버가 해당 맵을 클라이언트 접속을 통해 호스팅할 수 있다고 가정합니다.
+		// ** 중요 변경: 서버는 ServerTravel 하지 않습니다. **
+		// 서버는 해당 던전 맵을 이미 호스팅 중이거나,
+		// 플레이어가 ClientTravel로 접속할 때 자동으로 맵이 로드되도록 설정되어 있을 수 있습니다.
+		// 만약 서버가 현재 메인 로비 맵에 있다면, 던전 맵을 **동적으로 로드**하는 로직이 필요할 수 있습니다.
+		// UGameplayStatics::LoadStreamLevel(this, FName(*InstanceInfo->MapName), true, false, LatentActionInfo); (Sublevel)
+		// 또는 서버 시작 시 모든 던전 맵이 이미 로드되어 있는 복잡한 월드 구조일 수 있습니다.
+		// 여기서는 서버가 해당 맵을 클라이언트 접속을 통해 호스팅할 수 있다고 가정합니다.
 
-                // 클라이언트에게 연결 문자열 전송 (요청했던 클라이언트에게만)
-                // ClientRequest_Requestor는 UIB_GameInstance::Server_FindOrCreateDungeonInstance에서 설정됨
-                if (ClientRequest_Requestor.IsValid())
-                {
-                    AIB_RPGPlayerController* MyPC = Cast<AIB_RPGPlayerController>(ClientRequest_Requestor.Get());
-                    if (MyPC)
-                    {
-                        MyPC->Client_TravelToDungeonInstance(InstanceInfo->ConnectString);
-                    }
-                    else
-                    {
-                         UE_LOG(LogTemp, Error, TEXT("Server: Failed to cast ClientRequest_Requestor to AMyPlayerController for Client_TravelToDungeonInstance after session create."));
-                    }
-                }
-            }
-        }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("Server: Failed to create session '%s'."), *SessionName.ToString());
-            ActiveDungeonInstances.Remove(SessionName);
-            // 클라이언트에게 실패 알림 등 추가 처리
-        }
+		// 클라이언트에게 연결 문자열 전송 (요청했던 클라이언트에게만)
+		// ClientRequest_Requestor는 UIB_GameInstance::Server_FindOrCreateDungeonInstance에서 설정됨
+		if (ClientRequest_Requestor.IsValid())
+		{
+			// join session으로 바꿔야될듯, 이미 로비세션 안에 있는거기 때문에
+			AIB_RPGPlayerController* MyPC = Cast<AIB_RPGPlayerController>(ClientRequest_Requestor.Get());
+			if (MyPC)
+			{
+				MyPC->Client_TravelToDungeonInstance(InstanceInfo->ConnectString);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("Server: Failed to cast ClientRequest_Requester to AMyPlayerController for Client_TravelToDungeonInstance after session create."));
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Server: No dungeon info found for session '%s'."), *SessionName.ToString());
+	}
 }
 
 void UIB_GameInstance::OnFindSessionComplete(bool bWasSuccessful)
 {
+	if (!bWasSuccessful || !SessionSearch.IsValid()) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("Client: FindSession completed. Total: %d"), SessionSearch->SearchResults.Num());
+
+	for (const FOnlineSessionSearchResult& Result : SessionSearch->SearchResults)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("== Session Info =="));
+		for (auto& Setting : Result.Session.SessionSettings.Settings)
+		{
+			FString Key = Setting.Key.ToString();
+			FString Value = Setting.Value.Data.ToString();
+			UE_LOG(LogTemp, Warning, TEXT("Setting: %s = %s"), *Key, *Value);
+		}
+		FString SessionKeyword;
+		if (Result.Session.SessionSettings.Get(TEXT("SESSION_TYPE"), SessionKeyword))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Client: Found SessionKeyword == %s"), *SessionKeyword);
+			
+			if (SessionKeyword == "LobbySession")
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Client: Found LobbySession, attempting to join..."));
+				SessionInterface->JoinSession(0, FName("LobbySession"), Result);
+				return;
+			}
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Client: LobbySession not found."));
 }
 
 void UIB_GameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
@@ -287,10 +341,19 @@ void UIB_GameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCo
 		}
 
 		FString ConnectString;
+	
 		if (SessionInterface->GetResolvedConnectString(SessionName, ConnectString))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Client: Successfully joined session '%s'. Traveling to '%s'."), *SessionName.ToString(), *ConnectString);
-			ClientRequest_Requestor->ClientTravel(ConnectString, TRAVEL_Absolute);
+			APlayerController* PC = GetFirstLocalPlayerController();
+			if (PC)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Client: Joining session at %s"), *ConnectString);
+				PC->ClientTravel(ConnectString, TRAVEL_Absolute);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("OnJoinSessionComplete::NO PlayerController"));
+			}
 		}
 		else
 		{

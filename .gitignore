@@ -101,7 +101,8 @@ Content/ElfArden/
 # Package
 Package/*
 
-
+#
+*.bat
 
 # Rider 
 .idea/*

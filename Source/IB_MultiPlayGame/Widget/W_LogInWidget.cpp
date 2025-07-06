@@ -2,8 +2,12 @@
 
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
+#include "IB_MultiPlayGame/IB_Framework/IB_GameInstance.h"
+#include "IB_MultiPlayGame/IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 
+
+class UIB_GameInstance;
 
 void UW_LogInWidget::NativeConstruct()
 {
@@ -104,5 +108,15 @@ void UW_LogInWidget::OnClickedSignInCompleteButton()
 	{
 		
 	}
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UGameInstance* GameInstance = World->GetGameInstance();
+	UIB_GameInstance* IBGI = Cast<UIB_GameInstance>(GameInstance);
+	if (IBGI)
+	{
+		IBGI->Client_FindLobbySession(); // 아래 함수 참고
+	}
+	
 }
 
