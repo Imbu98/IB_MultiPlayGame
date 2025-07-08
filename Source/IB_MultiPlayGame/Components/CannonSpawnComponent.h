@@ -13,7 +13,7 @@ struct FCannonSpawnParameters : public FTableRowBase
 	 GENERATED_BODY()
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 CannonLevel;
+	int32 CannonLevel=1;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UStaticMeshComponent> CannonMesh;
 

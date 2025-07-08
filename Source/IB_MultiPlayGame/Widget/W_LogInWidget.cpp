@@ -2,6 +2,8 @@
 
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
+#include "IB_MultiPlayGame/IB_Framework/IB_GameInstance.h"
+#include "IB_MultiPlayGame/IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -104,5 +106,13 @@ void UW_LogInWidget::OnClickedSignInCompleteButton()
 	{
 		
 	}
+	if (AIB_RPGPlayerController* IB_RPGPlayerController=Cast<AIB_RPGPlayerController>(GetOwningPlayer()))
+	{
+		IB_RPGPlayerController->ServerFindLobbySession();
+	}
+	// if (UIB_GameInstance* IBGameInstance = Cast<UIB_GameInstance>(GetWorld()->GetGameInstance()))
+	// {
+	// 	IBGameInstance->FindLobbySession();
+	// }
 }
 

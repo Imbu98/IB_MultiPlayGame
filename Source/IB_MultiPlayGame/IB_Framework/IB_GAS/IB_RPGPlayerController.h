@@ -230,6 +230,8 @@ public:
 
 public:
 	// relevance On Dungeon
+	UFUNCTION(Server, Reliable)
+	void ServerFindLobbySession();
 	// 클라이언트 -> 서버: 던전 인스턴스 요청
 	UFUNCTION(Server, Reliable)
 	void Server_RequestDungeonInstance(const FString& DungeonID);

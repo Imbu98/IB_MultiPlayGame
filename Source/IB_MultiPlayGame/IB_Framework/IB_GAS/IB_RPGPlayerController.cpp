@@ -647,6 +647,15 @@ void AIB_RPGPlayerController::EquipItem(const FMasterItemDefinition& ItemDefinit
 	
 }
 
+void AIB_RPGPlayerController::ServerFindLobbySession_Implementation()
+{
+	 if (UIB_GameInstance* IBGameInstance = Cast<UIB_GameInstance>(GetWorld()->GetGameInstance()))
+	 {
+		IBGameInstance->FindLobbySession();
+	}
+}
+
+
 void AIB_RPGPlayerController::ServerUnEquipItem_Implementation(const FMasterItemDefinition& ItemDefinition,const float& SlotIndex)
 {
 	CombatComponent->UnEquipItem(ItemDefinition,SlotIndex);
@@ -688,7 +697,6 @@ void AIB_RPGPlayerController::Server_RequestDungeonInstance_Implementation(const
 	UIB_GameInstance* GameInstance = Cast<UIB_GameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
 	if (GameInstance)
 	{
-		GameInstance->Server_FindOrCreateDungeonInstance(DungeonID, this); // 'this'는 요청한 PlayerController
 	}
 }
 

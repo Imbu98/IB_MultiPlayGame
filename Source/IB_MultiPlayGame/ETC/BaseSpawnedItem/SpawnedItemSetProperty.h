@@ -14,7 +14,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGameplayTag ItemTag;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UStaticMesh* Mesh;
+	UStaticMesh* Mesh=nullptr;
 
 };
 
@@ -27,7 +27,7 @@ public:
 	UPROPERTY(EditAnywhere)
 	FGameplayTag ItemTag;
 	UPROPERTY(EditAnywhere)
-	float ItemTypeProbability;
+	float ItemTypeProbability=0.f;
 
 };
 
@@ -38,8 +38,8 @@ struct FItemRarityProbability : public FTableRowBase
 
 public:
 	UPROPERTY(EditAnywhere)
-	EItemRarity ItemRarity;
+	EItemRarity ItemRarity=EItemRarity::None;
 	UPROPERTY(EditAnywhere)
-	float ItemRarityProbability;
+	float ItemRarityProbability=0.f;
 
 };

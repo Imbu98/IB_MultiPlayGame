@@ -17,10 +17,11 @@ struct FItemRewards
 UENUM()
 enum class EObjectiveType : int32
 {
-	Location = 0,
-	Kill = 1,
-	Interact = 2,
-	Collect = 3
+	None=0,
+	Location = 1,
+	Kill = 2,
+	Interact = 3,
+	Collect = 4
 };
 
 
@@ -37,7 +38,7 @@ struct FObjectiveDetails
 	FText Description;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EObjectiveType Type;
+	EObjectiveType Type=EObjectiveType::None;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString ObjectiveID;

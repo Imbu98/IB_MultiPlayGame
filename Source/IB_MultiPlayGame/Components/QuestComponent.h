@@ -34,10 +34,10 @@ struct FActiveQuestData
 
 	FActiveQuestData()
 		: QuestID(NAME_None)
-		, QuestDetails()                // ±âº» »ý¼ºÀÚ È£Ãâ
+		, QuestDetails()                // ï¿½âº» ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½
 		, CurrentStage(0)
-		, CurrentStageDetails()         // ±âº» »ý¼ºÀÚ È£Ãâ
-		, CurrentStageObjectiveProgress() // ºó ¸Ê ÃÊ±âÈ­
+		, CurrentStageDetails()         // ï¿½âº» ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½
+		, CurrentStageObjectiveProgress() // ï¿½ï¿½ ï¿½ï¿½ ï¿½Ê±ï¿½È­
 		, IsCompleted(false)
 	{
 	}
@@ -54,7 +54,7 @@ struct FObjectiveProgressEntry
 	FString ObjectiveID;
 
 	UPROPERTY()
-	int32 Progress;
+	int32 Progress=0;
 };
 
 UCLASS(Blueprintable,ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )

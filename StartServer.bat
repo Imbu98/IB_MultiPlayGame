@@ -5,8 +5,8 @@ SET ENGINE_PATH=D:\UE_5.5.4_FS\Engine\Binaries\Win64
 REM 프로젝트 경로
 SET PROJECT_PATH=D:\IB_MultiplayGame\IB_MultiPlayGame.uproject
 REM 실행시킬 맵
-SET MAP_NAME=/Game/Maps/ThirdPersonMap
+SET MAP_NAME=/Game/Maps/L_Login
 
 REM 에디터에서 Dedicated Server 모드 실행
-"%ENGINE_PATH%\UnrealEditor-Cmd.exe" "%PROJECT_PATH%" "%MAP_NAME%" -server -log -nosteam
+"%ENGINE_PATH%\UnrealEditor-Cmd.exe" "%PROJECT_PATH%" "%MAP_NAME%" -server -log -PORT=7777
 pause

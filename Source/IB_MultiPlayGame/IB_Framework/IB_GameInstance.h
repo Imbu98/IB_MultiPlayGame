@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
 #include "OnlineSubsystem.h"
+#include "OnlineSessionSettings.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "IB_GameInstance.generated.h"
 
@@ -59,19 +60,11 @@ class IB_MULTIPLAYGAME_API UIB_GameInstance : public UGameInstance
 public:
 	virtual void Init() override;
 	virtual void Shutdown() override;
-	
-	void TryAutoConnect();
 
-	UFUNCTION(BlueprintCallable, Category = "Dungeon")
-	void RequestDungeonEntry(const FString& InDungeonID, APlayerController* RequestingPC);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void CreateLobbySession();
 
-	// 서버 측: 던전 인스턴스 찾거나 생성 (클라이언트 요청 처리)
-	// 이 함수는 서버에서만 호출되어야 합니다.
-	void Server_FindOrCreateDungeonInstance(const FString& InDungeonID, APlayerController* RequestingPC);
-
-	// 서버 측: 새로운 던전 세션 생성
-	// 이 함수는 서버에서만 호출되어야 합니다.
-	void Server_CreateDungeonSession(const FString& InDungeonID, APlayerController* RequestingPC);
+	void FindLobbySession();
 
 
 protected:
@@ -81,20 +74,6 @@ protected:
 	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful); // 세션 파괴 콜백 추가
 
-	// 서버 측: 10초 타이머 시작
-	void Server_StartSessionCloseTimer(FName SessionName);
-
-	// 서버 측: 10초 타이머 만료 또는 4명 입장 시 호출
-	void Server_CloseSessionEntry(FName SessionName);
-
-	// 서버 측: 세션 이름 생성
-	FString GenerateSessionName(const FString& InDungeonID);
-
-	// 서버 측: 플레이어 접속 시 호출 (GameMode에서 호출될 예정)
-	void Server_OnPlayerConnectedToDungeon(APlayerController* NewPlayer, const FName SessionName);
-
-	// 서버 측: 플레이어 접속 해제 시 호출 (GameMode에서 호출될 예정)
-	void Server_OnPlayerDisconnectedFromDungeon(APlayerController* Player, const FName SessionName);
 
 private:
 	IOnlineSessionPtr SessionInterface;
@@ -107,6 +86,13 @@ private:
 	// Key: SessionName (고유 ID), Value: FDungeonInstanceInfo
 	TMap<FName, FDungeonInstanceInfo> ActiveDungeonInstances;
 
-	// 서버 측: 세션 검색 결과 저장 (서버가 세션 검색할 때 사용)
-	TSharedPtr<FOnlineSessionSearch> ServerSessionSearch;
+	TSharedPtr<FOnlineSessionSettings> SessionSettings;
+	
+
+private:
+	TSharedPtr<FOnlineSessionSearch> SessionSearch;
+
+	TArray<FOnlineSessionSearchResult> SessionSearchResults;
+
+	int32 LobbySessionCounter;
 };

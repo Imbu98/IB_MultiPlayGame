@@ -187,7 +187,7 @@ struct FWeaponData : public FTableRowBase
 	TMap<EItemRarity, float> WeaponWeightMap;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EItemParts WeaponParts;
+	EItemParts WeaponParts=EItemParts::None;
 
 };
 
@@ -206,6 +206,6 @@ struct FArmorData : public FTableRowBase
 	TMap<EItemRarity,float> ArmorWeightMap;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EItemParts ArmorParts;
+	EItemParts ArmorParts = EItemParts::None;
 };
 
