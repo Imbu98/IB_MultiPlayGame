@@ -172,17 +172,25 @@ void UIB_GameInstance::OnFindSessionComplete(bool bWasSuccessful)
 				FString Value = Setting.Value.Data.ToString();
 				UE_LOG(LogTemp, Warning, TEXT("Setting: %s = %s"), *Key, *Value);
 			}
-			FString SessionType;
 			FString MapName;
-			if (Result.Session.SessionSettings.Get(FName("SESSION_TYPE"), SessionType) &&
-				Result.Session.SessionSettings.Get(FName("MAP_NAME"), MapName))
+			if (Result.Session.SessionSettings.Get(FName("MAPNAME"), MapName))
 			{
-				if (SessionType == "LobbySession" && MapName == "L_Lobby")
+				if ( MapName == "L_Lobby")
 				{
+					UE_LOG(LogTemp, Warning, TEXT("TryToJoinSession"));
 					SessionInterface->JoinSession(0, NAME_GameSession, Result);
 					return;
 				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("NoMapNameL_Lobby"));
+				}
 			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("NoMapName"));
+			}
+			
 		}
 	}
 }
