@@ -39,7 +39,7 @@ protected:
 	UPROPERTY()
 	int32 GameModePortNumber;
 
-	void HandleDungeonClear();
+	void HandleDungeonClear(const FString& DungeonName);
 
 public:
 
@@ -48,6 +48,9 @@ public:
 
 	virtual void Logout(AController* Exiting) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+
+	
+	FString CleanMapName;
 	
 	
 	

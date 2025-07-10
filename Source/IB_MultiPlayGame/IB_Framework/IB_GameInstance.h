@@ -7,50 +7,21 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "IB_GameInstance.generated.h"
 
-class UInventoryComponent;
-
 USTRUCT()
-struct FDungeonInstanceInfo
+struct FDungeonInstanceData
 {
 	GENERATED_BODY()
 
-	UPROPERTY()
-	FName SessionName; // 스팀 세션 이름 (고유 ID)
-
-	UPROPERTY()
-	FString DungeonID; // 던전 유형 ID (예: "Dungeon1")
-
-	UPROPERTY()
-	FString ConnectString; // 이 인스턴스로 접속할 IP:Port
-
-	UPROPERTY()
-	int32 CurrentPlayers; // 현재 인원
-
-	UPROPERTY()
-	int32 MaxPlayers; // 최대 인원
-
-	UPROPERTY()
-	FTimerHandle SessionTimeoutTimerHandle; // 10초 타이머 핸들
-
-	UPROPERTY()
-	bool bIsAdvertised; // 현재 스팀에 광고 중인지 여부
-
-	UPROPERTY()
-	bool bIsEntryClosed; // 입장 제한 여부
-	UPROPERTY() // 이 부분 추가
-	FString MapName; // 이 인스턴스가 사용하는 맵 이름 (예: Dungeon1_Map)
-
-	FDungeonInstanceInfo()
-		: SessionName(NAME_None)
-		, DungeonID(TEXT(""))
-		, ConnectString(TEXT(""))
-		, CurrentPlayers(0)
-		, MaxPlayers(4)
-		, bIsAdvertised(false)
-		, bIsEntryClosed(false)
-		, MapName(TEXT("")) // 기본값 초기화
-	{}
+	int32 InstanceID = -1;
+	int32 Port = -1;
+	int32 CurrentPlayers = 0;
+	bool bLocked = false;
+	FTimerHandle LockTimerHandle;
+	FProcHandle DungeonServerHandle;
 };
+
+class UInventoryComponent;
+class AIB_RPGPlayerController;
 
 UCLASS()
 class IB_MULTIPLAYGAME_API UIB_GameInstance : public UGameInstance
@@ -66,6 +37,24 @@ public:
 
 	void FindLobbySession();
 
+	void RequestFindOrCreateDungeonSession(const FString& DungeonName,AIB_RPGPlayerController* Player);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void CreateDungeonSession(const FString& DungeonName,const int32& GeneratedPort);
+
+	
+	void DestroyDungeonSession(const FString& DungeonName);
+
+	int32 GetAvailablePort();
+
+	UFUNCTION()
+	void ClientLeaveLobbySession(const FString& DungeonName);
+
+	void StartListeningForDungeonShutdown();
+
+	void PollSocket();
+
+	void RemoveDungeonInstance(int32 Port);
 
 protected:
 	// Online Subsystem 콜백
@@ -84,15 +73,39 @@ private:
 
 	// 서버 측에서 관리하는 활성 던전 인스턴스 맵
 	// Key: SessionName (고유 ID), Value: FDungeonInstanceInfo
-	TMap<FName, FDungeonInstanceInfo> ActiveDungeonInstances;
+	TMap<FName, FDungeonInstanceData> ActiveDungeonInstances;
 
-	TSharedPtr<FOnlineSessionSettings> SessionSettings;
+	FOnlineSessionSettings SessionSettings;
+
+	UPROPERTY()
+	TArray<FDungeonInstanceData> ActiveInstances;
+
+	FSocket* ListenerSocket;
+
+	FTimerHandle ListenTimerHandle;
+
+	
+
 	
 
 private:
-	TSharedPtr<FOnlineSessionSearch> SessionSearch;
+	FOnlineSessionSearch SessionSearch;
 
 	TArray<FOnlineSessionSearchResult> SessionSearchResults;
 
+	FOnlineSessionSearch DungeonSessionSearch;
+
+	TArray<FOnlineSessionSearchResult> DungeonSessionSearchResults;
+
 	int32 LobbySessionCounter;
+
+	FString CurrentRequestDungeonMapName;
+
+	TObjectPtr<AIB_RPGPlayerController> CurrentRequestPlayer;
+
+	int32 NextInstanceID = 1;
+
+	int32 StartPort = 8000;
+
+	int32 ToDeletePort = -1;
 };
