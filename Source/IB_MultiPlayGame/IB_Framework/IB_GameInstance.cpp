@@ -179,10 +179,20 @@ void UIB_GameInstance::OnFindSessionComplete(bool bWasSuccessful)
 			{
 				if (MapName == "L_Lobby")
 				{
+					UE_LOG(LogTemp, Warning, TEXT("TryToJoinSession"));
 					SessionInterface->JoinSession(0, NAME_GameSession, Result);
 					return;
 				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("NoMapNameL_Lobby"));
+				}
 			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("NoMapName"));
+			}
+			
 		}
 	}
 }
