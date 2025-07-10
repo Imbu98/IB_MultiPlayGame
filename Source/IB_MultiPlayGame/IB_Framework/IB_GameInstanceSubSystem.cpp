@@ -41,7 +41,7 @@ int32 UIB_GameInstanceSubSystem::LaunchNewDungeonServer(const FString& BaseMapNa
 	LockDelegate.BindUObject(this, &UIB_GameInstanceSubSystem::LockInstance, NewInstance.InstanceID);
 	GetWorld()->GetTimerManager().SetTimer(NewInstance.LockTimerHandle, LockDelegate, 10.0f, false);
 
-	FString Params = FString::Printf(TEXT("%s -server  -log -port=%d -nosteam"), *BaseMapName, NewPort);
+	FString Params = FString::Printf(TEXT("%s -server  -log -port=%d "), *BaseMapName, NewPort);
 	FString ServerPath = TEXT("D:\\IB_MultiplayGame\\Package\\WindowsServer\\IB_MultiPlayGameServer.exe");
 	NewInstance.DungeonServerHandle = FPlatformProcess::CreateProc(*ServerPath, *Params, true, false, false, nullptr, 0, nullptr, nullptr);
 
@@ -57,12 +57,14 @@ FString UIB_GameInstanceSubSystem::RequestDungeonURL(const FString& BaseMapName)
 		if (!Instance.bLocked && Instance.CurrentPlayers < 4)
 		{
 			++Instance.CurrentPlayers;
-			return FString::Printf(TEXT("192.168.0.176:%d"), Instance.Port);
+			return FString::Printf(TEXT("43.201.223.63:%d"), Instance.Port);
 		}
 	}
 
+
 	int32 Port = LaunchNewDungeonServer(BaseMapName);
-	return FString::Printf(TEXT("192.168.0.176:%d"), Port);
+
+	return FString::Printf(TEXT("43.201.223.63:%d"), Port);
 }
 
 void UIB_GameInstanceSubSystem::LockInstance(int32 InstanceID)

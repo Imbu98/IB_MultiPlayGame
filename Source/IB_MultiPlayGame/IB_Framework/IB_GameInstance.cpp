@@ -4,6 +4,7 @@
 #include "OnlineSubsystem.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/GameModeBase.h"
+#include "Online/OnlineSessionNames.h"
 // 네트워크 관련 핵심 헤더
 #include "Net/UnrealNetwork.h" // UNetDriver, FURL 등을 위해 필요
 #include "Sockets.h" // FInternetAddr, FIPv4Address 등을 위해 필요 (빌드 파일에 Sockets 모듈 포함 필수)
@@ -49,20 +50,20 @@ void UIB_GameInstance::Shutdown()
 {
 	Super::Shutdown();
 
-	// 데디케이티드 서버인 경우, 종료 시 모든 활성 세션 정리
-	if (IsRunningDedicatedServer())
-	{
-		for (auto& Pair : ActiveDungeonInstances)
-		{
-			FDungeonInstanceInfo& InstanceInfo = Pair.Value;
-			GetWorld()->GetTimerManager().ClearTimer(InstanceInfo.SessionTimeoutTimerHandle);
-			if (SessionInterface.IsValid() && InstanceInfo.bIsAdvertised)
-			{
-				SessionInterface->DestroySession(InstanceInfo.SessionName); // 세션 파괴
-			}
-		}
-		ActiveDungeonInstances.Empty();
-	}
+	
+	//if (IsRunningDedicatedServer())
+	//{
+	//	for (auto& Pair : ActiveDungeonInstances)
+	//	{
+	//		FDungeonInstanceInfo& InstanceInfo = Pair.Value;
+	//		GetWorld()->GetTimerManager().ClearTimer(InstanceInfo.SessionTimeoutTimerHandle);
+	//		if (SessionInterface.IsValid() && InstanceInfo.bIsAdvertised)
+	//		{
+	//			SessionInterface->DestroySession(InstanceInfo.SessionName); // 세션 파괴
+	//		}
+	//	}
+	//	ActiveDungeonInstances.Empty();
+	//}
 }
 
 void UIB_GameInstance::CreateLobbySession_Implementation()
@@ -106,18 +107,12 @@ void UIB_GameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucce
 			FNamedOnlineSession* CreatedSession = SessionInterface->GetNamedSession(SessionName);
 			if (CreatedSession)
 			{
-				// SESSION_TYPE 로그 출력
-				FString SessionType;
-				if (CreatedSession->SessionSettings.Get(TEXT("SESSION_TYPE"), SessionType))
-				{
-					UE_LOG(LogTemp, Log, TEXT("SESSION_TYPE = %s"), *SessionType);
-				}
 
 				// MAP_NAME 로그 출력
 				FString MapName;
-				if (CreatedSession->SessionSettings.Get(TEXT("MAP_NAME"), MapName))
+				if (CreatedSession->SessionSettings.Get(TEXT("MAPNAME"), MapName))
 				{
-					UE_LOG(LogTemp, Log, TEXT("MAP_NAME = %s"), *MapName);
+					UE_LOG(LogTemp, Log, TEXT("MAPNAME = %s"), *MapName);
 				}
 
 				// 예: 모든 키를 순회하며 출력 (디버그용)
@@ -140,30 +135,36 @@ void UIB_GameInstance::FindLobbySession()
 {
 	if (!SessionInterface.IsValid()) return;
 	
-	SessionSearch = MakeShareable(new FOnlineSessionSearch());
-	SessionSearch->MaxSearchResults = 20;
-	SessionSearch->QuerySettings.Set(FName("MAPNAME"), FString(TEXT("L_Lobby")), EOnlineComparisonOp::Equals);
-
-	FString SessionTypeValue;
-	if (SessionSearch->QuerySettings.Get(FName("MAPNAME"), SessionTypeValue))
+	SessionSearch.MaxSearchResults = 200000;
+	SessionSearch.QuerySettings.Set(FName("MAPNAME"), FString(TEXT("L_Lobby")), EOnlineComparisonOp::Equals);
+	
+	FString MapNameValue;
+	if (SessionSearch.QuerySettings.Get(FName("MAPNAME"), MapNameValue))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Lobby SESSION_TYPE 검색 조건: %s"), *SessionTypeValue);
+		UE_LOG(LogTemp, Warning, TEXT("MAPNAME 검색 조건: %s"), *MapNameValue);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SESSION_TYPE 검색 조건이 설정되지 않았습니다."));
+		UE_LOG(LogTemp, Warning, TEXT("MAPNAME 검색 조건이 설정되지 않았습니다."));
 	}
 
-	SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
+	SessionInterface->FindSessions(0, MakeShareable(new FOnlineSessionSearch(SessionSearch)));
+}
+
+UIB_GameInstance::RequestCreateDungeonSession_Implementation(const FString& DungeonName)
+{
+
+
+	UE_LOG(LogTemp, Error, TEXT("TryToCreateDungeonSession"));
 }
 
 void UIB_GameInstance::OnFindSessionComplete(bool bWasSuccessful)
 {
 	if (bWasSuccessful)
 	{
-		SessionSearchResults=SessionSearch->SearchResults;
+		SessionSearchResults=SessionSearch.SearchResults;
 	
-		for (const FOnlineSessionSearchResult& Result : SessionSearch->SearchResults)
+		for (const FOnlineSessionSearchResult& Result : SessionSearch.SearchResults)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("== Session Info =="));
 			for (auto& Setting : Result.Session.SessionSettings.Settings)
@@ -172,12 +173,11 @@ void UIB_GameInstance::OnFindSessionComplete(bool bWasSuccessful)
 				FString Value = Setting.Value.Data.ToString();
 				UE_LOG(LogTemp, Warning, TEXT("Setting: %s = %s"), *Key, *Value);
 			}
-			FString SessionType;
+			
 			FString MapName;
-			if (Result.Session.SessionSettings.Get(FName("SESSION_TYPE"), SessionType) &&
-				Result.Session.SessionSettings.Get(FName("MAP_NAME"), MapName))
+			if (Result.Session.SessionSettings.Get(FName("MAPNAME"), MapName))
 			{
-				if (SessionType == "LobbySession" && MapName == "L_Lobby")
+				if (MapName == "L_Lobby")
 				{
 					SessionInterface->JoinSession(0, NAME_GameSession, Result);
 					return;

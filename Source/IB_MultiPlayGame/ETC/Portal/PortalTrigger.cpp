@@ -34,18 +34,17 @@ void APortalTrigger::BeginPlay()
 
 void APortalTrigger::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (!HasAuthority) return;
+
 	if (OtherActor && OtherActor != this)
 	{
 		// 트리거한 액터가 플레이어 캐릭터인지 확인
 		ACharacter* PlayerCharacter = Cast<ACharacter>(OtherActor);
 		if (PlayerCharacter)
 		{
-			AIB_RPGPlayerController* PlayerController = Cast<AIB_RPGPlayerController>(PlayerCharacter->GetController());
-			if (PlayerController)
+			if (UIB_GameInstance* IB_GameInstance = Cast<UIB_GameInstance>(GetGameInstance()))
 			{
-				// 클라이언트에서 서버 RPC 호출
-				UE_LOG(LogTemp, Warning, TEXT("Portal triggered by %s. Requesting dungeon entry for ID: %s"), *PlayerCharacter->GetName(), *TargetDungeonID);
-				PlayerController->Server_RequestDungeonInstance(TargetDungeonID);
+				IB_GameInstance->RequestCreateDungeonSession(TargetDungeonName);
 			}
 		}
 	}

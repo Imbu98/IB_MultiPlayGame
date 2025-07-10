@@ -24,7 +24,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Components")
 	TObjectPtr<UBoxComponent> BoardingTriggerBox;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Values | Dungeon Name")
-	FString TargetDungeonID;
+	FString TargetDungeon;
 	
 
 

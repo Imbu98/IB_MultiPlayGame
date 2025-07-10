@@ -9,49 +9,6 @@
 
 class UInventoryComponent;
 
-USTRUCT()
-struct FDungeonInstanceInfo
-{
-	GENERATED_BODY()
-
-	UPROPERTY()
-	FName SessionName; // 스팀 세션 이름 (고유 ID)
-
-	UPROPERTY()
-	FString DungeonID; // 던전 유형 ID (예: "Dungeon1")
-
-	UPROPERTY()
-	FString ConnectString; // 이 인스턴스로 접속할 IP:Port
-
-	UPROPERTY()
-	int32 CurrentPlayers; // 현재 인원
-
-	UPROPERTY()
-	int32 MaxPlayers; // 최대 인원
-
-	UPROPERTY()
-	FTimerHandle SessionTimeoutTimerHandle; // 10초 타이머 핸들
-
-	UPROPERTY()
-	bool bIsAdvertised; // 현재 스팀에 광고 중인지 여부
-
-	UPROPERTY()
-	bool bIsEntryClosed; // 입장 제한 여부
-	UPROPERTY() // 이 부분 추가
-	FString MapName; // 이 인스턴스가 사용하는 맵 이름 (예: Dungeon1_Map)
-
-	FDungeonInstanceInfo()
-		: SessionName(NAME_None)
-		, DungeonID(TEXT(""))
-		, ConnectString(TEXT(""))
-		, CurrentPlayers(0)
-		, MaxPlayers(4)
-		, bIsAdvertised(false)
-		, bIsEntryClosed(false)
-		, MapName(TEXT("")) // 기본값 초기화
-	{}
-};
-
 UCLASS()
 class IB_MULTIPLAYGAME_API UIB_GameInstance : public UGameInstance
 {
@@ -65,6 +22,9 @@ public:
 	void CreateLobbySession();
 
 	void FindLobbySession();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	RequestCreateDungeonSession(const FString& DugeonName);
 
 
 protected:
@@ -86,11 +46,11 @@ private:
 	// Key: SessionName (고유 ID), Value: FDungeonInstanceInfo
 	TMap<FName, FDungeonInstanceInfo> ActiveDungeonInstances;
 
-	TSharedPtr<FOnlineSessionSettings> SessionSettings;
+	FOnlineSessionSettings SessionSettings;
 	
 
 private:
-	TSharedPtr<FOnlineSessionSearch> SessionSearch;
+	FOnlineSessionSearch SessionSearch;
 
 	TArray<FOnlineSessionSearchResult> SessionSearchResults;
 

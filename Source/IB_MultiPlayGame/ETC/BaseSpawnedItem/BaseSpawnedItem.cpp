@@ -80,6 +80,7 @@ void ABaseSpawnedItem::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedCo
 	if (ItemOverlayMaterial && ItemStaticMesh)
 	{
 		ItemStaticMesh->SetOverlayMaterial(ItemOverlayMaterial);
+	
 	}
 	if (WidgetComponent)
 	{

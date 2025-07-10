@@ -45,6 +45,7 @@
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "IB_MultiPlayGame/Components/StateComponent.h"
 #include "IB_MultiPlayGame/Widget/W_InventorySlot.h"
+#include <IB_MultiPlayGame/IB_Framework/IB_GameInstanceSubSystem.h>
 
 DEFINE_LOG_CATEGORY(Imbu);
 
@@ -694,10 +695,13 @@ void AIB_RPGPlayerController::Server_RequestDungeonInstance_Implementation(const
 {
 	// 이 함수는 데디케이티드 서버에서 실행됩니다.
 	// **중요**: 요청자(PlayerController)는 'this'를 통해 전달해야 합니다.
-	UIB_GameInstance* GameInstance = Cast<UIB_GameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
-	if (GameInstance)
+	
+	if (UIB_GameInstanceSubSystem* Subsystem = GetGameInstance()->GetSubsystem<UIB_GameInstanceSubSystem>())
 	{
+		FString TravelURL = Subsystem->RequestDungeonURL(DungeonID);
+		ClientTravel(TravelURL, ETravelType::TRAVEL_Absolute); // 클라 이동
 	}
+	
 }
 
 void AIB_RPGPlayerController::Client_TravelToDungeonInstance_Implementation(const FString& ConnectString)
