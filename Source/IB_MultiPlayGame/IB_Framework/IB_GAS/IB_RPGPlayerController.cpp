@@ -648,6 +648,14 @@ void AIB_RPGPlayerController::EquipItem(const FMasterItemDefinition& ItemDefinit
 	
 }
 
+void AIB_RPGPlayerController::ClientLeaveLobbySession_Implementation(const FString& DungeonName)
+{
+	if (UIB_GameInstance* IBGameInstance = Cast<UIB_GameInstance>(GetWorld()->GetGameInstance()))
+	{
+		IBGameInstance->ClientLeaveLobbySession(DungeonName);
+	}
+}
+
 void AIB_RPGPlayerController::ServerFindLobbySession_Implementation()
 {
 	 if (UIB_GameInstance* IBGameInstance = Cast<UIB_GameInstance>(GetWorld()->GetGameInstance()))
@@ -690,27 +698,6 @@ void AIB_RPGPlayerController::ClientSwitchInputMapping_Implementation(bool OnCan
 			}
 		}
 }
-
-void AIB_RPGPlayerController::Server_RequestDungeonInstance_Implementation(const FString& DungeonID)
-{
-	// 이 함수는 데디케이티드 서버에서 실행됩니다.
-	// **중요**: 요청자(PlayerController)는 'this'를 통해 전달해야 합니다.
-	
-	if (UIB_GameInstanceSubSystem* Subsystem = GetGameInstance()->GetSubsystem<UIB_GameInstanceSubSystem>())
-	{
-		FString TravelURL = Subsystem->RequestDungeonURL(DungeonID);
-		ClientTravel(TravelURL, ETravelType::TRAVEL_Absolute); // 클라 이동
-	}
-	
-}
-
-void AIB_RPGPlayerController::Client_TravelToDungeonInstance_Implementation(const FString& ConnectString)
-{
-	// 이 함수는 클라이언트에서 실행됩니다.
-	ClientTravel(ConnectString, TRAVEL_Absolute);
-	UE_LOG(LogTemp, Warning, TEXT("Client: Traveling to dungeon instance via '%s'."), *ConnectString);
-}
-
 
 
 //void AIB_RPGPlayerController::OnInputStarted()

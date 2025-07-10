@@ -10,6 +10,8 @@
 void AIB_RPGLobbyGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+
 }
 
 void AIB_RPGLobbyGameMode::PostLogin(APlayerController* NewPlayer)
