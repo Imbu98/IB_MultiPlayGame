@@ -29,6 +29,9 @@ public:
 
 	UPROPERTY()
 	bool IsAttachedWeapon= false;
+
+	UPROPERTY()
+	bool CanContinueAttack;
 	
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedItemsDefinition)
 	TArray<FMasterItemDefinition> EquippedItemsDefinition;

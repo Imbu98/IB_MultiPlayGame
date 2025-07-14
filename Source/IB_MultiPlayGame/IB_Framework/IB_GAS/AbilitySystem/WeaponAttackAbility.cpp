@@ -29,22 +29,18 @@ void UWeaponAttackAbility::OnGiveAbility(const FGameplayAbilityActorInfo* ActorI
 
 	AvatarActorFromInfo = GetAvatarActorFromActorInfo();
 	
-	if (!WeaponToSpawnTag.IsValid() || !IsValid(AvatarActorFromInfo))
+	if (!WeaponTag.IsValid() || !IsValid(AvatarActorFromInfo))
 	{
+		UE_LOG(LogTemp, Warning, TEXT("NoWeaponTag or AvatarActroFromInfo"));
 		return;
 	}
 	if (UWeapon_Info* WeaponInfo = UIB_BlueprintFunctionLibrary::GetWeaponInfo(AvatarActorFromInfo))
 	{
 		
-		CurrentWeaponParams = *WeaponInfo->WeaponMap.Find(WeaponToSpawnTag);
+		CurrentWeaponParams = *WeaponInfo->WeaponMap.Find(WeaponTag);
 	}
+	UE_LOG(LogTemp, Warning, TEXT("WeaponAttackability is activated"));
 
-	
-	// 클라에서 currentweaponparams 정보들로 스폰
-	if (AvatarActorFromInfo->HasAuthority())
-	{
-		SpawnAndAttachWeapon(CurrentWeaponParams);
-	}
 }
 
 void UWeaponAttackAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -72,42 +68,15 @@ void UWeaponAttackAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, c
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UWeaponAttackAbility::SpawnAndAttachWeapon(const FWeaponParams& CurrentWeaponParamsRef)
-{
-	if (!IsValid(AvatarActorFromInfo)) return;
-
-	if (AvatarActorFromInfo->HasAuthority())
-	{
-		FTransform SpawnTransform;
-
-		if (AWeaponBase* SpawnedWeapon = GetWorld()->SpawnActorDeferred<AWeaponBase>(CurrentWeaponParamsRef.WeaponClass, SpawnTransform))
-		{
-			SpawnedWeapon->SetReplicates(true);
-			SpawnedWeapon->SetWeaponParams(CurrentWeaponParamsRef);
-			//Ability에서 damage effectInfo를 설정
-			SpawnedWeapon->SetOwner(AvatarActorFromInfo);
-			SpawnedWeapon->FinishSpawning(SpawnTransform);
-
-			FName SocketName = CurrentWeaponParamsRef.AttackSocketName;
-			USkeletalMeshComponent* Mesh = Cast<USkeletalMeshComponent>(AvatarActorFromInfo->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
-			if (Mesh && Mesh->DoesSocketExist(CurrentWeaponParamsRef.AttackSocketName))
-			{
-				SpawnedWeapon->AttachToComponent(Mesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, CurrentWeaponParamsRef.AttackSocketName);
-			}
-
-			UE_LOG(LogTemp, Warning, TEXT("WeaponBase spawned on: %s"), GetWorld()->IsNetMode(NM_Client) ? TEXT("Client") : TEXT("Server"));
-		}
-	}
-}
-
 void UWeaponAttackAbility::WeaponAttack()
 {
+	UE_LOG(LogTemp, Warning, TEXT("Try To weapon Attack"));
+
 	if (!IsValid(AvatarActorFromInfo)) return;
 
 	AIB_MainChar* IB_MainChar = Cast<AIB_MainChar>(AvatarActorFromInfo);
 	if (!IsValid(IB_MainChar)) return;
 	
-
 	if (AIB_RPGPlayerController* IB_PlayerController= Cast<AIB_RPGPlayerController>(AvatarActorFromInfo->GetOwner()))
 	{
 		if (UCombatComponent* CombatComponent = IB_PlayerController->GetCombatComponent())
@@ -116,12 +85,17 @@ void UWeaponAttackAbility::WeaponAttack()
 
 			if (CurrentWeaponParams.WeaponAttackMontageArray.Num() > 0)
 			{
-				IB_MainChar->MulticastPlayMontage(CurrentWeaponParams.WeaponAttackMontageArray[AttackIndex]);
-				CombatComponent->AttackCount++;
-
-				if (AttackIndex >= CurrentWeaponParams.WeaponAttackMontageArray.Num() - 1)
+				if (CombatComponent->CanContinueAttack)
 				{
-					CombatComponent->ResetAttack();
+					CombatComponent->CanContinueAttack = false;
+
+					IB_MainChar->MulticastPlayMontage(CurrentWeaponParams.WeaponAttackMontageArray[AttackIndex]);
+					CombatComponent->AttackCount++;
+
+					if (AttackIndex >= CurrentWeaponParams.WeaponAttackMontageArray.Num() - 1)
+					{
+						CombatComponent->ResetAttack();
+					}
 				}
 			}
 		}

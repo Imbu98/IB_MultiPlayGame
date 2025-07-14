@@ -10,6 +10,8 @@
 #include "IB_MultiPlayGame/Interfaces/InteractInterface.h"
 #include "WeaponBase.generated.h"
 
+class UCollisionComponent;
+
 UCLASS()
 class IB_MULTIPLAYGAME_API AWeaponBase : public AEquippableBase
 {

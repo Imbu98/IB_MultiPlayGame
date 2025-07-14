@@ -97,8 +97,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* IB_LookAction;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* IB_AttackAction;
+	/*UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* IB_AttackAction;*/
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* IB_InteractAction;
@@ -143,11 +143,11 @@ protected:
 	UFUNCTION(Server,Reliable)
 	void SereverPlayerInteraction();
 
-	UFUNCTION()
+	/*UFUNCTION()
 	void PlayerAttack();
 	
 	UFUNCTION(Server,Reliable)
-	void ServerPlayerAttack();
+	void ServerPlayerAttack();*/
 
 	UFUNCTION()
 	void OpenInventory();

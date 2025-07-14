@@ -13,6 +13,11 @@ void UAN_ContinueAttack::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceB
 	{
 		if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(IB_MainChar->GetController()))
 		{
+			if (UCombatComponent* CombatComponent = IB_RPGPlayerController->GetCombatComponent())
+			{
+				CombatComponent->CanContinueAttack = true;
+			}
+
 			if (UStateComponent* StateComponent = IB_RPGPlayerController->GetStateComponent())
 			{
 				StateComponent->SetCurrentState(FGameplayTag::RequestGameplayTag("Player.Idle"));

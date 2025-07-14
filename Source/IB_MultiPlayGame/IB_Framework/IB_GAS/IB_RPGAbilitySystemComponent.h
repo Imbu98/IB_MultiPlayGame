@@ -21,25 +21,25 @@ public:
 
 	void SetDynamicProjectile(const FGameplayTag& ProjectileTag, int32 AbilityLevel);
 
-	virtual void SetDynamicWeapon_Implementation(const FGameplayTag& WeaponTag, int32 AbilityLevel) override;
+	virtual void SetMeleeAttackAbility_Implementation(const FGameplayTag& WeaponTag) override;
 
 private:
 
 	FGameplayAbilitySpecHandle ActiveProjectileAbilty;
 
-	FGameplayAbilitySpecHandle ActiveWeaponAttackAbilty;
+	FGameplayAbilitySpecHandle ActiveWeaponMeleeAttackAbilty;
 
 	UPROPERTY(EditDefaultsOnly,Category= "Custom Values | Abilities ")
 	TSubclassOf<UGameplayAbility> DynamicProjectileAbility;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Custom Values | Abilities ")
-	TSubclassOf<UGameplayAbility> DynamicWeaponAttackAbility;
+	TSubclassOf<UGameplayAbility> WeaponMeleeAttackAbility;
 
 	UFUNCTION(Server,Reliable)
 	void ServerSetDynamicProjectile(const FGameplayTag& ProjectileTag, int32 AbilityLevel);
 
 	UFUNCTION(Server, Reliable)
-	void ServerSetDynamicWeapon(const FGameplayTag& WeaponTag, int32 AbilityLevel);
+	void ServerSetMeleeAttackAbility(const FGameplayTag& WeaponTag);
 	
 	
 	

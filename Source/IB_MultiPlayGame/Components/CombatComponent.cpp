@@ -4,6 +4,7 @@
 #include "../ETC/Equippable/Armor/ArmorBase.h"
 #include "../ETC/Equippable/Weapon/WeaponBase.h"
 #include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
+#include "../IB_Framework/IB_GAS/IB_RPGAbilitySystemComponent.h"
 
 #include "Net/UnrealNetwork.h"
 #include "../Widget/W_RPGSystemWidget.h"
@@ -11,6 +12,7 @@
 #include "../Widget/W_InventorySlot.h"
 #include "../Widget/W_PlayerInfo.h"
 #include "IB_MultiPlayGame/Character/IB_MainChar.h"
+#include <AbilitySystemBlueprintLibrary.h>
 
 UCombatComponent::UCombatComponent()
 {
@@ -60,6 +62,7 @@ void UCombatComponent::ResetAttack()
 		if (UStateComponent* StateComponent = GetOwner()->FindComponentByClass<UStateComponent>())
 		{
 			StateComponent->ResetCurrentState();
+			CanContinueAttack = true;
 			AttackCount = 0;
 		}
 	}
@@ -78,6 +81,8 @@ void UCombatComponent::ServerResetAttack_Implementation()
 
 void UCombatComponent::SetEquippedItem(AActor* SpawnedItem)
 {
+	if (!GetOwner()) return;
+
 	if (!GetOwner()->HasAuthority()) return;
 	if (!IsValid(SpawnedItem)) return;
 
@@ -106,6 +111,17 @@ void UCombatComponent::SetEquippedItem(AActor* SpawnedItem)
 		}
 		if (EquippedItemDefinition.ItemParts==EItemParts::Weapon)
 		{
+			if (UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner()))
+			{
+				if (UIB_RPGAbilitySystemComponent* IB_RPGAbilitySystemComponent = Cast<UIB_RPGAbilitySystemComponent>(OwnerAsc))
+				{
+					if (IB_RPGAbilitySystemComponent->Implements<URPGAbilitySystemInterface>())
+					{
+						UE_LOG(LogTemp, Warning, TEXT("Try to Set meleeAttack Ability"));
+						IRPGAbilitySystemInterface::Execute_SetMeleeAttackAbility(IB_RPGAbilitySystemComponent, EquippedItemDefinition.ItemTag);
+					}
+				}
+			}
 			IsAttachedWeapon=true;
 		}
 		//ClientSetEquippedItemMap(EquippedItemsDefinition);

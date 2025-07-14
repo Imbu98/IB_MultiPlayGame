@@ -128,7 +128,7 @@ void UIB_RPGAbilitySystemComponent::ServerSetDynamicProjectile_Implementation(co
 
 }
 
-void UIB_RPGAbilitySystemComponent::SetDynamicWeapon_Implementation(const FGameplayTag& WeaponTag, int32 AbilityLevel)
+void UIB_RPGAbilitySystemComponent::SetMeleeAttackAbility_Implementation(const FGameplayTag& WeaponTag)
 {
 	if (!WeaponTag.IsValid())
 	{
@@ -137,33 +137,34 @@ void UIB_RPGAbilitySystemComponent::SetDynamicWeapon_Implementation(const FGamep
 
 	if (!GetAvatarActor()->HasAuthority())
 	{
-		ServerSetDynamicWeapon(WeaponTag, AbilityLevel);
+		ServerSetMeleeAttackAbility(WeaponTag);
 		return;
 	}
-	if (ActiveWeaponAttackAbilty.IsValid())
+	if (ActiveWeaponMeleeAttackAbilty.IsValid())
 	{
-		ClearAbility(ActiveWeaponAttackAbilty);
+		ClearAbility(ActiveWeaponMeleeAttackAbilty);
 	}
 
-	if (IsValid(DynamicWeaponAttackAbility))
+	if (IsValid(WeaponMeleeAttackAbility))
 	{
-		FGameplayAbilitySpec Spec = FGameplayAbilitySpec(DynamicWeaponAttackAbility, AbilityLevel);
+		FGameplayAbilitySpec Spec = FGameplayAbilitySpec(WeaponMeleeAttackAbility);
 		if (UWeaponAttackAbility* WeaponAttackAbility = Cast<UWeaponAttackAbility>(Spec.Ability))
 		{
 			// equipment component �����, item���� �� WeaponAttackAbility->CurrentWeaponParams�� �� item�� ����
 			
-			WeaponAttackAbility->WeaponToSpawnTag = WeaponTag;
+			WeaponAttackAbility->WeaponTag = WeaponTag;
 
 			Spec.GetDynamicSpecSourceTags().AddTag(WeaponAttackAbility->InputTag);
 
-			ActiveWeaponAttackAbilty = GiveAbility(Spec);
+			ActiveWeaponMeleeAttackAbilty = GiveAbility(Spec);
+
 		}
 	}
 }
 
-void UIB_RPGAbilitySystemComponent::ServerSetDynamicWeapon_Implementation(const FGameplayTag& WeaponTag, int32 AbilityLevel)
+void UIB_RPGAbilitySystemComponent::ServerSetMeleeAttackAbility_Implementation(const FGameplayTag& WeaponTag)
 {
-	SetDynamicWeapon(WeaponTag, AbilityLevel);
+	SetMeleeAttackAbility(WeaponTag);
 }
 
 

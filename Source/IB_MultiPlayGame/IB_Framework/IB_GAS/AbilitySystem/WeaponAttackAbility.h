@@ -24,16 +24,13 @@ public:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 	UPROPERTY()
-	FGameplayTag WeaponToSpawnTag;
+	FGameplayTag WeaponTag;
 
 private:
 	UPROPERTY()
 	TObjectPtr<AActor> AvatarActorFromInfo;
 
 	FWeaponParams CurrentWeaponParams;
-
-	UFUNCTION()
-	void SpawnAndAttachWeapon(const FWeaponParams& CurrentWeaponParamsRef);
 
 	UFUNCTION()
 	void WeaponAttack();

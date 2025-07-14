@@ -102,7 +102,7 @@ void AIB_MainChar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EnhancedInputComponent->BindAction(IB_InteractAction, ETriggerEvent::Started, this, &AIB_MainChar::PlayerInteraction);
 		EnhancedInputComponent->BindAction(IB_OpenInventoryAction, ETriggerEvent::Started, this, &AIB_MainChar::OpenInventory);
 		EnhancedInputComponent->BindAction(IB_OpenPlayerInfoAction, ETriggerEvent::Started, this, &AIB_MainChar::OpenPlayerInfoTab);
-		EnhancedInputComponent->BindAction(IB_AttackAction, ETriggerEvent::Triggered, this, &AIB_MainChar::PlayerAttack);
+		/*EnhancedInputComponent->BindAction(IB_AttackAction, ETriggerEvent::Triggered, this, &AIB_MainChar::PlayerAttack);*/
 	}
 }
 
@@ -406,42 +406,42 @@ void AIB_MainChar::Look(const FInputActionValue& Value)
 	}
 }
 
-void AIB_MainChar::PlayerAttack()
-{
-	if (!HasAuthority())
-	{
-		ServerPlayerAttack();
-		return;
-	}
-}
-
-void AIB_MainChar::ServerPlayerAttack_Implementation()
-{
-	if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(Controller))
-	{
-		UCombatComponent* CombatComponent = IB_RPGPlayerController->GetCombatComponent();
-		UStateComponent* StateComponent = IB_RPGPlayerController->GetStateComponent();
-		if (!IsValid(CombatComponent)) return;
-		if (!IsValid(StateComponent)) return;
-		FGameplayTag IdleTag =  FGameplayTag::RequestGameplayTag("Player.Idle");
-		FGameplayTag AttackTag =  FGameplayTag::RequestGameplayTag("Player.Action.Attack");
-		
-		{
-			if (CombatComponent->IsAttachedWeapon)
-			{
-				if (StateComponent->GetCurrentState().MatchesTag(IdleTag))
-				{
-					if (UAnimMontage* AttackMontage = CombatComponent->GetWeaponAnimMontage())
-					{
-						MulticastPlayMontage(AttackMontage);
-						CombatComponent->AttackCount++;
-						StateComponent->SetCurrentState(AttackTag);
-					}
-				}
-			}
-		}
-	}
-}
+//void AIB_MainChar::PlayerAttack()
+//{
+//	if (!HasAuthority())
+//	{
+//		ServerPlayerAttack();
+//		return;
+//	}
+//}
+//
+//void AIB_MainChar::ServerPlayerAttack_Implementation()
+//{
+//	if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(Controller))
+//	{
+//		UCombatComponent* CombatComponent = IB_RPGPlayerController->GetCombatComponent();
+//		UStateComponent* StateComponent = IB_RPGPlayerController->GetStateComponent();
+//		if (!IsValid(CombatComponent)) return;
+//		if (!IsValid(StateComponent)) return;
+//		FGameplayTag IdleTag =  FGameplayTag::RequestGameplayTag("Player.Idle");
+//		FGameplayTag AttackTag =  FGameplayTag::RequestGameplayTag("Player.Action.Attack");
+//		
+//		{
+//			if (CombatComponent->IsAttachedWeapon)
+//			{
+//				if (StateComponent->GetCurrentState().MatchesTag(IdleTag))
+//				{
+//					if (UAnimMontage* AttackMontage = CombatComponent->GetWeaponAnimMontage())
+//					{
+//						MulticastPlayMontage(AttackMontage);
+//						CombatComponent->AttackCount++;
+//						StateComponent->SetCurrentState(AttackTag);
+//					}
+//				}
+//			}
+//		}
+//	}
+//}
 
 void AIB_MainChar::MoveStop()
 {
