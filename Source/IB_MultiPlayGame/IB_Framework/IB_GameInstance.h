@@ -89,11 +89,11 @@ private:
 	
 
 private:
-	FOnlineSessionSearch SessionSearch;
+	TSharedPtr<FOnlineSessionSearch> SessionSearch;
 
 	TArray<FOnlineSessionSearchResult> SessionSearchResults;
 
-	FOnlineSessionSearch DungeonSessionSearch;
+	TSharedPtr<FOnlineSessionSearch> DungeonSessionSearch;
 
 	TArray<FOnlineSessionSearchResult> DungeonSessionSearchResults;
 

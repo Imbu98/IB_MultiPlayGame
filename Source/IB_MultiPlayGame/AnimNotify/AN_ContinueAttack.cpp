@@ -4,26 +4,20 @@
 #include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 #include "IB_MultiPlayGame/Components/CombatComponent.h"
 #include "IB_MultiPlayGame/Components/StateComponent.h"
+#include <AbilitySystemBlueprintLibrary.h>
 
 void UAN_ContinueAttack::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
-                                const FAnimNotifyEventReference& EventReference)
+	const FAnimNotifyEventReference& EventReference)
 {
-
 	if (AIB_MainChar* IB_MainChar = Cast<AIB_MainChar>(MeshComp->GetOwner()))
 	{
-		if (AIB_RPGPlayerController* IB_RPGPlayerController = Cast<AIB_RPGPlayerController>(IB_MainChar->GetController()))
+		if (AIB_RPGPlayerController* IB_RPGPlayerContrller = Cast<AIB_RPGPlayerController>(IB_MainChar->GetController()))
 		{
-			if (UCombatComponent* CombatComponent = IB_RPGPlayerController->GetCombatComponent())
+			if (UCombatComponent* CombatComponent = IB_RPGPlayerContrller->GetCombatComponent())
 			{
-				CombatComponent->CanContinueAttack = true;
-			}
-
-			if (UStateComponent* StateComponent = IB_RPGPlayerController->GetStateComponent())
-			{
-				StateComponent->SetCurrentState(FGameplayTag::RequestGameplayTag("Player.Idle"));
+				CombatComponent->ServerSetCanContinueAttack();
 			}
 		}
-
 	}
 }
 

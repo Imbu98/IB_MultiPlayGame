@@ -162,6 +162,14 @@ void UIB_RPGAbilitySystemComponent::SetMeleeAttackAbility_Implementation(const F
 	}
 }
 
+void UIB_RPGAbilitySystemComponent::ClearMeleeAttackAbility_Implementation()
+{
+	if (ActiveWeaponMeleeAttackAbilty.IsValid())
+	{
+		ClearAbility(ActiveWeaponMeleeAttackAbilty);
+	}
+}
+
 void UIB_RPGAbilitySystemComponent::ServerSetMeleeAttackAbility_Implementation(const FGameplayTag& WeaponTag)
 {
 	SetMeleeAttackAbility(WeaponTag);

@@ -40,8 +40,15 @@ struct FWeaponParams
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UStaticMesh> WeaponMesh;
+
 	UPROPERTY(EditDefaultsOnly)
-	FName AttackSocketName;
+	uint8 WeaponToSpawnCount;
+
+	UPROPERTY(EditDefaultsOnly)
+	FName AttachMainSocketName;
+
+	UPROPERTY(EditDefaultsOnly)
+	FName AttachSubSocketName;
 
 	UPROPERTY(EditDefaultsOnly)
 	TArray<TObjectPtr<UAnimMontage>> WeaponAttackMontageArray;

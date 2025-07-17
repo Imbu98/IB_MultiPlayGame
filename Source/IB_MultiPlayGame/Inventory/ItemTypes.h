@@ -5,6 +5,8 @@
 #include "Net/Serialization/FastArraySerializer.h"
 #include "ItemTypes.generated.h"
 
+
+
 UENUM(BlueprintType)
 enum class ESlotTypes : uint8
 {

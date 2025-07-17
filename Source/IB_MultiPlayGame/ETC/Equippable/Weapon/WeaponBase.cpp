@@ -1,5 +1,6 @@
 #include "WeaponBase.h"
 #include "Components\SkeletalMeshComponent.h"
+#include "../../../Components/CollisionComponent.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
@@ -14,6 +15,11 @@ AWeaponBase::AWeaponBase()
 	WeaponSkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>("WeaponSkeletalMesh");
 	SetRootComponent(WeaponSkeletalMesh);
 	WeaponSkeletalMesh->SetIsReplicated(true);
+
+	CollisionComponent = CreateDefaultSubobject<UCollisionComponent>("CollisionComponent");
+	CollisionComponent->SetIsReplicated(true);
+
+	CollisionComponent->Onhit.AddDynamic(this, &ThisClass::OnHitActor);
 
 }
 
@@ -63,8 +69,36 @@ void AWeaponBase::BeginPlay()
 	UE_LOG(LogTemp, Warning, TEXT("WeaponBase spawned on: %s"), GetWorld()->IsNetMode(NM_Client) ? TEXT("Client") : TEXT("Server"));
 }
 
+UPrimitiveComponent* AWeaponBase::GetItemMesh()
+{
+
+	if (WeaponSkeletalMesh != nullptr)
+	{
+		return WeaponSkeletalMesh;
+	}
+
+	return nullptr;
+}
+
+void AWeaponBase::OnHitActor(FHitResult HitResult)
+{
+	if (!HasAuthority()) return;
+
+
+}
+
+UCollisionComponent* AWeaponBase::GetWeaponCollisionComponent()
+{
+	if (CollisionComponent)
+	{
+		return CollisionComponent;
+	}
+	return nullptr;
+}
+
 void AWeaponBase::MulticastSetWeaponMesh_Implementation(USkeletalMesh* InMesh)
 {
+
 	if (IsValid(InMesh))
 	{
 		if (IsValid(WeaponSkeletalMesh))
@@ -84,21 +118,30 @@ void AWeaponBase::MulticastSetWeaponMesh_Implementation(USkeletalMesh* InMesh)
 	}
 }
 
-void AWeaponBase::SetCharacterAttack(float AttackPower)
+void AWeaponBase::SetCharacterAttack(float AttackPower,const uint8& DetermineIndex)
 {
-	WeaponAttackPower = AttackPower;
-
-	if (!IsValid(WeaponAttackEffect)) return;
-
-	if (AActor* OwnerCharacter = GetOwner())
+	if (CollisionComponent != nullptr)
 	{
-		if (UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerCharacter))
+		CollisionComponent->SetCollisionMesh(GetItemMesh());
+		CollisionComponent->AddActorsToIgnore(this->GetOwner());
+	}
+
+	if (DetermineIndex == 0)
+	{
+		WeaponAttackPower = AttackPower;
+
+		if (!IsValid(WeaponAttackEffect)) return;
+
+		if (AActor* OwnerCharacter = GetOwner())
 		{
-			FGameplayEffectSpecHandle SpecHandle = OwnerAsc->MakeOutgoingSpec(WeaponAttackEffect, 1.f, OwnerAsc->MakeEffectContext());
-			if (SpecHandle.IsValid())
+			if (UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerCharacter))
 			{
-				SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Combat.Data.Attack")), WeaponAttackPower);
-				ActiveGEHandle = OwnerAsc->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				FGameplayEffectSpecHandle SpecHandle = OwnerAsc->MakeOutgoingSpec(WeaponAttackEffect, 1.f, OwnerAsc->MakeEffectContext());
+				if (SpecHandle.IsValid())
+				{
+					SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Combat.Data.Attack")), WeaponAttackPower);
+					ActiveGEHandle = OwnerAsc->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				}
 			}
 		}
 	}

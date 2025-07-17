@@ -22,6 +22,8 @@ public:
 	void SetDynamicProjectile(const FGameplayTag& ProjectileTag, int32 AbilityLevel);
 
 	virtual void SetMeleeAttackAbility_Implementation(const FGameplayTag& WeaponTag) override;
+	virtual void ClearMeleeAttackAbility_Implementation() override;
+
 
 private:
 
@@ -40,6 +42,7 @@ private:
 
 	UFUNCTION(Server, Reliable)
 	void ServerSetMeleeAttackAbility(const FGameplayTag& WeaponTag);
+
 	
 	
 	

@@ -15,7 +15,9 @@ void UAN_ResetAttack::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase
 		{
 			if (UCombatComponent* CombatComponent = IB_RPGPlayerController->GetCombatComponent())
 			{
-				CombatComponent->ResetAttack();
+				UE_LOG(LogTemp, Warning, TEXT("ResetAttack"));
+
+				CombatComponent->ServerResetAttack();
 			}
 		}
 

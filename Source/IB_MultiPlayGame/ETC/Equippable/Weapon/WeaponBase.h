@@ -29,11 +29,14 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	TArray<TObjectPtr<UAnimMontage>> WeaponAttackMontageArray;
 	UFUNCTION()
-	void SetCharacterAttack(float AttackPower);
+	void SetCharacterAttack(float AttackPower, const uint8& DetermineIndex);
 
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Custom Values | GamePlayEffect")
 	TSubclassOf<UGameplayEffect> WeaponAttackEffect;
+
+	UFUNCTION()
+	UCollisionComponent* GetWeaponCollisionComponent();
 
 
 	
@@ -46,6 +49,8 @@ private:
 	TObjectPtr<USceneComponent> RootSceneComponent;
 	UPROPERTY(VisibleAnywhere, meta = (AllowPrivateAccess = true))
 	TObjectPtr<USkeletalMeshComponent> WeaponSkeletalMesh;
+	UPROPERTY(VisibleAnywhere, meta = (AllowPrivateAccess = true))
+	TObjectPtr<UCollisionComponent> CollisionComponent;
 	UPROPERTY()
 	float WeaponAttackPower;
 	
@@ -53,6 +58,12 @@ private:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastSetWeaponMesh(USkeletalMesh* InMesh);
+
+	UFUNCTION()
+	UPrimitiveComponent* GetItemMesh();
+	UFUNCTION()
+	void OnHitActor(FHitResult HitResult);
+	
 
 	
 

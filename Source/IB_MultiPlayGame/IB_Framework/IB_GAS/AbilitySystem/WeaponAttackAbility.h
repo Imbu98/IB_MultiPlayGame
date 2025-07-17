@@ -5,7 +5,10 @@
 #include "IB_RPGAbilityTypes.h"
 #include "GameplayTagContainer.h"
 #include "RPGDamageAbility.h"
+#include "AbilitySystemBlueprintLibrary.h"
 #include "WeaponAttackAbility.generated.h"
+
+class AGA_TargetActor;
 
 UCLASS()
 class IB_MULTIPLAYGAME_API UWeaponAttackAbility : public URPGDamageAbility
@@ -32,6 +35,11 @@ private:
 
 	FWeaponParams CurrentWeaponParams;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Attack")
+	TSubclassOf<AGA_TargetActor> TargetActorClass;
+
 	UFUNCTION()
 	void WeaponAttack();
+
+
 };

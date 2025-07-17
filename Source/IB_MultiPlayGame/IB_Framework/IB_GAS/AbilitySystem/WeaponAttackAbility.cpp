@@ -7,9 +7,12 @@
 #include "../IB_RPGAbilitySystemComponent.h"
 #include "../IB_RPGPlayerController.h"
 #include "../../../Components/CombatComponent.h"
+#include "GA_AttackAT.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
+#include "GA_AttackHitCheck.h"
+#include <Abilities/Tasks/AbilityTask_WaitGameplayEvent.h>
 
 UWeaponAttackAbility::UWeaponAttackAbility()
 {
@@ -89,13 +92,16 @@ void UWeaponAttackAbility::WeaponAttack()
 				{
 					CombatComponent->CanContinueAttack = false;
 
-					IB_MainChar->MulticastPlayMontage(CurrentWeaponParams.WeaponAttackMontageArray[AttackIndex]);
-					CombatComponent->AttackCount++;
+					UE_LOG(LogTemp, Warning, TEXT("ComboAttackCount : %d"), AttackIndex);
 
-					if (AttackIndex >= CurrentWeaponParams.WeaponAttackMontageArray.Num() - 1)
+					IB_MainChar->MulticastPlayMontage(CurrentWeaponParams.WeaponAttackMontageArray[AttackIndex]);
+
+					CombatComponent->AttackCount++;
+					
+					/*if (AttackIndex >= CurrentWeaponParams.WeaponAttackMontageArray.Num() - 1)
 					{
 						CombatComponent->ResetAttack();
-					}
+					}*/
 				}
 			}
 		}

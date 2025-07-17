@@ -1,4 +1,4 @@
-#include "CombatComponent.h"
+﻿#include "CombatComponent.h"
 
 #include "StateComponent.h"
 #include "../ETC/Equippable/Armor/ArmorBase.h"
@@ -6,6 +6,7 @@
 #include "../IB_Framework/IB_GAS/IB_RPGPlayerController.h"
 #include "../IB_Framework/IB_GAS/IB_RPGAbilitySystemComponent.h"
 
+#include "../Components/CollisionComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "../Widget/W_RPGSystemWidget.h"
 #include "../Widget/W_Inventory.h"
@@ -48,6 +49,8 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UCombatComponent, EquippedItemsDefinition);
+	DOREPLIFETIME(UCombatComponent, CanContinueAttack);
+	DOREPLIFETIME(UCombatComponent, AttackCount);
 }
 
 void UCombatComponent::ResetAttack()
@@ -79,7 +82,16 @@ void UCombatComponent::ServerResetAttack_Implementation()
 	}
 }
 
-void UCombatComponent::SetEquippedItem(AActor* SpawnedItem)
+void UCombatComponent::ServerSetCanContinueAttack_Implementation()
+{
+	if (!GetOwner()) return;
+
+	if (!GetOwner()->HasAuthority()) return;
+
+	CanContinueAttack = true;
+}
+
+void UCombatComponent::SetEquippedItem(AActor* SpawnedItem, const uint8& DefinitionMainNumber)
 {
 	if (!GetOwner()) return;
 
@@ -88,44 +100,46 @@ void UCombatComponent::SetEquippedItem(AActor* SpawnedItem)
 
 	if (AEquippableBase* EquippedItem = Cast<AEquippableBase>(SpawnedItem))
 	{
-		FMasterItemDefinition EquippedItemDefinition=EquippedItem->GetItemDefinition();
+		{
+			FMasterItemDefinition EquippedItemDefinition = EquippedItem->GetItemDefinition();
 
-		// EquippedItemActor������ ItemInfo Map���� ����
-		
-		EquippedInstancedItemMap.Add(EquippedItemDefinition.ItemParts,EquippedItem);
-		
-		//EquippedItemsDefinition.Add(EquippedItemDefinition);
-		
-		// Map�� ����� ���� ������ ������ Array�� �߰�
-		int32 EquipSlotIndex = DefinitionIndex(EquippedItemDefinition);
-		
-		if (EquippedItemsDefinition.IsValidIndex(EquipSlotIndex))
-		{
-			EquippedItemsDefinition[EquipSlotIndex] = EquippedItemDefinition;
-		}
-		
-		// Server���� ���� Array�� Map�� �����, Ŭ���̾�ƮRPC�� Ŭ�󿡼��� Map�� ������� 
-		for (const FMasterItemDefinition& ItemDef : EquippedItemsDefinition)
-		{
-			EquippedItemMap.Add(ItemDef.ItemParts,ItemDef);
-		}
-		if (EquippedItemDefinition.ItemParts==EItemParts::Weapon)
-		{
-			if (UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner()))
+			if (EquippedItemDefinition.ItemParts == EItemParts::Weapon)
 			{
-				if (UIB_RPGAbilitySystemComponent* IB_RPGAbilitySystemComponent = Cast<UIB_RPGAbilitySystemComponent>(OwnerAsc))
+				if (AWeaponBase* Weapon = Cast<AWeaponBase>(EquippedItem))
 				{
-					if (IB_RPGAbilitySystemComponent->Implements<URPGAbilitySystemInterface>())
-					{
-						UE_LOG(LogTemp, Warning, TEXT("Try to Set meleeAttack Ability"));
-						IRPGAbilitySystemInterface::Execute_SetMeleeAttackAbility(IB_RPGAbilitySystemComponent, EquippedItemDefinition.ItemTag);
-					}
+					SetWeapon(Weapon, DefinitionMainNumber);
+					IsAttachedWeapon = true;
 				}
 			}
-			IsAttachedWeapon=true;
+
+			//For Apply Once
+			if (DefinitionMainNumber == 0)
+			{
+				// EquippedItemActor������ ItemInfo Map���� ����
+
+				EquippedInstancedItemMap.Add(EquippedItemDefinition.ItemParts, EquippedItem);
+
+				//EquippedItemsDefinition.Add(EquippedItemDefinition);
+
+				// Map�� ����� ���� ������ ������ Array�� �߰�
+				int32 EquipSlotIndex = DefinitionIndex(EquippedItemDefinition);
+
+				if (EquippedItemsDefinition.IsValidIndex(EquipSlotIndex))
+				{
+					EquippedItemsDefinition[EquipSlotIndex] = EquippedItemDefinition;
+				}
+
+				// Server���� ���� Array�� Map�� �����, Ŭ���̾�ƮRPC�� Ŭ�󿡼��� Map�� ������� 
+				for (const FMasterItemDefinition& ItemDef : EquippedItemsDefinition)
+				{
+					EquippedItemMap.Add(ItemDef.ItemParts, ItemDef);
+				}
+			}
+
 		}
-		//ClientSetEquippedItemMap(EquippedItemsDefinition);
+			//ClientSetEquippedItemMap(EquippedItemsDefinition);
 	}
+		
 }
 
 void UCombatComponent::ClientSetEquippedItemMap_Implementation(const TArray<FMasterItemDefinition>& EquippedItemDefinitions)
@@ -135,25 +149,54 @@ void UCombatComponent::ClientSetEquippedItemMap_Implementation(const TArray<FMas
 
 void UCombatComponent::UnEquipItem(const FMasterItemDefinition& ItemInfo,const float& SlotIndex)
 {
-	if (ItemInfo.ItemParts==EItemParts::Weapon)
-	{
-		IsAttachedWeapon=false;
-	}
 	if (!GetOwner()->HasAuthority()) return;
-	
+
 	if (AEquippableBase** EquippedItemPtr = EquippedInstancedItemMap.Find(ItemInfo.ItemParts))
 	{
 		AEquippableBase* EquippedItem = *EquippedItemPtr;
+
 		if (IsValid(EquippedItem))
 		{
-			EquippedItem->UnEquipItem();
-			EquippedItem->Destroy();
 			EquippedInstancedItemMap[ItemInfo.ItemParts] = nullptr;
+			if (EquippedItemsDefinition.IsValidIndex(SlotIndex))
+			{
+				EquippedItemsDefinition[SlotIndex] = FMasterItemDefinition();
+			}
+
+			if (ItemInfo.ItemParts == EItemParts::Weapon)
+			{
+				IsAttachedWeapon = false;
+				if (UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner()))
+				{
+					if (UIB_RPGAbilitySystemComponent* IB_RPGAbilitySystemComponent = Cast<UIB_RPGAbilitySystemComponent>(OwnerAsc))
+					{
+						if (IB_RPGAbilitySystemComponent->Implements<URPGAbilitySystemInterface>())
+						{
+							UE_LOG(LogTemp, Warning, TEXT("Try to Clear meleeAttack Ability"));
+							IRPGAbilitySystemInterface::Execute_ClearMeleeAttackAbility(IB_RPGAbilitySystemComponent);
+						}
+					}
+				}
+				if (MainHandWeapon)
+				{
+					MainHandWeapon->UnEquipItem();
+					MainHandWeapon->Destroy();
+					MainHandWeapon = nullptr;
+				}
+				if (SubHandWeapon)
+				{
+					SubHandWeapon->Destroy();
+					MainHandWeapon = nullptr;
+				}
+			}
+			else
+			{
+
+				EquippedItem->UnEquipItem();
+				EquippedItem->Destroy();
+
+			}
 		}
-	}
-	if (EquippedItemsDefinition.IsValidIndex(SlotIndex))
-	{
-		EquippedItemsDefinition[SlotIndex] = FMasterItemDefinition();
 	}
 }
 
@@ -246,4 +289,73 @@ int32 UCombatComponent::DefinitionIndex(const FMasterItemDefinition& EquipItemDe
 	return static_cast<uint8>(EItemParts::None);
 }
 
+void UCombatComponent::SetWeapon(AWeaponBase* InWeapon, const uint8& DefinitionMainNumber)
+{
+	if (!IsValid(InWeapon)) return;
+
+	if (DefinitionMainNumber == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Try to Set MainHandWeapon"));
+		MainHandWeapon = InWeapon;
+		if (UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner()))
+		{
+			if (UIB_RPGAbilitySystemComponent* IB_RPGAbilitySystemComponent = Cast<UIB_RPGAbilitySystemComponent>(OwnerAsc))
+			{
+				if (IB_RPGAbilitySystemComponent->Implements<URPGAbilitySystemInterface>())
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Try to Set meleeAttack Ability"));
+					FMasterItemDefinition WeaponDefinition = InWeapon->GetItemDefinition();
+					IRPGAbilitySystemInterface::Execute_SetMeleeAttackAbility(IB_RPGAbilitySystemComponent, WeaponDefinition.ItemTag);
+				}
+			}
+		}
+	}
+	if(DefinitionMainNumber == 1)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Try to Set SubHandWeapon"));
+		SubHandWeapon = InWeapon;
+	}
+	
+}
+
+void UCombatComponent::ServerEnableCollisionTrace_Implementation(const uint8& DefinitionMainNumber)
+{
+	UCollisionComponent* CollisionComponent = nullptr;
+	if (DefinitionMainNumber == 0)
+	{
+		if (MainHandWeapon)
+		{
+			CollisionComponent = MainHandWeapon->GetWeaponCollisionComponent();
+		}
+	}
+	else if (DefinitionMainNumber == 1)
+	{
+		if (SubHandWeapon)
+		{
+			CollisionComponent = SubHandWeapon->GetWeaponCollisionComponent();
+		}
+	}
+	CollisionComponent->EnableCollision();
+}
+
+
+void UCombatComponent::ServerDisableCollisionTrace_Implementation()
+{
+		if (MainHandWeapon)
+		{
+			if (UCollisionComponent* CollisionComponent = MainHandWeapon->GetWeaponCollisionComponent())
+			{
+				CollisionComponent->DisableCollision();
+			}
+		}
+
+		if (SubHandWeapon)
+		{
+			if (UCollisionComponent* CollisionComponent = SubHandWeapon->GetWeaponCollisionComponent())
+			{
+				CollisionComponent->DisableCollision();
+			}
+		}
+
+}
 

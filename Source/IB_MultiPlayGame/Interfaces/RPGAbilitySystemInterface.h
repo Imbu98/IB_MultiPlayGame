@@ -24,6 +24,9 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void SetMeleeAttackAbility(const FGameplayTag& WeaponTag);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void ClearMeleeAttackAbility();
 	
 	
 };

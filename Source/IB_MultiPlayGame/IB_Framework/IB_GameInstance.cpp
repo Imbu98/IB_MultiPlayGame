@@ -123,7 +123,7 @@ void UIB_GameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucce
 					UE_LOG(LogTemp, Log, TEXT("MAPNAME = %s"), *MapName);
 					if (MapName == CurrentRequestDungeonMapName)
 					{
-						SessionInterface->FindSessions(0, MakeShareable(new FOnlineSessionSearch(SessionSearch)));
+						SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
 						FTimerHandle LockSessionTimerHandle;
 						GetWorld()->GetTimerManager().SetTimer(
 							LockSessionTimerHandle,
@@ -168,20 +168,24 @@ void UIB_GameInstance::FindLobbySession()
 {
 	if (!SessionInterface.IsValid()) return;
 	
-	SessionSearch.MaxSearchResults = 200000;
-	SessionSearch.QuerySettings.Set(FName("MAPNAME"), FString(TEXT("L_Lobby")), EOnlineComparisonOp::Equals);
-	
-	FString MapNameValue;
-	if (SessionSearch.QuerySettings.Get(FName("MAPNAME"), MapNameValue))
+	SessionSearch = MakeShareable(new FOnlineSessionSearch());
+	if (SessionSearch)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MAPNAME 검색 조건: %s"), *MapNameValue);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("MAPNAME 검색 조건이 설정되지 않았습니다."));
-	}
+		SessionSearch->MaxSearchResults = 200000;
+		SessionSearch->QuerySettings.Set(FName("MAPNAME"), FString(TEXT("L_Lobby")), EOnlineComparisonOp::Equals);
 
-	SessionInterface->FindSessions(0, MakeShareable(new FOnlineSessionSearch(SessionSearch)));
+		FString MapNameValue;
+		if (SessionSearch->QuerySettings.Get(FName("MAPNAME"), MapNameValue))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("MAPNAME 검색 조건: %s"), *MapNameValue);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("MAPNAME 검색 조건이 설정되지 않았습니다."));
+		}
+
+		SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
+	}
 }
 
 void UIB_GameInstance::RequestFindOrCreateDungeonSession(const FString& DungeonName, AIB_RPGPlayerController* Player)
@@ -198,21 +202,24 @@ void UIB_GameInstance::RequestFindOrCreateDungeonSession(const FString& DungeonN
 		IB_RPGPlayerController->ClientLeaveLobbySession(DungeonName);
 	}*/
 	
-		
-	SessionSearch.MaxSearchResults = 200000;
-	SessionSearch.QuerySettings.Set(FName("MAPNAME"), DungeonName, EOnlineComparisonOp::Equals);
-
-	FString MapNameValue;
-	if (SessionSearch.QuerySettings.Get(FName("MAPNAME"), MapNameValue))
+	SessionSearch = MakeShareable(new FOnlineSessionSearch());
+	if (SessionSearch)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MAPNAME 검색 조건: %s"), *MapNameValue);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("MAPNAME 검색 조건이 설정되지 않았습니다."));
-	}
+		SessionSearch->MaxSearchResults = 200000;
+		SessionSearch->QuerySettings.Set(FName("MAPNAME"), DungeonName, EOnlineComparisonOp::Equals);
 
-	SessionInterface->FindSessions(0, MakeShareable(new FOnlineSessionSearch(SessionSearch)));
+		FString MapNameValue;
+		if (SessionSearch->QuerySettings.Get(FName("MAPNAME"), MapNameValue))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("MAPNAME 검색 조건: %s"), *MapNameValue);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("MAPNAME 검색 조건이 설정되지 않았습니다."));
+		}
+
+		SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
+	}
 }
 
 void UIB_GameInstance::CreateDungeonSession_Implementation(const FString& DungeonName, const int32& GeneratedPort)
@@ -223,11 +230,21 @@ void UIB_GameInstance::CreateDungeonSession_Implementation(const FString& Dungeo
 
 void UIB_GameInstance::OnFindSessionComplete(bool bWasSuccessful)
 {
+	UE_LOG(LogTemp, Error, TEXT("Tryo On Find Session Complete"));
+
 	if (bWasSuccessful)
 	{
-		SessionSearchResults=SessionSearch.SearchResults;
+		UE_LOG(LogTemp, Error, TEXT("Session Found"));
+
+		if (!SessionSearch)
+		{
+			UE_LOG(LogTemp, Error, TEXT("No SharedPtr:Session Search "));
+			return;
+		}
+
+		SessionSearchResults=SessionSearch->SearchResults;
 	
-		for (const FOnlineSessionSearchResult& Result : SessionSearch.SearchResults)
+		for (const FOnlineSessionSearchResult& Result : SessionSearch->SearchResults)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("== Session Info =="));
 			for (auto& Setting : Result.Session.SessionSettings.Settings)

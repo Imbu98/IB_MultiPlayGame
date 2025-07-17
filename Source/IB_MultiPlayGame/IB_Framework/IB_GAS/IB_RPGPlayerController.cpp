@@ -84,6 +84,10 @@ void AIB_RPGPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME(AIB_RPGPlayerController, InventoryComponent);
 	DOREPLIFETIME(AIB_RPGPlayerController, QuestLogComponent);
 	DOREPLIFETIME(AIB_RPGPlayerController, QuestComponent);
+	DOREPLIFETIME(AIB_RPGPlayerController, CombatComponent);
+	DOREPLIFETIME(AIB_RPGPlayerController, CannonSpawnComponent);
+	DOREPLIFETIME(AIB_RPGPlayerController, StateComponent);
+	DOREPLIFETIME(AIB_RPGPlayerController, bAlreadyQuest);
 	
 }
 
@@ -592,24 +596,27 @@ void AIB_RPGPlayerController::EquipItem(const FMasterItemDefinition& ItemDefinit
 
 			FTransform SpawnTransform;
 
-			if (AWeaponBase* SpawnedWeapon = GetWorld()->SpawnActorDeferred<AWeaponBase>(CurrentWeaponParams.WeaponClass, SpawnTransform))
+			for (int i = 0; i < CurrentWeaponParams.WeaponToSpawnCount; ++i)
 			{
-				SpawnedWeapon->SetReplicates(true);
-				SpawnedWeapon->SetWeaponParams(CurrentWeaponParams); 
-				SpawnedWeapon->SetOwner(this->GetPawn());
-				SpawnedWeapon->SetCharacterAttack(ItemDefinition.WeaponAttackPower);
-				SpawnedWeapon->SetItemDefinition(ItemDefinition);
-				SpawnedWeapon->FinishSpawning(SpawnTransform);
-
-				CombatComponent->SetEquippedItem(SpawnedWeapon);
-
-				FName SocketName = CurrentWeaponParams.AttackSocketName;
-				USkeletalMeshComponent* Mesh = Cast<USkeletalMeshComponent>(this->GetPawn()->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
-				if (Mesh && Mesh->DoesSocketExist(SocketName))
+				if (AWeaponBase* SpawnedWeapon = GetWorld()->SpawnActorDeferred<AWeaponBase>(CurrentWeaponParams.WeaponClass, SpawnTransform))
 				{
-					SpawnedWeapon->AttachToComponent(Mesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
+					SpawnedWeapon->SetReplicates(true);
+					SpawnedWeapon->SetWeaponParams(CurrentWeaponParams);
+					SpawnedWeapon->SetOwner(this->GetPawn());
+					SpawnedWeapon->SetCharacterAttack(ItemDefinition.WeaponAttackPower,i);
+					SpawnedWeapon->SetItemDefinition(ItemDefinition);
+					SpawnedWeapon->FinishSpawning(SpawnTransform);
 
-					UE_LOG(LogTemp, Warning, TEXT("WeaponBase spawned on: %s"), GetWorld()->IsNetMode(NM_Client) ? TEXT("Client") : TEXT("Server"));
+					CombatComponent->SetEquippedItem(SpawnedWeapon,i);
+
+					FName SocketName = (i == 0) ? CurrentWeaponParams.AttachMainSocketName : CurrentWeaponParams.AttachSubSocketName;
+					USkeletalMeshComponent* Mesh = Cast<USkeletalMeshComponent>(this->GetPawn()->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
+					if (Mesh && Mesh->DoesSocketExist(SocketName))
+					{
+						SpawnedWeapon->AttachToComponent(Mesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
+
+						UE_LOG(LogTemp, Warning, TEXT("WeaponBase spawned on: %s"), GetWorld()->IsNetMode(NM_Client) ? TEXT("Client") : TEXT("Server"));
+					}
 				}
 			}
 		}
@@ -631,7 +638,7 @@ void AIB_RPGPlayerController::EquipItem(const FMasterItemDefinition& ItemDefinit
 				SpawnedArmor->SetCharacterDefense(ItemDefinition.ArmorDefense);
 				SpawnedArmor->FinishSpawning(SpawnTransform);
 
-				CombatComponent->SetEquippedItem(SpawnedArmor);
+				CombatComponent->SetEquippedItem(SpawnedArmor,0);
 
 				FName SocketName = CurrentArmorParams.AttackSocketName;
 				USkeletalMeshComponent* Mesh = Cast<USkeletalMeshComponent>(this->GetPawn()->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
